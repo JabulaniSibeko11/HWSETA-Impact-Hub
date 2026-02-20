@@ -1,7 +1,6 @@
-﻿@using Microsoft.AspNetCore.Identity
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
-
+﻿@using HWSETA_Impact_Hub.Infrastructure.Identity
+@inject Microsoft.AspNetCore.Identity.SignInManager<ApplicationUser> SignInManager
+@inject Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> UserManager
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {

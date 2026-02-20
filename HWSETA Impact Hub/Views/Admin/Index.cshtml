@@ -1,0 +1,49 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="mb-0">Admin Dashboard</h1>
+</div>
+
+<div class="alert alert-info">
+    <strong>HWSETA Impact Hub</strong> administration focuses on:
+    <ul class="mb-0">
+        <li>Dynamic web forms to track beneficiary changes, challenges, and outcomes.</li>
+        <li>Progress tracking: Entered, In Training, Dropped Out, Completed.</li>
+        <li>Two-way communication (interactive email chat).</li>
+        <li>Reports + dashboards (downloadable + visual).</li>
+    </ul>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">System Setup</h5>
+                <p class="card-text">Start by creating Programmes, Employers, and Providers.</p>
+                <a class="btn btn-outline-primary" asp-controller="Programmes" asp-action="Index">Go to Programmes</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">User Management</h5>
+                <p class="card-text">Create staff accounts and beneficiaries with correct roles.</p>
+                <a class="btn btn-outline-primary" asp-controller="AdminUsers" asp-action="Create">Create Users</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Reporting</h5>
+                <p class="card-text">View dashboards and export tables.</p>
+                <a class="btn btn-outline-primary" asp-controller="Reports" asp-action="Index">Open Reporting</a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,32 @@
+﻿@model HWSETA_Impact_Hub.Domain.Entities.Programme
+@{
+    ViewData["Title"] = "Programme Details";
+}
+
+<h1>Programme Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Name</dt>
+    <dd class="col-sm-9">@Model.ProgrammeName</dd>
+
+    <dt class="col-sm-3">Type</dt>
+    <dd class="col-sm-9">@Model.ProgrammeType</dd>
+
+    <dt class="col-sm-3">Cohort</dt>
+    <dd class="col-sm-9">@Model.CohortYear</dd>
+
+    <dt class="col-sm-3">Province</dt>
+    <dd class="col-sm-9">@Model.Province</dd>
+
+    <dt class="col-sm-3">Dates</dt>
+    <dd class="col-sm-9">@Model.StartDate:yyyy-MM-dd → @Model.EndDate:yyyy-MM-dd</dd>
+
+    <dt class="col-sm-3">Target</dt>
+    <dd class="col-sm-9">@Model.TargetBeneficiaries</dd>
+
+    <dt class="col-sm-3">Notes</dt>
+    <dd class="col-sm-9">@Model.Notes</dd>
+</dl>
+
+<a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+<a asp-action="Index" class="btn btn-outline-secondary">Back</a>

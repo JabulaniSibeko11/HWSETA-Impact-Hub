@@ -1,0 +1,28 @@
+﻿@using HWSETA_Impact_Hub.Infrastructure.Identity
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Options
+@inject IOptions<SecurityOptions> Sec
+@inject IAuthorizationService Auth
+
+<ul class="navbar-nav me-auto">
+    @foreach (var item in Sec.Value.AdminMenu)
+    {
+        var allowed = true;
+
+        if (!string.IsNullOrWhiteSpace(item.Policy))
+        {
+            var result = await Auth.AuthorizeAsync(User, item.Policy);
+            allowed = result.Succeeded;
+        }
+
+        if (!allowed) { continue; }
+
+        <li class="nav-item">
+            <a class="nav-link text-dark"
+               asp-controller="@item.Controller"
+               asp-action="@item.Action">
+                @item.Title
+            </a>
+        </li>
+    }
+</ul>

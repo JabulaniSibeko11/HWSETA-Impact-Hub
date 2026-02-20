@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿@using HWSETA_Impact_Hub.Infrastructure.Identity
+@inject Microsoft.AspNetCore.Identity.SignInManager<ApplicationUser> SignInManager
+@inject Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> UserManager
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -23,10 +26,20 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
+                     @*    @if (User?.Identity?.IsAuthenticated == true)
+                        { *@
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Index">Admin</a>
+                            </li>
+                      @*   } *@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <partial name="_AdminMenu" />
+                    }
                     <partial name="_LoginPartial" />
                 </div>
             </div>
