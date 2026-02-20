@@ -1,4 +1,6 @@
-﻿using HWSETA_Impact_Hub.Domain.Entities;
+﻿using ClosedXML.Excel;
+using HWSETA_Impact_Hub.Domain.Entities;
+using HWSETA_Impact_Hub.Models.ViewModels.Programme;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace HWSETA_Impact_Hub.Controllers
 {
     [Authorize(Policy = "AdminManage")]
-    public class ProgrammesController : Controller
+    public sealed class ProgrammesController : Controller
     {
         private readonly IProgrammeService _svc;
         private readonly IAuditService _audit;
@@ -23,69 +25,96 @@ namespace HWSETA_Impact_Hub.Controllers
             return View(list);
         }
 
-        public async Task<IActionResult> Details(Guid id, CancellationToken ct)
+        [HttpGet]
+        public IActionResult Create() => View(new ProgrammeCreateVm());
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ProgrammeCreateVm vm, CancellationToken ct)
         {
-            var item = await _svc.GetAsync(id, ct);
-            if (item is null) return NotFound();
+            if (!ModelState.IsValid) return View(vm);
 
-            await _audit.LogViewAsync("Programme", id.ToString(), null, ct);
+            var (ok, error) = await _svc.CreateAsync(vm, ct);
 
-            return View(item);
-        }
+            await _audit.LogViewAsync(
+                "Programme",
+                vm.ProgrammeCode ?? vm.ProgrammeName,
+                ok ? "Single create success" : $"Single create failed: {error}",
+                ct);
 
-        public IActionResult Create()
-        {
-            return View(new Programme
+            if (!ok)
             {
-                CohortYear = DateTime.UtcNow.Year,
-                StartDate = DateTime.Today,
-                EndDate = DateTime.Today.AddMonths(3)
-            });
+                ModelState.AddModelError(string.Empty, error ?? "Failed.");
+                return View(vm);
+            }
+
+            TempData["Success"] = "Programme added successfully.";
+            return RedirectToAction(nameof(Index));
         }
+
+        [HttpGet]
+        public IActionResult Upload() => View();
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Programme model, CancellationToken ct)
+        public async Task<IActionResult> Upload(IFormFile file, CancellationToken ct)
         {
-            if (!ModelState.IsValid) return View(model);
+            var res = await _svc.ImportFromExcelAsync(file, ct);
 
-            await _svc.CreateAsync(model, ct);
-            return RedirectToAction(nameof(Index));
+            await _audit.LogViewAsync(
+                "ProgrammeImport",
+                file?.FileName ?? "no-file",
+                $"Bulk import: Total={res.TotalRows}, Inserted={res.Inserted}, Updated={res.Updated}, Skipped={res.Skipped}, Errors={res.Errors.Count}",
+                ct);
+
+            return View("UploadResult", res);
         }
 
-        public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
+        [HttpGet]
+        public async Task<IActionResult> DownloadTemplate(CancellationToken ct)
         {
-            var item = await _svc.GetAsync(id, ct);
-            if (item is null) return NotFound();
-            return View(item);
-        }
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Programmes");
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, Programme model, CancellationToken ct)
-        {
-            if (id != model.Id) return BadRequest();
-            if (!ModelState.IsValid) return View(model);
+            var headers = new[]
+            {
+                "ProgrammeCode",
+                "ProgrammeName",
+                "NqfLevel",
+                "QualificationType",
+                "DurationMonths",
+                "IsActive"
+            };
 
-            var ok = await _svc.UpdateAsync(model, ct);
-            if (!ok) return NotFound();
+            for (int i = 0; i < headers.Length; i++)
+                ws.Cell(1, i + 1).Value = headers[i];
 
-            return RedirectToAction(nameof(Index));
-        }
+            ws.Row(1).Style.Font.Bold = true;
+            ws.SheetView.FreezeRows(1);
 
-        public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
-        {
-            var item = await _svc.GetAsync(id, ct);
-            if (item is null) return NotFound();
-            return View(item);
-        }
+            ws.Cell(2, 1).Value = "PRG-0001";
+            ws.Cell(2, 2).Value = "Example Learnership Programme";
+            ws.Cell(2, 3).Value = "NQF 4";
+            ws.Cell(2, 4).Value = "Learnership";
+            ws.Cell(2, 5).Value = 12;
+            ws.Cell(2, 6).Value = true;
 
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken ct)
-        {
-            await _svc.DeleteAsync(id, ct);
-            return RedirectToAction(nameof(Index));
+            ws.Columns().AdjustToContents();
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+            var bytes = ms.ToArray();
+
+            await _audit.LogViewAsync(
+                "ProgrammeTemplate",
+                "ProgrammesTemplate.xlsx",
+                "Downloaded programmes Excel template",
+                ct);
+
+            var fileName = $"Programmes_Template_{DateTime.Today:yyyyMMdd}.xlsx";
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
         }
     }
 }

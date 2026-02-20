@@ -1,0 +1,46 @@
+﻿@model List<HWSETA_Impact_Hub.Domain.Entities.Beneficiary>
+@{
+    ViewData["Title"] = "Beneficiaries";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Beneficiaries</h1>
+    <div>
+        <a class="btn btn-outline-secondary" asp-action="DownloadTemplate">Download Excel Template</a>
+        <a class="btn btn-outline-secondary" asp-action="Upload">Bulk Upload</a>
+        <a class="btn btn-primary" asp-action="Create">Add Beneficiary</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Identifier</th>
+            <th>Name</th>
+            <th>DOB</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Province</th>
+            <th>Active</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var b in Model)
+        {
+            <tr>
+                <td>@b.IdentifierType - @b.IdentifierValue</td>
+                <td>@b.FirstName @b.LastName</td>
+                <td>@(b.DateOfBirth.HasValue? b.DateOfBirth.Value.ToString("yyyy-MM-dd") : "")</td>
+                <td>@b.Email</td>
+                <td>@b.Phone</td>
+                <td>@b.Province</td>
+                <td>@(b.IsActive ? "Yes" : "No")</td>
+            </tr>
+        }
+    </tbody>
+</table>

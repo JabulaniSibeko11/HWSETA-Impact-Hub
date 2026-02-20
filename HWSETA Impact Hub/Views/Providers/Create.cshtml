@@ -1,0 +1,58 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Provider.ProviderCreateVm
+@{
+    ViewData["Title"] = "Add Provider";
+}
+
+<h1>Add Provider</h1>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Provider Code (optional)</label>
+            <input asp-for="ProviderCode" class="form-control" />
+        </div>
+        <div class="col-md-8">
+            <label class="form-label">Provider Name</label>
+            <input asp-for="ProviderName" class="form-control" />
+            <span asp-validation-for="ProviderName" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Accreditation No</label>
+            <input asp-for="AccreditationNo" class="form-control" />
+            <span asp-validation-for="AccreditationNo" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Province</label>
+            <input asp-for="Province" class="form-control" />
+            <span asp-validation-for="Province" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Contact Name</label>
+            <input asp-for="ContactName" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Contact Email</label>
+            <input asp-for="ContactEmail" class="form-control" />
+            <span asp-validation-for="ContactEmail" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Phone</label>
+            <input asp-for="Phone" class="form-control" />
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

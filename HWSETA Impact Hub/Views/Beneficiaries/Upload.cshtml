@@ -1,0 +1,25 @@
+﻿@{
+    ViewData["Title"] = "Bulk Upload Beneficiaries";
+}
+
+<h1>Bulk Upload Beneficiaries</h1>
+
+<a class="btn btn-outline-secondary mb-3" asp-action="DownloadTemplate">Download Excel Template</a>
+
+<div class="alert alert-info">
+    Required headers:
+    <strong>IdentifierType</strong> (SaId/Passport),
+    <strong>IdentifierValue</strong>,
+    <strong>FirstName</strong>,
+    <strong>LastName</strong>.
+    Others optional.
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div class="mb-3">
+        <input type="file" name="file" class="form-control" accept=".xlsx" />
+    </div>
+    <button class="btn btn-primary" type="submit">Upload</button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+</form>

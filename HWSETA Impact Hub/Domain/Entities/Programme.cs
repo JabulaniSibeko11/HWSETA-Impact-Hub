@@ -14,5 +14,11 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public string Province { get; set; } = "";
         public int TargetBeneficiaries { get; set; }
         public string? Notes { get; set; }
+       
+        public string? ProgrammeCode { get; set; }   // optional unique
+        public string? NqfLevel { get; set; }        // e.g. "NQF 4"
+        public string? QualificationType { get; set; } // Learnership / Internship / Skills Programme
+        public int? DurationMonths { get; set; }     // e.g. 12
+        public bool IsActive { get; set; } = true;
     }
 }

@@ -3,6 +3,7 @@ using HWSETA_Impact_Hub.Infrastructure.Audit;
 using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Infrastructure.RequestContext;
 using HWSETA_Impact_Hub.Services.Implementations;
+using HWSETA_Impact_Hub.Services.Implementations.HWSETA_Impact_Hub.Services.Implementations;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -87,11 +88,13 @@ builder.Services.AddScoped<AuditSaveChangesInterceptor>();
 // Services
 builder.Services.AddScoped<IProgrammeService, ProgrammeService>();
 builder.Services.AddScoped<IProviderService, ProviderService>();
-
-
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IEmployerService, EmployerService>();
+builder.Services.AddScoped<IBeneficiaryService, BeneficiaryService>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 
 var app = builder.Build();
-await RoleSeeder.SeedAsync(app.Services);
+await IdentitySeeder.SeedAsync(app.Services);
 // Pipeline
 if (app.Environment.IsDevelopment())
 {

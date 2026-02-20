@@ -1,0 +1,32 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Provider.ProviderImportResultVm
+@{
+    ViewData["Title"] = "Upload Result";
+}
+
+<h1>Upload Result</h1>
+
+<div class="row g-3">
+    <div class="col-md-3"><div class="card"><div class="card-body"><b>Total Rows</b><div>@Model.TotalRows</div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><b>Inserted</b><div>@Model.Inserted</div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><b>Updated</b><div>@Model.Updated</div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><b>Skipped</b><div>@Model.Skipped</div></div></div></div>
+</div>
+
+@if (Model.Errors.Any())
+{
+    <div class="alert alert-warning mt-3">
+        <b>Errors (@Model.Errors.Count)</b>
+        <ul class="mb-0">
+            @foreach (var e in Model.Errors.Take(50))
+            {
+                <li>@e</li>
+            }
+        </ul>
+        @if (Model.Errors.Count > 50)
+        {
+            <div class="mt-2">Showing first 50 errors.</div>
+        }
+    </div>
+}
+
+<a class="btn btn-primary" asp-action="Index">Back to Providers</a>

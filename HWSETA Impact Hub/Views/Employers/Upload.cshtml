@@ -1,0 +1,23 @@
+﻿@{
+    ViewData["Title"] = "Bulk Upload Employers";
+}
+
+<h1>Bulk Upload Employers</h1>
+
+<div class="alert alert-info">
+    Upload an Excel file (.xlsx) with headers:
+    <strong>EmployerCode</strong>, <strong>EmployerName</strong>, <strong>Sector</strong>, <strong>Province</strong>,
+    ContactName, ContactEmail, Phone
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div class="mb-3">
+        <input type="file" name="file" class="form-control" accept=".xlsx" />
+    </div>
+    <button class="btn btn-primary" type="submit">Upload</button>
+    <a class="btn btn-outline-secondary mb-3" asp-action="DownloadTemplate">
+        Download Excel Template
+    </a>
+    <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+</form>

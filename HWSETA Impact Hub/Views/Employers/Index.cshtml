@@ -1,0 +1,42 @@
+﻿@model List<HWSETA_Impact_Hub.Domain.Entities.Employer>
+@{
+    ViewData["Title"] = "Employers";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Employers</h1>
+    <div>
+        <a class="btn btn-outline-secondary" asp-action="DownloadTemplate">Download Excel Template</a>
+        <a class="btn btn-outline-secondary" asp-action="Upload">Bulk Upload</a>
+        <a class="btn btn-primary" asp-action="Create">Add Employer</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Sector</th>
+            <th>Province</th>
+            <th>Contact</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var e in Model)
+        {
+            <tr>
+                <td>@e.EmployerCode</td>
+                <td>@e.EmployerName</td>
+                <td>@e.Sector</td>
+                <td>@e.Province</td>
+                <td>@(e.ContactName ?? "") @(string.IsNullOrWhiteSpace(e.ContactEmail) ? "" : $"({e.ContactEmail})")</td>
+            </tr>
+        }
+    </tbody>
+</table>

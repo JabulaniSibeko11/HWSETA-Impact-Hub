@@ -4,6 +4,7 @@ namespace HWSETA_Impact_Hub.Domain.Entities
 {
     public sealed class Provider : BaseEntity
     {
+        public string? ProviderCode { get; set; }
         public string ProviderName { get; set; } = "";
         public string AccreditationNo { get; set; } = "";
         public string Province { get; set; } = "";

@@ -1,0 +1,49 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Admin.CreateUserVm
+@{
+    ViewData["Title"] = "Create User";
+    var roles = ViewBag.Roles as List<string> ?? new List<string>();
+}
+
+<h1>Create User</h1>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Temporary Password</label>
+        <input asp-for="TempPassword" class="form-control" />
+        <span asp-validation-for="TempPassword" class="text-danger"></span>
+        <div class="form-text">Give the user this password. They can change it after first login.</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Role</label>
+        <select asp-for="Role" class="form-select">
+            @foreach (var r in roles)
+            {
+                <option value="@r">@r</option>
+            }
+        </select>
+        <span asp-validation-for="Role" class="text-danger"></span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="EmailConfirmed" class="form-check-input" />
+        <label class="form-check-label" asp-for="EmailConfirmed">Email confirmed</label>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Create</button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
