@@ -11,18 +11,53 @@ namespace HWSETA_Impact_Hub.Domain.Entities
 
     public sealed class Beneficiary : BaseEntity
     {
-        // Unique identity for dedup
-        public IdentifierType IdentifierType { get; set; } = IdentifierType.SaId;
+
+        public IdentifierType IdentifierType { get; set; }
         public string IdentifierValue { get; set; } = "";
 
-        // Personal info
         public string FirstName { get; set; } = "";
+        public string? MiddleName { get; set; }
         public string LastName { get; set; } = "";
-        public DateTime? DateOfBirth { get; set; }
-        public string? Gender { get; set; } // keep free text for now ("Male/Female/Other")
+        public DateTime DateOfBirth { get; set; }
 
-        // Contact
+        // Mandatory SA reporting lookups
+        public Guid GenderId { get; set; }
+        public Gender Gender { get; set; } = null!;
+        public Guid RaceId { get; set; }
+        public Race Race { get; set; } = null!;
+        public Guid CitizenshipStatusId { get; set; }
+        public CitizenshipStatus CitizenshipStatus { get; set; } = null!;
+        public Guid DisabilityStatusId { get; set; }
+        public DisabilityStatus DisabilityStatus { get; set; } = null!;
+        public Guid? DisabilityTypeId { get; set; }   // required when DisabilityStatus = Yes
+        public DisabilityType? DisabilityType { get; set; }
+
+        public Guid EducationLevelId { get; set; }
+        public EducationLevel EducationLevel { get; set; } = null!;
+        public Guid EmploymentStatusId { get; set; }
+        public EmploymentStatus EmploymentStatus { get; set; } = null!;
+
+        // Contact (at least one should be mandatory in validation)
         public string? Email { get; set; }
+        public string MobileNumber { get; set; } = "";
+        public string? AltNumber { get; set; }
+
+        // Address
+        public Guid AddressId { get; set; }
+        public Address Address { get; set; } = null!;
+
+        // POPIA
+        public bool ConsentGiven { get; set; }
+        public DateTime ConsentDate { get; set; }
+
+        // Optional Identity account link
+        public string? UserId { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+   
+
+        
         public string? Phone { get; set; }
 
         // Address (simple MVP)
@@ -32,9 +67,9 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public string? PostalCode { get; set; }
 
         // Future link to Identity user account (optional)
-        public string? UserId { get; set; }
+       
         public ApplicationUser? User { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        
     }
 }

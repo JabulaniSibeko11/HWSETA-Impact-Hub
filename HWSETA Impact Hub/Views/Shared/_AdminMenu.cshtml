@@ -4,25 +4,92 @@
 @inject IOptions<SecurityOptions> Sec
 @inject IAuthorizationService Auth
 
-<ul class="navbar-nav me-auto">
+@* ═══════════════════════════════════════════════════════════════
+   _AdminMenu.cshtml
+   Renders policy-gated sidebar links from SecurityOptions.AdminMenu.
+   Drops into the <nav class="hw-sidebar-nav"> block in _Layout.cshtml.
+   ═══════════════════════════════════════════════════════════════ *@
+
+@if (Sec.Value?.AdminMenu?.Any() == true)
+{
+    <div class="hw-section-label">Administration</div>
+
     @foreach (var item in Sec.Value.AdminMenu)
     {
         var allowed = true;
 
-        if (!string.IsNullOrWhiteSpace(item.Policy))
+        @* Policy check *@
+        @if (!string.IsNullOrWhiteSpace(item.Policy))
         {
             var result = await Auth.AuthorizeAsync(User, item.Policy);
             allowed = result.Succeeded;
         }
 
-        if (!allowed) { continue; }
+        @if (!allowed) { continue; }
 
-        <li class="nav-item">
-            <a class="nav-link text-dark"
+        @* Determine active state by matching current controller + action *@
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+        var isActive = string.Equals(currentController, item.Controller, StringComparison.OrdinalIgnoreCase)
+                             && (string.IsNullOrEmpty(item.Action)
+                                 || string.Equals(currentAction, item.Action, StringComparison.OrdinalIgnoreCase));
+
+        @* Pick an icon; fall back to a generic circle if none mapped *@
+        var iconClass = item.Icon ?? HwMenuIcons.GetIcon(item.Controller, item.Action);
+
+        <div class="hw-nav-item">
+            <a class="hw-nav-link @(isActive ? "active" : "")"
                asp-controller="@item.Controller"
-               asp-action="@item.Action">
-                @item.Title
+               asp-action="@(!string.IsNullOrWhiteSpace(item.Action) ? item.Action : "Index")"
+               data-tip="@item.Title"
+               title="@item.Title">
+                <span class="hw-nav-icon"><i class="bi @iconClass"></i></span>
+                <span class="hw-nav-label">@item.Title</span>
+                @if (item.BadgeCount.HasValue && item.BadgeCount.Value > 0)
+                {
+                    <span class="hw-nav-badge">@item.BadgeCount</span>
+                }
             </a>
-        </li>
+        </div>
     }
-</ul>
+}
+
+@* ─── Inline icon-mapping helper (no extra class file needed) ─── *@
+@functions {
+    private static class HwMenuIcons
+    {
+        private static readonly Dictionary<string, string> _map =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                // Controllers → icon
+                { "Admin",         "bi-shield-lock"          },
+                { "Beneficiary",   "bi-people"               },
+                { "Beneficiaries", "bi-people"               },
+                { "Programme",     "bi-mortarboard"          },
+                { "Programmes",    "bi-mortarboard"          },
+                { "Form",          "bi-ui-checks-grid"       },
+                { "Forms",         "bi-ui-checks-grid"       },
+                { "Report",        "bi-bar-chart-line"       },
+                { "Reports",       "bi-bar-chart-line"       },
+                { "Chat",          "bi-chat-square-text"     },
+                { "Email",         "bi-envelope"             },
+                { "Document",      "bi-folder2-open"         },
+                { "Documents",     "bi-folder2-open"         },
+                { "Notification",  "bi-bell"                 },
+                { "Notifications", "bi-bell"                 },
+                { "Progress",      "bi-graph-up-arrow"       },
+                { "User",          "bi-person-lines-fill"    },
+                { "Users",         "bi-person-lines-fill"    },
+                { "Audit",         "bi-clipboard-data"       },
+                { "Settings",      "bi-gear"                 },
+                { "Dashboard",     "bi-grid-1x2"             },
+            };
+
+        public static string GetIcon(string? controller, string? action)
+        {
+            if (controller != null && _map.TryGetValue(controller, out var ico)) return ico;
+            if (action != null && _map.TryGetValue(action, out ico)) return ico;
+            return "bi-circle";
+        }
+    }
+}

@@ -3,30 +3,49 @@
     ViewData["Title"] = "Programme Details";
 }
 
-<h1>Programme Details</h1>
+<h1 class="mb-3">Programme Details</h1>
 
-<dl class="row">
-    <dt class="col-sm-3">Name</dt>
-    <dd class="col-sm-9">@Model.ProgrammeName</dd>
+<div class="card">
+    <div class="card-body">
+        <dl class="row mb-0">
 
-    <dt class="col-sm-3">Type</dt>
-    <dd class="col-sm-9">@Model.ProgrammeType</dd>
+            <dt class="col-sm-3">Programme Code</dt>
+            <dd class="col-sm-9">
+                @(string.IsNullOrWhiteSpace(Model.ProgrammeCode) ? "-" : Model.ProgrammeCode)
+            </dd>
 
-    <dt class="col-sm-3">Cohort</dt>
-    <dd class="col-sm-9">@Model.CohortYear</dd>
+            <dt class="col-sm-3">Programme Name</dt>
+            <dd class="col-sm-9">@Model.ProgrammeName</dd>
 
-    <dt class="col-sm-3">Province</dt>
-    <dd class="col-sm-9">@Model.Province</dd>
+            <dt class="col-sm-3">Qualification Type</dt>
+            <dd class="col-sm-9">@Model.QualificationType?.Name</dd>
 
-    <dt class="col-sm-3">Dates</dt>
-    <dd class="col-sm-9">@Model.StartDate:yyyy-MM-dd → @Model.EndDate:yyyy-MM-dd</dd>
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Inactive</span>
+                }
+            </dd>
 
-    <dt class="col-sm-3">Target</dt>
-    <dd class="col-sm-9">@Model.TargetBeneficiaries</dd>
+            <dt class="col-sm-3">Created On</dt>
+            <dd class="col-sm-9">@Model.CreatedOnUtc.ToString("yyyy-MM-dd HH:mm")</dd>
 
-    <dt class="col-sm-3">Notes</dt>
-    <dd class="col-sm-9">@Model.Notes</dd>
-</dl>
+            @if (Model.UpdatedOnUtc.HasValue)
+            {
+                <dt class="col-sm-3">Last Updated</dt>
+                <dd class="col-sm-9">@Model.UpdatedOnUtc.Value.ToString("yyyy-MM-dd HH:mm")</dd>
+            }
 
-<a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
-<a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+        </dl>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+</div>

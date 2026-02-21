@@ -4,45 +4,160 @@
     ViewData["Title"] = "Add Beneficiary";
 }
 
-<h1>Add Beneficiary</h1>
+<h1 class="mb-3">Add Beneficiary</h1>
 
 <form method="post">
     @Html.AntiForgeryToken()
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
     <div class="row g-3">
+
+        <!-- Identifier -->
         <div class="col-md-4">
-            <label class="form-label">Identifier Type</label>
+            <label asp-for="IdentifierType" class="form-label">Identifier Type</label>
             <select asp-for="IdentifierType" class="form-select">
                 <option value="@IdentifierType.SaId">SA ID</option>
                 <option value="@IdentifierType.Passport">Passport</option>
             </select>
+            <span asp-validation-for="IdentifierType" class="text-danger"></span>
         </div>
+
         <div class="col-md-8">
-            <label class="form-label">ID / Passport Number</label>
+            <label asp-for="IdentifierValue" class="form-label">ID / Passport Number</label>
             <input asp-for="IdentifierValue" class="form-control" />
             <span asp-validation-for="IdentifierValue" class="text-danger"></span>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label">First Name</label>
+        <!-- Names -->
+        <div class="col-md-4">
+            <label asp-for="FirstName" class="form-label">First Name</label>
             <input asp-for="FirstName" class="form-control" />
             <span asp-validation-for="FirstName" class="text-danger"></span>
         </div>
-        <div class="col-md-6">
-            <label class="form-label">Last Name</label>
+
+        <div class="col-md-4">
+            <label asp-for="MiddleName" class="form-label">Middle Name</label>
+            <input asp-for="MiddleName" class="form-control" />
+            <span asp-validation-for="MiddleName" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="LastName" class="form-label">Surname</label>
             <input asp-for="LastName" class="form-control" />
             <span asp-validation-for="LastName" class="text-danger"></span>
         </div>
 
+        <!-- Demographics -->
         <div class="col-md-4">
-            <label class="form-label">Date of Birth</label>
-            <input asp-for="DateOfBirth" class="form-control" />
+            <label asp-for="DateOfBirth" class="form-label">Date of Birth</label>
+            <input asp-for="DateOfBirth" class="form-control" type="date" />
+            <span asp-validation-for="DateOfBirth" class="text-danger"></span>
         </div>
+
         <div class="col-md-4">
-            <label class="form-label">Gender</label>
-            <input asp-for="Gender" class="form-control" placeholder="Male/Female/Other" />
+            <label asp-for="GenderId" class="form-label">Gender</label>
+            <select asp-for="GenderId" asp-items="Model.Genders" class="form-select">
+                <option value="">-- Select gender --</option>
+            </select>
+            <span asp-validation-for="GenderId" class="text-danger"></span>
         </div>
+
+        <div class="col-md-4">
+            <label asp-for="RaceId" class="form-label">Race</label>
+            <select asp-for="RaceId" asp-items="Model.Races" class="form-select">
+                <option value="">-- Select race --</option>
+            </select>
+            <span asp-validation-for="RaceId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="CitizenshipStatusId" class="form-label">Citizenship Status</label>
+            <select asp-for="CitizenshipStatusId" asp-items="Model.CitizenshipStatuses" class="form-select">
+                <option value="">-- Select citizenship status --</option>
+            </select>
+            <span asp-validation-for="CitizenshipStatusId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="EducationLevelId" class="form-label">Education Level</label>
+            <select asp-for="EducationLevelId" asp-items="Model.EducationLevels" class="form-select">
+                <option value="">-- Select education level --</option>
+            </select>
+            <span asp-validation-for="EducationLevelId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="EmploymentStatusId" class="form-label">Employment Status</label>
+            <select asp-for="EmploymentStatusId" asp-items="Model.EmploymentStatuses" class="form-select">
+                <option value="">-- Select employment status --</option>
+            </select>
+            <span asp-validation-for="EmploymentStatusId" class="text-danger"></span>
+        </div>
+
+        <!-- Disability -->
+        <div class="col-md-6">
+            <label asp-for="DisabilityStatusId" class="form-label">Disability Status</label>
+            <select asp-for="DisabilityStatusId" asp-items="Model.DisabilityStatuses" class="form-select" id="disabilityStatus">
+                <option value="">-- Select --</option>
+            </select>
+            <span asp-validation-for="DisabilityStatusId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6" id="disabilityTypeWrap">
+            <label asp-for="DisabilityTypeId" class="form-label">Disability Type</label>
+            <select asp-for="DisabilityTypeId" asp-items="Model.DisabilityTypes" class="form-select">
+                <option value="">-- Select disability type --</option>
+            </select>
+            <span asp-validation-for="DisabilityTypeId" class="text-danger"></span>
+        </div>
+
+        <!-- Contact -->
+        <div class="col-md-6">
+            <label asp-for="Email" class="form-label">Email</label>
+            <input asp-for="Email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label asp-for="MobileNumber" class="form-label">Mobile Number</label>
+            <input asp-for="MobileNumber" class="form-control" />
+            <span asp-validation-for="MobileNumber" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label asp-for="AltNumber" class="form-label">Alternative Number</label>
+            <input asp-for="AltNumber" class="form-control" />
+            <span asp-validation-for="AltNumber" class="text-danger"></span>
+        </div>
+
+        <!-- Address -->
+        <div class="col-md-4">
+            <label asp-for="ProvinceId" class="form-label">Province</label>
+            <select asp-for="ProvinceId" asp-items="Model.Provinces" class="form-select">
+                <option value="">-- Select province --</option>
+            </select>
+            <span asp-validation-for="ProvinceId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="City" class="form-label">City</label>
+            <input asp-for="City" class="form-control" />
+            <span asp-validation-for="City" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="PostalCode" class="form-label">Postal Code</label>
+            <input asp-for="PostalCode" class="form-control" />
+            <span asp-validation-for="PostalCode" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-12">
+            <label asp-for="AddressLine1" class="form-label">Address Line 1</label>
+            <input asp-for="AddressLine1" class="form-control" />
+            <span asp-validation-for="AddressLine1" class="text-danger"></span>
+        </div>
+
+        <!-- Status -->
         <div class="col-md-4">
             <div class="form-check mt-4">
                 <input asp-for="IsActive" class="form-check-input" />
@@ -50,33 +165,23 @@
             </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Email</label>
-            <input asp-for="Email" class="form-control" />
-            <span asp-validation-for="Email" class="text-danger"></span>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">Phone</label>
-            <input asp-for="Phone" class="form-control" />
-        </div>
-
-        <div class="col-md-4">
-            <label class="form-label">Province</label>
-            <input asp-for="Province" class="form-control" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">City</label>
-            <input asp-for="City" class="form-control" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Postal Code</label>
-            <input asp-for="PostalCode" class="form-control" />
+        <!-- POPIA Consent -->
+        <div class="col-md-8">
+            <div class="border rounded p-3">
+                <div class="form-check">
+                    <input asp-for="ConsentGiven" class="form-check-input" />
+                    <label asp-for="ConsentGiven" class="form-check-label">
+                        I consent to the processing of my personal information (POPIA)
+                    </label>
+                </div>
+                <div class="mt-2">
+                    <label asp-for="ConsentDate" class="form-label">Consent Date</label>
+                    <input asp-for="ConsentDate" class="form-control" type="date" />
+                    <span asp-validation-for="ConsentDate" class="text-danger"></span>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-12">
-            <label class="form-label">Address Line 1</label>
-            <input asp-for="AddressLine1" class="form-control" />
-        </div>
     </div>
 
     <div class="mt-3">
@@ -87,4 +192,23 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            // Hide disability type by default; show only when DisabilityStatus indicates "Yes".
+            // Since we don't know your exact "Yes" lookup ID, we show it when the user selects any value
+            // and you can tighten this rule later once you confirm the "Yes" record id.
+            const status = document.getElementById('disabilityStatus');
+            const wrap = document.getElementById('disabilityTypeWrap');
+
+            function toggle() {
+                if (!status || !wrap) return;
+                const hasValue = status.value && status.value !== "";
+                wrap.style.display = hasValue ? "" : "none";
+            }
+
+            toggle();
+            status?.addEventListener('change', toggle);
+        })();
+    </script>
 }

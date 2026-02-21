@@ -32,5 +32,17 @@
         public string Controller { get; set; } = "";
         public string Action { get; set; } = "";
         public string Policy { get; set; } = "";
+
+        /// <summary>
+        /// Bootstrap Icons class name e.g. "bi-people" or "bi-mortarboard".
+        /// When null the _AdminMenu partial falls back to its built-in controller→icon map.
+        /// </summary>
+        public string? Icon { get; set; }
+
+        /// <summary>
+        /// Optional red badge counter shown on the nav link (e.g. pending approvals).
+        /// Null or zero hides the badge entirely.
+        /// </summary>
+        public int? BadgeCount { get; set; }
     }
 }

@@ -2,48 +2,235 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="mb-0">Admin Dashboard</h1>
+@* ── Inline page styles (scoped to this view) ── *@
+
+<link href="~/css/admindashboardcss.css" rel="stylesheet" />
+@* ══════════════════════════════════════════════════════
+   PAGE HEADER
+══════════════════════════════════════════════════════ *@
+<div class="hw-page-header">
+    <div>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-shield-lock me-1"></i>Administration
+        </div>
+        <h1 class="hw-page-title">Admin <span>Dashboard</span></h1>
+        <p class="hw-page-desc">
+            Manage beneficiaries, programmes, communications, and system configuration.
+        </p>
+    </div>
+    <div class="hw-header-actions">
+        <a asp-controller="Reports" asp-action="Index" class="btn-hw-outline">
+            <i class="bi bi-download"></i> Export Report
+        </a>
+        <a asp-controller="AdminUsers" asp-action="Create" class="btn-hw-primary">
+            <i class="bi bi-person-plus"></i> New User
+        </a>
+    </div>
 </div>
 
-<div class="alert alert-info">
-    <strong>HWSETA Impact Hub</strong> administration focuses on:
-    <ul class="mb-0">
-        <li>Dynamic web forms to track beneficiary changes, challenges, and outcomes.</li>
-        <li>Progress tracking: Entered, In Training, Dropped Out, Completed.</li>
-        <li>Two-way communication (interactive email chat).</li>
-        <li>Reports + dashboards (downloadable + visual).</li>
-    </ul>
+@* ══════════════════════════════════════════════════════
+   FOCUS AREAS BANNER
+══════════════════════════════════════════════════════ *@
+<div class="hw-focus-banner">
+    <div class="hw-focus-icon"><i class="bi bi-bullseye"></i></div>
+    <div class="hw-focus-content">
+        <div class="hw-focus-label">HWSETA Impact Hub · Administration Focus</div>
+        <div class="hw-focus-title">National Skills Development Plan 2030 — Monitoring Framework</div>
+        <ul class="hw-focus-items">
+            <li class="hw-focus-item"><i class="bi bi-ui-checks-grid"></i> Dynamic web forms &amp; tracking</li>
+            <li class="hw-focus-item"><i class="bi bi-graph-up-arrow"></i> Progress: Entered · Training · Completed</li>
+            <li class="hw-focus-item"><i class="bi bi-chat-square-text"></i> Two-way beneficiary communication</li>
+            <li class="hw-focus-item"><i class="bi bi-bar-chart-line"></i> Downloadable reports &amp; dashboards</li>
+        </ul>
+    </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">System Setup</h5>
-                <p class="card-text">Start by creating Programmes, Employers, and Providers.</p>
-                <a class="btn btn-outline-primary" asp-controller="Programmes" asp-action="Index">Go to Programmes</a>
+@* ══════════════════════════════════════════════════════
+   QUICK ACTIONS
+══════════════════════════════════════════════════════ *@
+<div class="hw-section-heading">Quick Actions</div>
+<div class="hw-qa-grid">
+
+    @* System Setup *@
+    <div class="hw-qa-card green">
+        <div class="hw-qa-icon-wrap green"><i class="bi bi-mortarboard"></i></div>
+        <div>
+            <h5 class="hw-qa-card-title">System Setup</h5>
+            <p class="hw-qa-card-desc">
+                Create and manage Programmes, Employers, and Training Providers to prepare the system for beneficiary enrolment.
+            </p>
+        </div>
+        <a asp-controller="Programmes" asp-action="Index" class="hw-qa-link">
+            Go to Programmes <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    @* User Management *@
+    <div class="hw-qa-card gold">
+        <div class="hw-qa-icon-wrap gold"><i class="bi bi-person-lines-fill"></i></div>
+        <div>
+            <h5 class="hw-qa-card-title">User Management</h5>
+            <p class="hw-qa-card-desc">
+                Create staff accounts and beneficiary profiles with the appropriate roles, permissions, and programme assignments.
+            </p>
+        </div>
+        <a asp-controller="AdminUsers" asp-action="Create" class="hw-qa-link gold">
+            Create Users <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    @* Reporting *@
+    <div class="hw-qa-card dark">
+        <div class="hw-qa-icon-wrap dark"><i class="bi bi-bar-chart-line"></i></div>
+        <div>
+            <h5 class="hw-qa-card-title">Reporting &amp; Analytics</h5>
+            <p class="hw-qa-card-desc">
+                View real-time dashboards, export beneficiary tables, and generate progress and outcome reports by programme.
+            </p>
+        </div>
+        <a asp-controller="Reports" asp-action="Index" class="hw-qa-link dark">
+            Open Reporting <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    @* Forms Builder *@
+    <div class="hw-qa-card red">
+        <div class="hw-qa-icon-wrap red"><i class="bi bi-ui-checks-grid"></i></div>
+        <div>
+            <h5 class="hw-qa-card-title">Forms Builder</h5>
+            <p class="hw-qa-card-desc">
+                Design and publish dynamic web forms to collect beneficiary feedback, track training challenges, and log outcomes.
+            </p>
+        </div>
+        <a asp-controller="Forms" asp-action="Index" class="hw-qa-link red">
+            Manage Forms <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+</div>
+
+@* ══════════════════════════════════════════════════════
+   LOWER GRID  ─  Getting Started  +  Shortcuts
+══════════════════════════════════════════════════════ *@
+<div class="hw-lower-grid">
+
+    @* Getting Started Steps *@
+    <div class="hw-info-card">
+        <div class="hw-info-card-head">
+            <span class="hw-info-card-title">
+                <i class="bi bi-list-check"></i> Getting Started
+            </span>
+            <span style="font-size:11px;color:var(--hw-muted);">Recommended setup order</span>
+        </div>
+        <div class="hw-info-card-body">
+            <ol class="hw-step-list">
+                <li class="hw-step-item">
+                    <div class="hw-step-num">1</div>
+                    <div class="hw-step-body">
+                        <div class="hw-step-title">Configure Programmes</div>
+                        <div class="hw-step-desc">Add health and social development programmes with start and end dates, NQF levels, and linked providers.</div>
+                        <div class="hw-step-action">
+                            <a asp-controller="Programmes" asp-action="Create" class="btn-hw-outline" style="font-size:11px;padding:5px 11px;">
+                                <i class="bi bi-plus-lg"></i> Add Programme
+                            </a>
+                        </div>
+                    </div>
+                </li>
+                <li class="hw-step-item">
+                    <div class="hw-step-num">2</div>
+                    <div class="hw-step-body">
+                        <div class="hw-step-title">Add Employers &amp; Providers</div>
+                        <div class="hw-step-desc">Register employer organisations and accredited training providers that will be linked to beneficiary records.</div>
+                    </div>
+                </li>
+                <li class="hw-step-item">
+                    <div class="hw-step-num">3</div>
+                    <div class="hw-step-body">
+                        <div class="hw-step-title">Create User Accounts</div>
+                        <div class="hw-step-desc">Set up staff and beneficiary accounts with the correct roles. Beneficiaries will use these to register and upload proof of completion.</div>
+                        <div class="hw-step-action">
+                            <a asp-controller="AdminUsers" asp-action="Create" class="btn-hw-outline" style="font-size:11px;padding:5px 11px;">
+                                <i class="bi bi-person-plus"></i> Create User
+                            </a>
+                        </div>
+                    </div>
+                </li>
+                <li class="hw-step-item">
+                    <div class="hw-step-num">4</div>
+                    <div class="hw-step-body">
+                        <div class="hw-step-title">Build Monitoring Forms</div>
+                        <div class="hw-step-desc">Use the Forms Builder to create unique web forms for tracking beneficiary changes, challenges, and post-training outcomes.</div>
+                    </div>
+                </li>
+                <li class="hw-step-item">
+                    <div class="hw-step-num">5</div>
+                    <div class="hw-step-body">
+                        <div class="hw-step-title">Review Reports &amp; Dashboards</div>
+                        <div class="hw-step-desc">Monitor progress through visual dashboards and download tabular reports to share with HWSETA stakeholders.</div>
+                    </div>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    @* Shortcuts *@
+    <div class="hw-info-card">
+        <div class="hw-info-card-head">
+            <span class="hw-info-card-title">
+                <i class="bi bi-lightning-charge"></i> Shortcuts
+            </span>
+            <span style="font-size:11px;color:var(--hw-muted);">Frequently used actions</span>
+        </div>
+        <div class="hw-info-card-body">
+            <div class="hw-shortcut-grid">
+                <a asp-controller="Beneficiaries" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-people" style="color:var(--hw-green);"></i> Beneficiaries
+                </a>
+                <a asp-controller="Beneficiaries" asp-action="Create" class="hw-shortcut">
+                    <i class="bi bi-person-plus" style="color:var(--hw-green);"></i> Add Beneficiary
+                </a>
+                <a asp-controller="Forms" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-ui-checks-grid" style="color:var(--hw-gold-dark);"></i> View Forms
+                </a>
+                <a asp-controller="Forms" asp-action="Create" class="hw-shortcut">
+                    <i class="bi bi-plus-square" style="color:var(--hw-gold-dark);"></i> New Form
+                </a>
+                <a asp-controller="Chat" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-chat-square-text" style="color:var(--hw-green);"></i> Email Chat
+                </a>
+                <a asp-controller="Documents" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-folder2-open" style="color:var(--hw-green);"></i> Documents
+                </a>
+                <a asp-controller="Reports" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-bar-chart-line" style="color:var(--hw-dark);"></i> Reports
+                </a>
+                <a asp-controller="AdminUsers" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-person-lines-fill" style="color:var(--hw-dark);"></i> All Users
+                </a>
+                <a asp-controller="Programmes" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-mortarboard" style="color:var(--hw-green);"></i> Programmes
+                </a>
+                <a asp-controller="Notifications" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-bell" style="color:var(--hw-red);"></i> Notifications
+                </a>
+                <a asp-controller="Progress" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-graph-up-arrow" style="color:var(--hw-green);"></i> Progress
+                </a>
+                <a asp-controller="Settings" asp-action="Index" class="hw-shortcut">
+                    <i class="bi bi-gear" style="color:var(--hw-muted);"></i> Settings
+                </a>
+            </div>
+
+            @* Help note *@
+            <div style="margin-top:20px;padding:14px 16px;background:var(--hw-gold-light);border:1.5px solid #f0d060;border-radius:10px;display:flex;gap:10px;align-items:flex-start;">
+                <i class="bi bi-info-circle" style="color:var(--hw-gold-dark);font-size:16px;flex-shrink:0;margin-top:1px;"></i>
+                <div style="font-size:12.5px;color:var(--hw-dark);line-height:1.55;">
+                    <strong>Need help?</strong> Submit queries to
+                    <a href="mailto:research@hwseta.org.za" style="color:var(--hw-green);font-weight:600;">research@hwseta.org.za</a>
+                    or call <strong>011 607 6900</strong>. Reference: <code style="background:rgba(0,0,0,.07);padding:1px 5px;border-radius:4px;font-size:11px;">HWSETA-2025/26 EvalResearch-0007</code>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">User Management</h5>
-                <p class="card-text">Create staff accounts and beneficiaries with correct roles.</p>
-                <a class="btn btn-outline-primary" asp-controller="AdminUsers" asp-action="Create">Create Users</a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Reporting</h5>
-                <p class="card-text">View dashboards and export tables.</p>
-                <a class="btn btn-outline-primary" asp-controller="Reports" asp-action="Index">Open Reporting</a>
-            </div>
-        </div>
-    </div>
 </div>

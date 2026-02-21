@@ -4,8 +4,10 @@ using HWSETA_Impact_Hub.Domain.Entities;
 using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Models.ViewModels.Programme;
 using HWSETA_Impact_Hub.Services.Interface;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 
 namespace HWSETA_Impact_Hub.Services.Implementations
 {
@@ -25,20 +27,38 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
         public async Task<(bool ok, string? error)> CreateAsync(ProgrammeCreateVm vm, CancellationToken ct)
         {
-            if (!string.IsNullOrWhiteSpace(vm.ProgrammeCode))
+            if (string.IsNullOrWhiteSpace(vm.ProgrammeName))
+                return (false, "ProgrammeName is required.");
+
+            if (string.IsNullOrWhiteSpace(vm.QualificationType))
+                return (false, "QualificationType is required.");
+
+            var name = vm.ProgrammeName.Trim();
+
+            // Optional unique code check
+            string? code = string.IsNullOrWhiteSpace(vm.ProgrammeCode) ? null : vm.ProgrammeCode.Trim();
+            if (!string.IsNullOrWhiteSpace(code))
             {
-                var code = vm.ProgrammeCode.Trim();
                 if (await _db.Programmes.AnyAsync(x => x.ProgrammeCode == code, ct))
                     return (false, "ProgrammeCode already exists.");
             }
 
+            // QualificationType lookup (by Name) -> REQUIRED
+            var qName = vm.QualificationType.Trim();
+
+            var qualificationTypeId = await _db.QualificationTypes
+                .Where(x => x.IsActive && x.Name == qName)
+                .Select(x => x.Id)
+                .FirstOrDefaultAsync(ct);
+
+            if (qualificationTypeId == Guid.Empty)
+                return (false, $"QualificationType '{qName}' not found in lookup.");
+
             var p = new Programme
             {
-                ProgrammeName = vm.ProgrammeName.Trim(),
-                ProgrammeCode = string.IsNullOrWhiteSpace(vm.ProgrammeCode) ? null : vm.ProgrammeCode.Trim(),
-                NqfLevel = vm.NqfLevel?.Trim(),
-                QualificationType = vm.QualificationType?.Trim(),
-                DurationMonths = vm.DurationMonths,
+                ProgrammeName = name,
+                ProgrammeCode = code,
+                QualificationTypeId = qualificationTypeId,   // Guid (required)
                 IsActive = vm.IsActive,
                 CreatedOnUtc = DateTime.UtcNow,
                 CreatedByUserId = _user.UserId
@@ -46,6 +66,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             _db.Programmes.Add(p);
             await _db.SaveChangesAsync(ct);
+
             return (true, null);
         }
 
@@ -76,10 +97,10 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             }
 
             // Expected headers:
-            // ProgrammeCode | ProgrammeName | NqfLevel | QualificationType | DurationMonths | IsActive
+            // ProgrammeCode | ProgrammeName | QualificationType | IsActive
             var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
 
-            var headers = ws.Row(1).Cells().ToDictionary(
+            var headers = ws.Row(1).CellsUsed().ToDictionary(
                 c => (c.GetString() ?? "").Trim(),
                 c => c.Address.ColumnNumber,
                 StringComparer.OrdinalIgnoreCase);
@@ -88,22 +109,55 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             var cCode = Col("ProgrammeCode");
             var cName = Col("ProgrammeName");
-            var cNqf = Col("NqfLevel");
             var cQual = Col("QualificationType");
-            var cDur = Col("DurationMonths");
             var cAct = Col("IsActive");
 
             if (cName < 0)
             {
-                result.Errors.Add("Missing required header: ProgrammeName. Optional: ProgrammeCode, NqfLevel, QualificationType, DurationMonths, IsActive");
+                result.Errors.Add("Missing required header: ProgrammeName. Optional: ProgrammeCode, IsActive. Required: QualificationType");
                 return result;
             }
 
-            // Upsert by ProgrammeCode if present, else insert
+            if (cQual < 0)
+            {
+                result.Errors.Add("Missing required header: QualificationType.");
+                return result;
+            }
+
+            // Lookups: QualificationTypes (Name -> Id)
+            var qualTypes = await _db.QualificationTypes
+                .Where(x => x.IsActive)
+                .Select(x => new { x.Id, x.Name })
+                .ToListAsync(ct);
+
+            var qualByName = qualTypes
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+                .GroupBy(x => x.Name!.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+
+            // Upsert by ProgrammeCode if present
             var existingByCode = await _db.Programmes
                 .Where(x => x.ProgrammeCode != null)
                 .AsTracking()
                 .ToDictionaryAsync(x => x.ProgrammeCode!, x => x, StringComparer.OrdinalIgnoreCase, ct);
+
+            // bool parsing (true/false, 1/0, yes/no)
+            static bool TryParseBoolLoose(string? s, out bool value)
+            {
+                value = false;
+                if (string.IsNullOrWhiteSpace(s)) return false;
+
+                s = s.Trim();
+                if (bool.TryParse(s, out value)) return true;
+
+                if (s.Equals("1") || s.Equals("yes", StringComparison.OrdinalIgnoreCase) || s.Equals("y", StringComparison.OrdinalIgnoreCase))
+                { value = true; return true; }
+
+                if (s.Equals("0") || s.Equals("no", StringComparison.OrdinalIgnoreCase) || s.Equals("n", StringComparison.OrdinalIgnoreCase))
+                { value = false; return true; }
+
+                return false;
+            }
 
             using var tx = await _db.Database.BeginTransactionAsync(ct);
 
@@ -127,49 +181,48 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                     continue;
                 }
 
-                var nqf = cNqf > 0 ? row.Cell(cNqf).GetString()?.Trim() : null;
-                var qual = cQual > 0 ? row.Cell(cQual).GetString()?.Trim() : null;
-
-                int? dur = null;
-                if (cDur > 0)
+                // QualificationType REQUIRED per row
+                var qualName = row.Cell(cQual).GetString()?.Trim();
+                if (string.IsNullOrWhiteSpace(qualName))
                 {
-                    var durStr = row.Cell(cDur).GetString()?.Trim();
-                    if (!string.IsNullOrWhiteSpace(durStr) && int.TryParse(durStr, out var dm))
-                        dur = dm;
+                    result.Errors.Add($"Row {r}: QualificationType is required.");
+                    result.Skipped++;
+                    continue;
+                }
+
+                if (!qualByName.TryGetValue(qualName, out var qualId))
+                {
+                    result.Errors.Add($"Row {r}: Unknown QualificationType '{qualName}'.");
+                    result.Skipped++;
+                    continue;
                 }
 
                 bool isActive = true;
                 if (cAct > 0)
                 {
                     var actStr = row.Cell(cAct).GetString()?.Trim();
-                    if (!string.IsNullOrWhiteSpace(actStr) && bool.TryParse(actStr, out var b))
+                    if (!string.IsNullOrWhiteSpace(actStr) && TryParseBoolLoose(actStr, out var b))
                         isActive = b;
                 }
 
-                Programme? entity = null;
-
                 if (!string.IsNullOrWhiteSpace(code) && existingByCode.TryGetValue(code, out var found))
                 {
-                    entity = found;
-                    entity.ProgrammeName = name;
-                    entity.NqfLevel = nqf;
-                    entity.QualificationType = qual;
-                    entity.DurationMonths = dur;
-                    entity.IsActive = isActive;
-                    entity.UpdatedOnUtc = DateTime.UtcNow;
-                    entity.UpdatedByUserId = _user.UserId;
+                    // update
+                    found.ProgrammeName = name;
+                    found.QualificationTypeId = qualId;   // Guid (required)
+                    found.IsActive = isActive;
+                    found.UpdatedOnUtc = DateTime.UtcNow;
+                    found.UpdatedByUserId = _user.UserId;
 
                     result.Updated++;
                 }
                 else
                 {
-                    entity = new Programme
+                    var entity = new Programme
                     {
                         ProgrammeCode = string.IsNullOrWhiteSpace(code) ? null : code,
                         ProgrammeName = name,
-                        NqfLevel = nqf,
-                        QualificationType = qual,
-                        DurationMonths = dur,
+                        QualificationTypeId = qualId,      // Guid (required)
                         IsActive = isActive,
                         CreatedOnUtc = DateTime.UtcNow,
                         CreatedByUserId = _user.UserId
@@ -193,4 +246,3 @@ namespace HWSETA_Impact_Hub.Services.Implementations
         }
     }
 }
-

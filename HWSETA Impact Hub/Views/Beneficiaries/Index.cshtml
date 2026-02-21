@@ -1,11 +1,12 @@
 ﻿@model List<HWSETA_Impact_Hub.Domain.Entities.Beneficiary>
+
 @{
     ViewData["Title"] = "Beneficiaries";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0">Beneficiaries</h1>
-    <div>
+    <div class="btn-group">
         <a class="btn btn-outline-secondary" asp-action="DownloadTemplate">Download Excel Template</a>
         <a class="btn btn-outline-secondary" asp-action="Upload">Bulk Upload</a>
         <a class="btn btn-primary" asp-action="Create">Add Beneficiary</a>
@@ -17,30 +18,75 @@
     <div class="alert alert-success">@TempData["Success"]</div>
 }
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Identifier</th>
-            <th>Name</th>
-            <th>DOB</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Province</th>
-            <th>Active</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var b in Model)
-        {
+<div class="table-responsive">
+    <table id="beneficiariesTable" class="table table-striped table-bordered align-middle">
+        <thead class="table-light">
             <tr>
-                <td>@b.IdentifierType - @b.IdentifierValue</td>
-                <td>@b.FirstName @b.LastName</td>
-                <td>@(b.DateOfBirth.HasValue? b.DateOfBirth.Value.ToString("yyyy-MM-dd") : "")</td>
-                <td>@b.Email</td>
-                <td>@b.Phone</td>
-                <td>@b.Province</td>
-                <td>@(b.IsActive ? "Yes" : "No")</td>
+                <th>Identifier</th>
+                <th>Name</th>
+                <th>Date of Birth</th>
+                <th>Email</th>
+                <th>Mobile</th>
+                <th>Province</th>
+                <th>Status</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var b in Model)
+            {
+                <tr>
+                    <td>@b.IdentifierType - @b.IdentifierValue</td>
+                    <td>@b.FirstName @b.LastName</td>
+                    <td>@b.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                    <td>@b.Email</td>
+                    <td>@b.MobileNumber</td>
+                    <td>@b.Address?.Province?.Name</td>
+                    <td>
+                        @if (b.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Styles {
+    <!-- DataTables CSS -->
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            $('#beneficiariesTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                order: [[1, 'asc']], // sort by Name
+                columnDefs: [
+                    { targets: [6], orderable: false } // Status not sortable
+                ],
+                language: {
+                    search: "Search beneficiaries:",
+                    lengthMenu: "Show _MENU_ records per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ beneficiaries",
+                    infoEmpty: "No beneficiaries found",
+                    zeroRecords: "No matching beneficiaries found"
+                }
+            });
+        });
+    </script>
+}

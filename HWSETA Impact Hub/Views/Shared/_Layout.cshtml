@@ -6,59 +6,342 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HWSETA_Impact_Hub</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] — HWSETA Impact Hub</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/HWSETA_Impact_Hub.styles.css" asp-append-version="true" />
+
+    <link href="~/css/layoutcss.css" rel="stylesheet" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">HWSETA_Impact_Hub</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        @if (User?.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Index">Admin</a>
-                            </li>
-                        }
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    @if (User?.Identity?.IsAuthenticated == true)
-                    {
-                        <partial name="_AdminMenu" />
-                    }
-                    <partial name="_LoginPartial" />
-                </div>
+
+    @* ── PAGE LOADER ───────────────────────────────────── *@
+    <div id="hw-page-loader" role="status" aria-label="Loading application">
+        <div class="hw-loader-mark">
+            <div class="hw-loader-badge">IH</div>
+            <div>
+                <div class="hw-loader-name"><span>HWSETA</span> Impact Hub</div>
+                <div class="hw-loader-sub">Health &amp; Welfare SETA · Beneficiary Management</div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+        </div>
+        <div class="hw-loader-bar"><div class="hw-loader-bar-fill"></div></div>
+        <div class="hw-loader-hint">Initialising system, please wait…</div>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - HWSETA_Impact_Hub - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
+    @* ── TOAST CONTAINER ──────────────────────────────── *@
+    <div id="hw-toasts" aria-live="polite" aria-atomic="true"></div>
+
+    @* ── MOBILE OVERLAY ───────────────────────────────── *@
+    <div id="hw-overlay" onclick="hwCloseMobile()"></div>
+
+    @* ── APP SHELL ────────────────────────────────────── *@
+    <div id="hw-shell">
+
+        @* ╔══════════════════════════════════════════════╗
+           ║                  SIDEBAR                     ║
+           ╚══════════════════════════════════════════════╝ *@
+        <aside id="hw-sidebar" aria-label="Main navigation">
+
+            @* Brand gradient stripe *@
+            <div class="hw-sidebar-stripe"></div>
+
+            @* Logo / Brand *@
+            <div class="hw-sidebar-head">
+                <div class="hw-sidebar-badge">IH</div>
+                <div class="hw-sidebar-brand">
+                    <div class="hw-brand-name">HWSETA Impact Hub</div>
+                    <div class="hw-brand-sub">Beneficiary Management</div>
+                </div>
+                <button class="hw-toggle-btn" id="hw-toggle-btn"
+                        onclick="hwToggleSidebar()"
+                        title="Toggle navigation"
+                        aria-expanded="true"
+                        aria-controls="hw-sidebar">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </div>
+
+            @* ── DYNAMIC ADMIN MENU (from _AdminMenu partial) ── *@
+            <nav class="hw-sidebar-nav" aria-label="Application menu">
+                @if (User?.Identity?.IsAuthenticated == true)
+                {
+                    @* Home *@
+                    <div class="hw-section-label">Main</div>
+                    <div class="hw-nav-item">
+                        <a class="hw-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                           asp-area="" asp-controller="Home" asp-action="Index"
+                           data-tip="Dashboard">
+                            <span class="hw-nav-icon"><i class="bi bi-grid-1x2"></i></span>
+                            <span class="hw-nav-label">Dashboard</span>
+                        </a>
+                    </div>
+
+                    @* Admin menu items rendered via partial *@
+                    <partial name="_AdminMenu" />
+
+                    @* Privacy / static pages *@
+                    <div class="hw-section-label">System</div>
+                    <div class="hw-nav-item">
+                        <a class="hw-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Privacy" ? "active" : "")"
+                           asp-area="" asp-controller="Home" asp-action="Privacy"
+                           data-tip="Privacy Policy">
+                            <span class="hw-nav-icon"><i class="bi bi-shield-check"></i></span>
+                            <span class="hw-nav-label">Privacy Policy</span>
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    @* Non-authenticated minimal nav *@
+                    <div class="hw-section-label">Navigation</div>
+                    <div class="hw-nav-item">
+                        <a class="hw-nav-link active" asp-area="" asp-controller="Home" asp-action="Index" data-tip="Home">
+                            <span class="hw-nav-icon"><i class="bi bi-house-door"></i></span>
+                            <span class="hw-nav-label">Home</span>
+                        </a>
+                    </div>
+                    <div class="hw-nav-item">
+                        <a class="hw-nav-link" asp-area="" asp-controller="Home" asp-action="Privacy" data-tip="Privacy">
+                            <span class="hw-nav-icon"><i class="bi bi-shield-check"></i></span>
+                            <span class="hw-nav-label">Privacy Policy</span>
+                        </a>
+                    </div>
+                }
+            </nav>
+
+            @* ── User / Profile footer ── *@
+            <div class="hw-sidebar-foot">
+                @if (User?.Identity?.IsAuthenticated == true)
+                {
+                    var currentUser = await UserManager.GetUserAsync(User);
+                    var displayName = currentUser?.UserName ?? User.Identity.Name ?? "User";
+                    var initials = string.Concat(displayName.Split(' ').Take(2).Select(w => w.Length > 0 ? w[0].ToString().ToUpper() : ""));
+                    if (initials.Length == 0) initials = displayName.Length >= 2 ? displayName[..2].ToUpper() : displayName.ToUpper();
+                    var roles = await UserManager.GetRolesAsync(currentUser!);
+                    var primaryRole = roles.FirstOrDefault() ?? "User";
+
+                    <div class="hw-user-row" title="@displayName">
+                        <div class="hw-user-avatar">@initials</div>
+                        <div class="hw-user-info">
+                            <div class="hw-user-name">@displayName</div>
+                            <div class="hw-user-role">@primaryRole</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="hw-user-row">
+                        <div class="hw-user-avatar"><i class="bi bi-person"></i></div>
+                        <div class="hw-user-info">
+                            <div class="hw-user-name">Guest</div>
+                            <div class="hw-user-role">Not signed in</div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+        </aside>
+
+        @* ╔══════════════════════════════════════════════╗
+           ║               MAIN WRAPPER                   ║
+           ╚══════════════════════════════════════════════╝ *@
+        <div id="hw-main">
+
+            @* ── TOPBAR ──────────────────────────────── *@
+            <header id="hw-topbar">
+
+                @* Mobile hamburger *@
+                <button class="hw-mobile-menu-btn" onclick="hwOpenMobile()" aria-label="Open navigation">
+                    <i class="bi bi-list"></i>
+                </button>
+
+                @* Breadcrumb *@
+                <nav class="hw-breadcrumb" aria-label="breadcrumb">
+                    <a class="hw-bc-home" asp-area="" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-house-door-fill me-1"></i>Home
+                    </a>
+                    @if (ViewData["Title"] != null)
+                    {
+                        <i class="bi bi-chevron-right hw-bc-sep"></i>
+                        <span class="hw-bc-page">@ViewData["Title"]</span>
+                    }
+                </nav>
+
+                @* Right-side controls *@
+                <div class="hw-topbar-right">
+
+                    @* Search *@
+                    <div class="hw-search d-none d-md-block">
+                        <i class="bi bi-search hw-search-ico"></i>
+                        <input type="search" placeholder="Search…" aria-label="Search" />
+                    </div>
+
+                    @* Notifications *@
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <button class="hw-icon-btn" title="Notifications"
+                                onclick="hwToast('info','Notifications','No new notifications at this time.')">
+                            <i class="bi bi-bell"></i>
+                            <span class="hw-notif-dot"></span>
+                        </button>
+                    }
+
+                    @* Login partial (sign in / sign out / register links) *@
+                    <partial name="_LoginPartial" />
+
+                </div>
+            </header>
+
+            @* ── PAGE CONTENT ─────────────────────── *@
+            <main id="hw-body" role="main">
+                @RenderBody()
+            </main>
+
+            @* ── FOOTER ───────────────────────────── *@
+            <footer id="hw-footer">
+                <div>
+                    <span class="hw-footer-brand">HWSETA Impact Hub</span>
+                    &nbsp;&middot;&nbsp;
+                    &copy; @DateTime.Now.Year Health and Welfare Sector Education and Training Authority
+                </div>
+                <div class="hw-footer-links">
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                    <a href="mailto:research@hwseta.org.za">Contact</a>
+                </div>
+            </footer>
+
+        </div>@* /hw-main *@
+    </div>@* /hw-shell *@
+
+    @* ── SCRIPTS ──────────────────────────────────── *@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        /* ── PAGE LOADER ──────────────────────────── */
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                var loader = document.getElementById('hw-page-loader');
+                if (loader) loader.classList.add('hw-loader-hide');
+            }, 1800);
+        });
+
+        /* ── SIDEBAR TOGGLE ───────────────────────── */
+        var _hwCollapsed = false;
+        var _hwSidebar   = document.getElementById('hw-sidebar');
+        var _hwMain      = document.getElementById('hw-main');
+        var _hwToggleBtn = document.getElementById('hw-toggle-btn');
+
+        function hwToggleSidebar() {
+            _hwCollapsed = !_hwCollapsed;
+            _hwSidebar.classList.toggle('hw-collapsed', _hwCollapsed);
+            _hwMain.classList.toggle('hw-sidebar-collapsed', _hwCollapsed);
+            _hwToggleBtn.setAttribute('aria-expanded', !_hwCollapsed);
+            try { localStorage.setItem('hw_sidebar_collapsed', _hwCollapsed ? '1' : '0'); } catch(e){}
+        }
+
+        /* Restore preference */
+        (function () {
+            try {
+                if (localStorage.getItem('hw_sidebar_collapsed') === '1') {
+                    _hwCollapsed = true;
+                    _hwSidebar.classList.add('hw-collapsed');
+                    _hwMain.classList.add('hw-sidebar-collapsed');
+                    _hwToggleBtn.setAttribute('aria-expanded', 'false');
+                }
+            } catch(e){}
+        })();
+
+        /* Hover-expand when collapsed (desktop only) */
+        _hwSidebar.addEventListener('mouseenter', function () {
+            if (_hwCollapsed && window.innerWidth > 768) _hwSidebar.classList.remove('hw-collapsed');
+        });
+        _hwSidebar.addEventListener('mouseleave', function () {
+            if (_hwCollapsed && window.innerWidth > 768) _hwSidebar.classList.add('hw-collapsed');
+        });
+
+        /* ── MOBILE SIDEBAR ───────────────────────── */
+        function hwOpenMobile() {
+            _hwSidebar.classList.add('hw-mobile-open');
+            document.getElementById('hw-overlay').classList.add('hw-show');
+            document.body.style.overflow = 'hidden';
+        }
+        function hwCloseMobile() {
+            _hwSidebar.classList.remove('hw-mobile-open');
+            document.getElementById('hw-overlay').classList.remove('hw-show');
+            document.body.style.overflow = '';
+        }
+
+        /* ── TOAST SYSTEM ─────────────────────────── */
+        var _hwToastIcons = {
+            success: 'bi-check-circle-fill',
+            error:   'bi-x-circle-fill',
+            warning: 'bi-exclamation-triangle-fill',
+            info:    'bi-info-circle-fill'
+        };
+
+        function hwToast(type, title, message, duration) {
+            type     = type     || 'info';
+            title    = title    || type.charAt(0).toUpperCase() + type.slice(1);
+            message  = message  || '';
+            duration = duration || 4500;
+
+            var container = document.getElementById('hw-toasts');
+            var t = document.createElement('div');
+            t.className = 'hw-toast ' + type;
+            t.setAttribute('role', 'alert');
+            t.innerHTML =
+                '<div class="hw-toast-ico ' + type + '"><i class="bi ' + _hwToastIcons[type] + '"></i></div>' +
+                '<div class="hw-toast-body">' +
+                    '<div class="hw-toast-title">' + title + '</div>' +
+                    (message ? '<div class="hw-toast-msg">' + message + '</div>' : '') +
+                '</div>' +
+                '<button class="hw-toast-close" aria-label="Dismiss" onclick="hwDismissToast(this.closest(\'.hw-toast\'))">' +
+                    '<i class="bi bi-x"></i>' +
+                '</button>' +
+                '<div class="hw-toast-prog" style="animation-duration:' + duration + 'ms"></div>';
+
+            container.appendChild(t);
+            var timer = setTimeout(function () { hwDismissToast(t); }, duration);
+            t._hwTimer = timer;
+        }
+
+        function hwDismissToast(el) {
+            if (!el || el.classList.contains('hw-toast-out')) return;
+            clearTimeout(el._hwTimer);
+            el.classList.add('hw-toast-out');
+            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
+        }
+
+        /* Expose globally so controllers / pages can call hwToast() from Razor TempData scripts */
+        window.hwToast        = hwToast;
+        window.hwDismissToast = hwDismissToast;
+
+        /* ── TEMPDATA TOAST BRIDGE ────────────────── */
+        /* Place this in your controllers:
+             TempData["ToastType"]    = "success";
+             TempData["ToastTitle"]   = "Saved";
+             TempData["ToastMessage"] = "Record updated successfully.";
+        */
+        (function () {
+            var type = '@(TempData["ToastType"] as string ?? "")';
+            var title= '@(TempData["ToastTitle"] as string ?? "")';
+            var msg  = '@(TempData["ToastMessage"] as string ?? "")';
+            if (type && title) {
+                window.addEventListener('load', function () {
+                    setTimeout(function () { hwToast(type, title, msg); }, 400);
+                });
+            }
+        })();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

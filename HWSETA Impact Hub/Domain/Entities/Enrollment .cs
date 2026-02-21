@@ -7,6 +7,19 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public Guid BeneficiaryId { get; set; }
         public Beneficiary Beneficiary { get; set; } = null!;
 
+        public Guid CohortId { get; set; }
+        public Cohort Cohort { get; set; } = null!;
+
+        public EnrollmentStatus CurrentStatus { get; set; } = EnrollmentStatus.Enrolled;
+
+        public DateTime StartDate { get; set; }
+        public DateTime? ActualEndDate { get; set; }
+
+        public string? Notes { get; set; }
+        public bool IsActive { get; set; } = true;
+
+    
+
         public Guid ProgrammeId { get; set; }
         public Programme Programme { get; set; } = null!;
 
@@ -16,12 +29,9 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public Guid? EmployerId { get; set; }
         public Employer? Employer { get; set; }
 
-        public DateTime StartDate { get; set; } = DateTime.Today;
+        
         public DateTime? EndDate { get; set; }
 
-        public EnrollmentStatus CurrentStatus { get; set; } = EnrollmentStatus.Enrolled;
-
-        public string? Notes { get; set; } // short summary
-        public bool IsActive { get; set; } = true;
+      
     }
 }

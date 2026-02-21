@@ -3,7 +3,7 @@
     ViewData["Title"] = "Add Programme";
 }
 
-<h1>Add Programme</h1>
+<h1 class="mb-3">Add Programme</h1>
 
 <form method="post">
     @Html.AntiForgeryToken()
@@ -11,31 +11,27 @@
 
     <div class="row g-3">
         <div class="col-md-4">
-            <label class="form-label">Programme Code (optional)</label>
+            <label asp-for="ProgrammeCode" class="form-label">Programme Code (optional)</label>
             <input asp-for="ProgrammeCode" class="form-control" />
+            <span asp-validation-for="ProgrammeCode" class="text-danger"></span>
         </div>
+
         <div class="col-md-8">
-            <label class="form-label">Programme Name</label>
+            <label asp-for="ProgrammeName" class="form-label">Programme Name</label>
             <input asp-for="ProgrammeName" class="form-control" />
             <span asp-validation-for="ProgrammeName" class="text-danger"></span>
         </div>
 
-        <div class="col-md-4">
-            <label class="form-label">NQF Level</label>
-            <input asp-for="NqfLevel" class="form-control" placeholder="NQF 4" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Qualification Type</label>
-            <input asp-for="QualificationType" class="form-control" placeholder="Learnership / Internship" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Duration (months)</label>
-            <input asp-for="DurationMonths" class="form-control" />
-            <span asp-validation-for="DurationMonths" class="text-danger"></span>
+        <div class="col-md-6">
+            <label asp-for="QualificationTypeId" class="form-label">Qualification Type</label>
+            <select asp-for="QualificationTypeId" asp-items="Model.QualificationTypes" class="form-select">
+                <option value="">-- Select qualification type --</option>
+            </select>
+            <span asp-validation-for="QualificationTypeId" class="text-danger"></span>
         </div>
 
-        <div class="col-md-12">
-            <div class="form-check mt-2">
+        <div class="col-md-6">
+            <div class="form-check mt-4">
                 <input asp-for="IsActive" class="form-check-input" />
                 <label asp-for="IsActive" class="form-check-label">Active</label>
             </div>
