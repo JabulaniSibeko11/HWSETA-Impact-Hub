@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="~/HWSETA_Impact_Hub.styles.css" asp-append-version="true" />
 
     <link href="~/css/layoutcss.css" rel="stylesheet" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
 
@@ -123,14 +124,14 @@
                     var displayName = currentUser?.UserName ?? User.Identity.Name ?? "User";
                     var initials = string.Concat(displayName.Split(' ').Take(2).Select(w => w.Length > 0 ? w[0].ToString().ToUpper() : ""));
                     if (initials.Length == 0) initials = displayName.Length >= 2 ? displayName[..2].ToUpper() : displayName.ToUpper();
-                    var roles = await UserManager.GetRolesAsync(currentUser!);
-                    var primaryRole = roles.FirstOrDefault() ?? "User";
+                    //var roles = await UserManager.GetRolesAsync(currentUser!);
+                    //var primaryRole = roles.FirstOrDefault() ?? "User";
 
                     <div class="hw-user-row" title="@displayName">
                         <div class="hw-user-avatar">@initials</div>
                         <div class="hw-user-info">
                             <div class="hw-user-name">@displayName</div>
-                            <div class="hw-user-role">@primaryRole</div>
+                            @* <div class="hw-user-role">@primaryRole</div> *@
                         </div>
                     </div>
                 }

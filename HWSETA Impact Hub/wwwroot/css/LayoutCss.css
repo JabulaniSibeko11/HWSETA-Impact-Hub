@@ -34,7 +34,7 @@
 
 html, body {
     height: 100%;
-    font-family: 'Geist Sans', 'Segoe UI', sans-serif;
+    font-family: 'poppins', sans-serif;
     background: var(--hw-offwhite);
     color: var(--hw-dark);
     font-size: 15px;

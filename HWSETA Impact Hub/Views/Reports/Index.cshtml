@@ -1,0 +1,156 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Reporting.CohortDeliveryReportVm
+@{
+    ViewData["Title"] = "Reporting";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Cohort Delivery Reporting</h1>
+
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary"
+           asp-action="ExportCsv"
+           asp-route-CohortId="@Model.Filters.CohortId"
+           asp-route-ProgrammeId="@Model.Filters.ProgrammeId"
+           asp-route-ProviderId="@Model.Filters.ProviderId"
+           asp-route-FundingTypeId="@Model.Filters.FundingTypeId"
+           asp-route-IntakeYear="@Model.Filters.IntakeYear"
+           asp-route-StartFrom="@(Model.Filters.StartFrom?.ToString("yyyy-MM-dd"))"
+           asp-route-StartTo="@(Model.Filters.StartTo?.ToString("yyyy-MM-dd"))">
+            Export CSV
+        </a>
+
+        <a class="btn btn-outline-secondary"
+           asp-action="ExportExcel"
+           asp-route-CohortId="@Model.Filters.CohortId"
+           asp-route-ProgrammeId="@Model.Filters.ProgrammeId"
+           asp-route-ProviderId="@Model.Filters.ProviderId"
+           asp-route-FundingTypeId="@Model.Filters.FundingTypeId"
+           asp-route-IntakeYear="@Model.Filters.IntakeYear"
+           asp-route-StartFrom="@(Model.Filters.StartFrom?.ToString("yyyy-MM-dd"))"
+           asp-route-StartTo="@(Model.Filters.StartTo?.ToString("yyyy-MM-dd"))">
+            Export Excel
+        </a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Cohort</label>
+                <select class="form-select" name="CohortId" asp-items="Model.Filters.Cohorts">
+                    <option value="">-- All --</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Programme</label>
+                <select class="form-select" name="ProgrammeId" asp-items="Model.Filters.Programmes">
+                    <option value="">-- All --</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Provider</label>
+                <select class="form-select" name="ProviderId" asp-items="Model.Filters.Providers">
+                    <option value="">-- All --</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Funding Type</label>
+                <select class="form-select" name="FundingTypeId" asp-items="Model.Filters.FundingTypes">
+                    <option value="">-- All --</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Intake Year</label>
+                <input class="form-control" name="IntakeYear" value="@Model.Filters.IntakeYear" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Start From</label>
+                <input class="form-control" type="date" name="StartFrom" value="@(Model.Filters.StartFrom?.ToString("yyyy-MM-dd"))" />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Start To</label>
+                <input class="form-control" type="date" name="StartTo" value="@(Model.Filters.StartTo?.ToString("yyyy-MM-dd"))" />
+            </div>
+
+            <div class="col-md-6 d-flex align-items-end gap-2">
+                <button class="btn btn-primary" type="submit">Apply Filters</button>
+                <a class="btn btn-outline-secondary" asp-action="Index">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Cohorts</div><div>@Model.Kpis.TotalCohorts</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Enrollments</div><div>@Model.Kpis.TotalEnrollments</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Active</div><div>@Model.Kpis.ActiveEnrollments</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Completed</div><div>@Model.Kpis.CompletedEnrollments</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Dropped</div><div>@Model.Kpis.DroppedOutEnrollments</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Completion %</div><div>@Model.Kpis.CompletionRatePct</div></div></div></div>
+</div>
+
+<table id="cohortDeliveryTable" class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Cohort</th>
+            <th>Intake</th>
+            <th>Start</th>
+            <th>Planned End</th>
+            <th>Programme</th>
+            <th>Qualification</th>
+            <th>Provider</th>
+            <th>Funding</th>
+            <th>Employer</th>
+            <th>Total</th>
+            <th>Active</th>
+            <th>Completed</th>
+            <th>Dropped</th>
+            <th>Completion %</th>
+            <th>Dropout %</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model.Rows)
+        {
+            <tr>
+                <td>@r.CohortCode</td>
+                <td>@r.IntakeYear</td>
+                <td>@r.StartDate.ToString("yyyy-MM-dd")</td>
+                <td>@r.PlannedEndDate.ToString("yyyy-MM-dd")</td>
+                <td>@r.ProgrammeName</td>
+                <td>@r.QualificationType</td>
+                <td>@r.ProviderName</td>
+                <td>@r.FundingType</td>
+                <td>@r.EmployerCode</td>
+                <td>@r.Total</td>
+                <td>@r.Active</td>
+                <td>@r.Completed</td>
+                <td>@r.DroppedOut</td>
+                <td>@r.CompletionRatePct</td>
+                <td>@r.DropoutRatePct</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <!-- DataTables (assumes you already use it elsewhere; otherwise add CDN in _Layout) -->
+    <script>
+        $(document).ready(function () {
+            $('#cohortDeliveryTable').DataTable({
+                pageLength: 25,
+                order: [[2, "desc"]],
+                responsive: true
+            });
+        });
+    </script>
+}

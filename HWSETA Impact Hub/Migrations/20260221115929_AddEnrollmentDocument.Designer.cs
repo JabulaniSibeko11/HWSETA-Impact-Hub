@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace HWSETA_Impact_Hub.Data.Migrations
+namespace HWSETA_Impact_Hub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260221075954_CreateTable")]
-    partial class CreateTable
+    [Migration("20260221115929_AddEnrollmentDocument")]
+    partial class AddEnrollmentDocument
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -313,8 +313,8 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
 
-                    b.Property<string>("CreatedByUserId")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedOnUtc")
                         .HasColumnType("datetime2");
@@ -541,6 +541,67 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Enrollments", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.EnrollmentDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("DocumentTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("StoredPath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("UploadedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentTypeId");
+
+                    b.HasIndex("EnrollmentId", "DocumentTypeId");
+
+                    b.ToTable("EnrollmentDocuments", (string)null);
                 });
 
             modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.EnrollmentStatusHistory", b =>
@@ -1262,13 +1323,13 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Beneficiary", "Beneficiary")
                         .WithMany()
                         .HasForeignKey("BeneficiaryId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Cohort", "Cohort")
                         .WithMany()
                         .HasForeignKey("CohortId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Employer", "Employer")
@@ -1296,6 +1357,25 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                     b.Navigation("Programme");
 
                     b.Navigation("Provider");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.EnrollmentDocument", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.DocumentType", "DocumentType")
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Enrollment", "Enrollment")
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DocumentType");
+
+                    b.Navigation("Enrollment");
                 });
 
             modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.EnrollmentStatusHistory", b =>

@@ -21,61 +21,67 @@ namespace HWSETA_Impact_Hub.Services.Implementations
         public Task<List<Enrollment>> ListAsync(CancellationToken ct) =>
             _db.Enrollments.AsNoTracking()
                 .Include(x => x.Beneficiary)
-                .Include(x => x.Programme)
-                .Include(x => x.Provider)
-                .Include(x => x.Employer)
+                .Include(x => x.Cohort)
+                    .ThenInclude(c => c.Programme)
+                        .ThenInclude(p => p.QualificationType)
+                .Include(x => x.Cohort)
+                    .ThenInclude(c => c.Provider)
+                .Include(x => x.Cohort)
+                    .ThenInclude(c => c.Employer)
+                .Include(x => x.Cohort)
+                    .ThenInclude(c => c.FundingType)
                 .OrderByDescending(x => x.StartDate)
                 .ToListAsync(ct);
 
         public Task<Enrollment?> GetAsync(Guid id, CancellationToken ct) =>
-      _db.Enrollments.AsNoTracking()
-          .Include(x => x.Beneficiary)
-          .Include(x => x.Programme)
-          .Include(x => x.Provider)
-          .Include(x => x.Employer)
-          .FirstOrDefaultAsync(x => x.Id == id, ct);
-        public Task<List<EnrollmentStatusHistory>> GetHistoryAsync(Guid enrollmentId, CancellationToken ct) =>
-       _db.EnrollmentStatusHistories.AsNoTracking()
-           .Where(x => x.EnrollmentId == enrollmentId)
-           .OrderByDescending(x => x.StatusDate)
-           .ThenByDescending(x => x.Id)
-           .ToListAsync(ct);
+            _db.Enrollments.AsNoTracking()
+                .Include(x => x.Beneficiary)
+                .Include(x => x.Cohort)
+                    .ThenInclude(c => c.Programme)
+                        .ThenInclude(p => p.QualificationType)
+                .Include(x => x.Cohort)
+                    .ThenInclude(c => c.Provider)
+                .Include(x => x.Cohort)
+                    .ThenInclude(c => c.Employer)
+                .Include(x => x.Cohort)
+                    .ThenInclude(c => c.FundingType)
+                .FirstOrDefaultAsync(x => x.Id == id, ct);
 
+        public Task<List<EnrollmentStatusHistory>> GetHistoryAsync(Guid enrollmentId, CancellationToken ct) =>
+            _db.EnrollmentStatusHistories.AsNoTracking()
+                .Where(x => x.EnrollmentId == enrollmentId)
+                .OrderByDescending(x => x.StatusDate)
+                .ThenByDescending(x => x.Id)
+                .ToListAsync(ct);
 
         public async Task<(bool ok, string? error, Guid? enrollmentId)> CreateAsync(EnrollmentCreateVm vm, CancellationToken ct)
         {
-            var benExists = await _db.Beneficiaries.AnyAsync(x => x.Id == vm.BeneficiaryId, ct);
-            var progExists = await _db.Programmes.AnyAsync(x => x.Id == vm.ProgrammeId, ct);
-            var provExists = await _db.Providers.AnyAsync(x => x.Id == vm.ProviderId, ct);
+            // Validate Beneficiary
+            var beneficiaryExists = await _db.Beneficiaries.AnyAsync(x => x.Id == vm.BeneficiaryId, ct);
+            if (!beneficiaryExists) return (false, "Beneficiary not found.", null);
 
-            if (!benExists) return (false, "Beneficiary not found.", null);
-            if (!progExists) return (false, "Programme not found.", null);
-            if (!provExists) return (false, "Provider not found.", null);
+            // Load Cohort (need StartDate)
+            var cohort = await _db.Cohorts.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == vm.CohortId, ct);
 
-            if (vm.EmployerId.HasValue)
-            {
-                var empExists = await _db.Employers.AnyAsync(x => x.Id == vm.EmployerId.Value, ct);
-                if (!empExists) return (false, "Employer not found.", null);
-            }
+            if (cohort == null) return (false, "Cohort not found.", null);
 
+            // Duplicate check: Beneficiary can only be enrolled once per Cohort
             var dup = await _db.Enrollments.AnyAsync(x =>
                 x.BeneficiaryId == vm.BeneficiaryId &&
-                x.ProgrammeId == vm.ProgrammeId &&
-                x.ProviderId == vm.ProviderId &&
-                x.StartDate == vm.StartDate.Date, ct);
+                x.CohortId == vm.CohortId, ct);
 
-            if (dup) return (false, "This beneficiary is already enrolled in this Programme/Provider for that start date.", null);
+            if (dup) return (false, "This beneficiary is already enrolled in this cohort.", null);
+
+            var start = (vm.StartDate?.Date ?? cohort.StartDate.Date);
 
             using var tx = await _db.Database.BeginTransactionAsync(ct);
 
             var enrollment = new Enrollment
             {
                 BeneficiaryId = vm.BeneficiaryId,
-                ProgrammeId = vm.ProgrammeId,
-                ProviderId = vm.ProviderId,
-                EmployerId = vm.EmployerId,
-                StartDate = vm.StartDate.Date,
-                EndDate = vm.EndDate?.Date,
+                CohortId = vm.CohortId,
+                StartDate = start,
                 CurrentStatus = EnrollmentStatus.Enrolled,
                 Notes = vm.Notes?.Trim(),
                 IsActive = true,
@@ -90,9 +96,10 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             {
                 EnrollmentId = enrollment.Id,
                 Status = EnrollmentStatus.Enrolled,
-                StatusDate = vm.StartDate.Date,
+                StatusDate = start,
                 Reason = "Initial enrollment",
                 Comment = vm.Notes?.Trim(),
+                ChangedByUserId = _user.UserId,
                 CreatedOnUtc = DateTime.UtcNow,
                 CreatedByUserId = _user.UserId
             };
@@ -105,7 +112,6 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             return (true, null, enrollment.Id);
         }
 
-
         public async Task<(bool ok, string? error)> UpdateStatusAsync(EnrollmentStatusUpdateVm vm, CancellationToken ct)
         {
             var enr = await _db.Enrollments.FirstOrDefaultAsync(x => x.Id == vm.EnrollmentId, ct);
@@ -117,8 +123,12 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             enr.UpdatedOnUtc = DateTime.UtcNow;
             enr.UpdatedByUserId = _user.UserId;
 
-            if ((vm.Status == EnrollmentStatus.Completed || vm.Status == EnrollmentStatus.DroppedOut) && enr.EndDate == null)
-                enr.EndDate = vm.StatusDate.Date;
+            // Set actual end date for terminal statuses
+            if (vm.Status == EnrollmentStatus.Completed || vm.Status == EnrollmentStatus.DroppedOut)
+            {
+                if (enr.ActualEndDate == null)
+                    enr.ActualEndDate = vm.StatusDate.Date;
+            }
 
             var hist = new EnrollmentStatusHistory
             {
@@ -127,6 +137,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 StatusDate = vm.StatusDate.Date,
                 Reason = vm.Reason?.Trim(),
                 Comment = vm.Comment?.Trim(),
+                ChangedByUserId = _user.UserId,
                 CreatedOnUtc = DateTime.UtcNow,
                 CreatedByUserId = _user.UserId
             };

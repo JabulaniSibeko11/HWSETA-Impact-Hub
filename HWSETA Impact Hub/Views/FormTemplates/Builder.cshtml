@@ -1,0 +1,210 @@
+﻿@using HWSETA_Impact_Hub.Domain.Entities
+@model HWSETA_Impact_Hub.Models.ViewModels.Forms.FormTemplateBuilderVm
+@{
+    ViewData["Title"] = "Form Builder";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h1 class="mb-0">@Model.Title</h1>
+        <div class="text-muted">Status: @Model.Status | Version: @Model.Version</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+        <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.TemplateId">Edit Template</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Add Section</h5>
+        <form asp-action="AddSection" method="post" class="row g-2">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="FormTemplateId" value="@Model.TemplateId" />
+            <div class="col-md-4">
+                <input class="form-control" name="Title" placeholder="Section title" />
+            </div>
+            <div class="col-md-6">
+                <input class="form-control" name="Description" placeholder="Optional description" />
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@foreach (var s in Model.Sections)
+{
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-bold">@s.Title</div>
+                @if (!string.IsNullOrWhiteSpace(s.Description))
+                {
+                    <div class="text-muted">@s.Description</div>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                <form asp-action="DeleteSection" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="sectionId" value="@s.Id" />
+                    <input type="hidden" name="templateId" value="@Model.TemplateId" />
+                    <button class="btn btn-sm btn-outline-danger" type="submit"
+                            onclick="return confirm('Delete this section?');">
+                        Delete Section
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-body">
+
+            <!-- Add Field -->
+            <div class="border rounded p-3 mb-3">
+                <div class="fw-bold mb-2">Add Question</div>
+
+                <form asp-action="AddField" method="post" class="row g-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="templateId" value="@Model.TemplateId" />
+                    <input type="hidden" name="FormSectionId" value="@s.Id" />
+
+                    <div class="col-md-5">
+                        <input class="form-control" name="Label" placeholder="Question label" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <select class="form-select" name="FieldType">
+                            <option value="@FormFieldType.ShortText">Short Text</option>
+                            <option value="@FormFieldType.LongText">Long Text</option>
+                            <option value="@FormFieldType.Email">Email</option>
+                            <option value="@FormFieldType.Phone">Phone</option>
+                            <option value="@FormFieldType.Url">URL</option>
+
+                            <option value="@FormFieldType.Number">Number</option>
+                            <option value="@FormFieldType.Decimal">Decimal</option>
+                            <option value="@FormFieldType.Date">Date</option>
+                            <option value="@FormFieldType.Time">Time</option>
+
+                            <option value="@FormFieldType.Dropdown">Dropdown</option>
+                            <option value="@FormFieldType.Radio">Radio</option>
+                            <option value="@FormFieldType.Checkbox">Checkbox</option>
+                            <option value="@FormFieldType.YesNo">Yes/No</option>
+
+                            <option value="@FormFieldType.Rating">Rating</option>
+                            <option value="@FormFieldType.FileUpload">File Upload</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="IsRequired" value="true" />
+                            <label class="form-check-label">Required</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                    </div>
+
+                    <div class="col-12">
+                        <input class="form-control" name="HelpText" placeholder="Help text (optional)" />
+                    </div>
+                </form>
+            </div>
+
+            <!-- Fields list -->
+            @if (s.Fields.Count == 0)
+            {
+                <div class="text-muted">No questions yet.</div>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var f in s.Fields.OrderBy(x => x.SortOrder))
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold">@f.Label</div>
+                                    <div class="text-muted">
+                                        Type: @f.FieldType @(f.IsRequired ? "| Required" : "")
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(f.HelpText))
+                                    {
+                                        <div class="small">@f.HelpText</div>
+                                    }
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <form asp-action="DeleteField" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="fieldId" value="@f.Id" />
+                                        <input type="hidden" name="templateId" value="@Model.TemplateId" />
+                                        <button class="btn btn-sm btn-outline-danger" type="submit"
+                                                onclick="return confirm('Remove this question?');">
+                                            Remove
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            @if (f.FieldType == FormFieldType.Dropdown || f.FieldType == FormFieldType.Radio || f.FieldType == FormFieldType.Checkbox)
+                            {
+                                <hr />
+                                <div class="fw-bold mb-2">Options</div>
+
+                                <form asp-action="AddOption" method="post" class="row g-2 mb-2">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="templateId" value="@Model.TemplateId" />
+                                    <input type="hidden" name="FormFieldId" value="@f.Id" />
+
+                                    <div class="col-md-4">
+                                        <input class="form-control" name="Text" placeholder="Option text" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input class="form-control" name="Value" placeholder="Optional value (defaults to text)" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                                    </div>
+                                </form>
+
+                                @if (f.Options.Count == 0)
+                                {
+                                    <div class="text-muted">No options yet.</div>
+                                }
+                                else
+                                {
+                                    <ul class="mb-0">
+                                        @foreach (var o in f.Options.OrderBy(x => x.SortOrder))
+                                        {
+                                            <li class="d-flex justify-content-between align-items-center">
+                                                <span>@o.Text <span class="text-muted">(@o.Value)</span></span>
+                                                <form asp-action="DeleteOption" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="optionId" value="@o.Id" />
+                                                    <input type="hidden" name="templateId" value="@Model.TemplateId" />
+                                                    <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                                                </form>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}

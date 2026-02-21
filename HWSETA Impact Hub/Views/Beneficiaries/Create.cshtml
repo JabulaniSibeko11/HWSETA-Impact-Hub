@@ -4,211 +4,505 @@
     ViewData["Title"] = "Add Beneficiary";
 }
 
-<h1 class="mb-3">Add Beneficiary</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-<form method="post">
+<link href="~/css/beneficiarycreatecss.css" rel="stylesheet" />
+
+@* ── PAGE HEADER ── *@
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-person-lines-fill me-1"></i>Beneficiary Management</div>
+        <h1 class="hw-page-title">Add <span>Beneficiary</span></h1>
+        <p class="hw-page-desc">Complete all sections to register a new beneficiary on the system.</p>
+    </div>
+    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;">
+        <i class="bi bi-arrow-left"></i> Back to List
+    </a>
+</div>
+
+@* ── STEPPER ── *@
+<div class="hw-stepper" id="hw-stepper">
+    <div class="hw-step active" data-step="0" onclick="hwGoStep(0)">
+        <div class="hw-step-dot"><i class="bi bi-fingerprint"></i></div>
+        <div class="hw-step-label">Identity</div>
+    </div>
+    <div class="hw-step-line"><div class="hw-step-line-fill" id="hw-line-0"></div></div>
+    <div class="hw-step" data-step="1" onclick="hwGoStep(1)">
+        <div class="hw-step-dot">2</div>
+        <div class="hw-step-label">Demographics</div>
+    </div>
+    <div class="hw-step-line"><div class="hw-step-line-fill" id="hw-line-1"></div></div>
+    <div class="hw-step" data-step="2" onclick="hwGoStep(2)">
+        <div class="hw-step-dot">3</div>
+        <div class="hw-step-label">Contact</div>
+    </div>
+    <div class="hw-step-line"><div class="hw-step-line-fill" id="hw-line-2"></div></div>
+    <div class="hw-step" data-step="3" onclick="hwGoStep(3)">
+        <div class="hw-step-dot">4</div>
+        <div class="hw-step-label">Address</div>
+    </div>
+    <div class="hw-step-line"><div class="hw-step-line-fill" id="hw-line-3"></div></div>
+    <div class="hw-step" data-step="4" onclick="hwGoStep(4)">
+        <div class="hw-step-dot">5</div>
+        <div class="hw-step-label">Consent</div>
+    </div>
+</div>
+
+<form method="post" id="hw-beneficiary-form">
     @Html.AntiForgeryToken()
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    <div class="row g-3">
-
-        <!-- Identifier -->
-        <div class="col-md-4">
-            <label asp-for="IdentifierType" class="form-label">Identifier Type</label>
-            <select asp-for="IdentifierType" class="form-select">
-                <option value="@IdentifierType.SaId">SA ID</option>
-                <option value="@IdentifierType.Passport">Passport</option>
-            </select>
-            <span asp-validation-for="IdentifierType" class="text-danger"></span>
+    @if (!ViewData.ModelState.IsValid &&
+        ViewData.ModelState.TryGetValue(string.Empty, out var rootEntry) &&
+        rootEntry.Errors.Count > 0)
+    {
+        <div class="hw-val-summary" role="alert">
+            <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;margin-top:1px;font-size:16px;"></i>
+            <div>
+                <strong>Please correct the following errors:</strong>
+                <ul>@foreach (var e in rootEntry.Errors) {
+                <li>@e.ErrorMessage</li>
+            }
+</ul>
         </div>
+    </div>
+        }
 
-        <div class="col-md-8">
-            <label asp-for="IdentifierValue" class="form-label">ID / Passport Number</label>
-            <input asp-for="IdentifierValue" class="form-control" />
-            <span asp-validation-for="IdentifierValue" class="text-danger"></span>
-        </div>
-
-        <!-- Names -->
-        <div class="col-md-4">
-            <label asp-for="FirstName" class="form-label">First Name</label>
-            <input asp-for="FirstName" class="form-control" />
-            <span asp-validation-for="FirstName" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="MiddleName" class="form-label">Middle Name</label>
-            <input asp-for="MiddleName" class="form-control" />
-            <span asp-validation-for="MiddleName" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="LastName" class="form-label">Surname</label>
-            <input asp-for="LastName" class="form-control" />
-            <span asp-validation-for="LastName" class="text-danger"></span>
-        </div>
-
-        <!-- Demographics -->
-        <div class="col-md-4">
-            <label asp-for="DateOfBirth" class="form-label">Date of Birth</label>
-            <input asp-for="DateOfBirth" class="form-control" type="date" />
-            <span asp-validation-for="DateOfBirth" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="GenderId" class="form-label">Gender</label>
-            <select asp-for="GenderId" asp-items="Model.Genders" class="form-select">
-                <option value="">-- Select gender --</option>
-            </select>
-            <span asp-validation-for="GenderId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="RaceId" class="form-label">Race</label>
-            <select asp-for="RaceId" asp-items="Model.Races" class="form-select">
-                <option value="">-- Select race --</option>
-            </select>
-            <span asp-validation-for="RaceId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="CitizenshipStatusId" class="form-label">Citizenship Status</label>
-            <select asp-for="CitizenshipStatusId" asp-items="Model.CitizenshipStatuses" class="form-select">
-                <option value="">-- Select citizenship status --</option>
-            </select>
-            <span asp-validation-for="CitizenshipStatusId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="EducationLevelId" class="form-label">Education Level</label>
-            <select asp-for="EducationLevelId" asp-items="Model.EducationLevels" class="form-select">
-                <option value="">-- Select education level --</option>
-            </select>
-            <span asp-validation-for="EducationLevelId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="EmploymentStatusId" class="form-label">Employment Status</label>
-            <select asp-for="EmploymentStatusId" asp-items="Model.EmploymentStatuses" class="form-select">
-                <option value="">-- Select employment status --</option>
-            </select>
-            <span asp-validation-for="EmploymentStatusId" class="text-danger"></span>
-        </div>
-
-        <!-- Disability -->
-        <div class="col-md-6">
-            <label asp-for="DisabilityStatusId" class="form-label">Disability Status</label>
-            <select asp-for="DisabilityStatusId" asp-items="Model.DisabilityStatuses" class="form-select" id="disabilityStatus">
-                <option value="">-- Select --</option>
-            </select>
-            <span asp-validation-for="DisabilityStatusId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6" id="disabilityTypeWrap">
-            <label asp-for="DisabilityTypeId" class="form-label">Disability Type</label>
-            <select asp-for="DisabilityTypeId" asp-items="Model.DisabilityTypes" class="form-select">
-                <option value="">-- Select disability type --</option>
-            </select>
-            <span asp-validation-for="DisabilityTypeId" class="text-danger"></span>
-        </div>
-
-        <!-- Contact -->
-        <div class="col-md-6">
-            <label asp-for="Email" class="form-label">Email</label>
-            <input asp-for="Email" class="form-control" />
-            <span asp-validation-for="Email" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-3">
-            <label asp-for="MobileNumber" class="form-label">Mobile Number</label>
-            <input asp-for="MobileNumber" class="form-control" />
-            <span asp-validation-for="MobileNumber" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-3">
-            <label asp-for="AltNumber" class="form-label">Alternative Number</label>
-            <input asp-for="AltNumber" class="form-control" />
-            <span asp-validation-for="AltNumber" class="text-danger"></span>
-        </div>
-
-        <!-- Address -->
-        <div class="col-md-4">
-            <label asp-for="ProvinceId" class="form-label">Province</label>
-            <select asp-for="ProvinceId" asp-items="Model.Provinces" class="form-select">
-                <option value="">-- Select province --</option>
-            </select>
-            <span asp-validation-for="ProvinceId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="City" class="form-label">City</label>
-            <input asp-for="City" class="form-control" />
-            <span asp-validation-for="City" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="PostalCode" class="form-label">Postal Code</label>
-            <input asp-for="PostalCode" class="form-control" />
-            <span asp-validation-for="PostalCode" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-12">
-            <label asp-for="AddressLine1" class="form-label">Address Line 1</label>
-            <input asp-for="AddressLine1" class="form-control" />
-            <span asp-validation-for="AddressLine1" class="text-danger"></span>
-        </div>
-
-        <!-- Status -->
-        <div class="col-md-4">
-            <div class="form-check mt-4">
-                <input asp-for="IsActive" class="form-check-input" />
-                <label asp-for="IsActive" class="form-check-label">Active</label>
+    @* ══ STEP 1 — IDENTITY ══ *@
+    <div class="hw-panel hw-panel-active" id="hw-step-0">
+        <div class="hw-panel-head">
+            <div class="hw-panel-icon green"><i class="bi bi-fingerprint"></i></div>
+            <div>
+                <div class="hw-panel-title">Identity &amp; Name</div>
+                <div class="hw-panel-sub">South African ID or Passport number and full legal name</div>
             </div>
         </div>
+        <div class="hw-panel-body">
+            <div class="hw-grid hw-grid-13" style="margin-bottom:18px;">
+                <div class="hw-field">
+                    <label asp-for="IdentifierType" class="hw-field-label">ID Type <span class="hw-req">*</span></label>
+                    <div class="hw-select-wrap">
+                        <select asp-for="IdentifierType" class="hw-select hw-select-no-icon" style="padding-left:12px;">
+                            <option value="@IdentifierType.SaId">SA ID</option>
+                            <option value="@IdentifierType.Passport">Passport</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="IdentifierType" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="IdentifierValue" class="hw-field-label">ID / Passport Number <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-credit-card-2-front hw-field-ico"></i>
+                        <input asp-for="IdentifierValue" class="hw-input" placeholder="e.g. 9001015009087" />
+                    </div>
+                    <span asp-validation-for="IdentifierValue" class="hw-field-error"></span>
+                </div>
+            </div>
+            <div class="hw-grid hw-grid-3">
+                <div class="hw-field">
+                    <label asp-for="FirstName" class="hw-field-label">First Name <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-person hw-field-ico"></i>
+                        <input asp-for="FirstName" class="hw-input" placeholder="e.g. Thabo" />
+                    </div>
+                    <span asp-validation-for="FirstName" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="MiddleName" class="hw-field-label">Middle Name</label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-person hw-field-ico"></i>
+                        <input asp-for="MiddleName" class="hw-input" placeholder="Optional" />
+                    </div>
+                    <span asp-validation-for="MiddleName" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="LastName" class="hw-field-label">Surname <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-person hw-field-ico"></i>
+                        <input asp-for="LastName" class="hw-input" placeholder="e.g. Mokoena" />
+                    </div>
+                    <span asp-validation-for="LastName" class="hw-field-error"></span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- POPIA Consent -->
-        <div class="col-md-8">
-            <div class="border rounded p-3">
-                <div class="form-check">
-                    <input asp-for="ConsentGiven" class="form-check-input" />
-                    <label asp-for="ConsentGiven" class="form-check-label">
-                        I consent to the processing of my personal information (POPIA)
+    @* ══ STEP 2 — DEMOGRAPHICS ══ *@
+    <div class="hw-panel" id="hw-step-1">
+        <div class="hw-panel-head">
+            <div class="hw-panel-icon gold"><i class="bi bi-bar-chart-steps"></i></div>
+            <div>
+                <div class="hw-panel-title">Demographics</div>
+                <div class="hw-panel-sub">Date of birth, gender, race, education, employment and disability information</div>
+            </div>
+        </div>
+        <div class="hw-panel-body">
+            <div class="hw-grid hw-grid-3" style="margin-bottom:18px;">
+                <div class="hw-field">
+                    <label asp-for="DateOfBirth" class="hw-field-label">Date of Birth <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-calendar3 hw-field-ico"></i>
+                        <input asp-for="DateOfBirth" class="hw-input" type="date" />
+                    </div>
+                    <span asp-validation-for="DateOfBirth" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="GenderId" class="hw-field-label">Gender <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-gender-ambiguous hw-field-ico"></i>
+                        <select asp-for="GenderId" asp-items="Model.Genders" class="hw-select">
+                            <option value="">— Select gender —</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="GenderId" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="RaceId" class="hw-field-label">Race <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-people hw-field-ico"></i>
+                        <select asp-for="RaceId" asp-items="Model.Races" class="hw-select">
+                            <option value="">— Select race —</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="RaceId" class="hw-field-error"></span>
+                </div>
+            </div>
+            <div class="hw-grid hw-grid-3" style="margin-bottom:18px;">
+                <div class="hw-field">
+                    <label asp-for="CitizenshipStatusId" class="hw-field-label">Citizenship Status <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-passport hw-field-ico"></i>
+                        <select asp-for="CitizenshipStatusId" asp-items="Model.CitizenshipStatuses" class="hw-select">
+                            <option value="">— Select —</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="CitizenshipStatusId" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="EducationLevelId" class="hw-field-label">Education Level <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-mortarboard hw-field-ico"></i>
+                        <select asp-for="EducationLevelId" asp-items="Model.EducationLevels" class="hw-select">
+                            <option value="">— Select —</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="EducationLevelId" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="EmploymentStatusId" class="hw-field-label">Employment Status <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-briefcase hw-field-ico"></i>
+                        <select asp-for="EmploymentStatusId" asp-items="Model.EmploymentStatuses" class="hw-select">
+                            <option value="">— Select —</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="EmploymentStatusId" class="hw-field-error"></span>
+                </div>
+            </div>
+            <div class="hw-grid hw-grid-2">
+                <div class="hw-field">
+                    <label asp-for="DisabilityStatusId" class="hw-field-label">Disability Status <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-universal-access hw-field-ico"></i>
+                        <select asp-for="DisabilityStatusId" asp-items="Model.DisabilityStatuses"
+                                class="hw-select" id="disabilityStatus">
+                            <option value="">— Select —</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="DisabilityStatusId" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field hw-hidden" id="disabilityTypeWrap">
+                    <label asp-for="DisabilityTypeId" class="hw-field-label">Disability Type</label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-heart-pulse hw-field-ico"></i>
+                        <select asp-for="DisabilityTypeId" asp-items="Model.DisabilityTypes" class="hw-select">
+                            <option value="">— Select type —</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="DisabilityTypeId" class="hw-field-error"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ══ STEP 3 — CONTACT ══ *@
+    <div class="hw-panel" id="hw-step-2">
+        <div class="hw-panel-head">
+            <div class="hw-panel-icon green"><i class="bi bi-telephone-inbound"></i></div>
+            <div>
+                <div class="hw-panel-title">Contact Details</div>
+                <div class="hw-panel-sub">Email address and phone numbers for communication</div>
+            </div>
+        </div>
+        <div class="hw-panel-body">
+            <div class="hw-grid hw-grid-2" style="margin-bottom:18px;">
+                <div class="hw-field">
+                    <label asp-for="Email" class="hw-field-label">Email Address</label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-envelope hw-field-ico"></i>
+                        <input asp-for="Email" class="hw-input" placeholder="user@example.co.za" type="email" />
+                    </div>
+                    <span asp-validation-for="Email" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field" style="align-self:start;">
+                    <div class="hw-field-hint" style="padding:10px 14px;background:var(--hw-offwhite);border:1.5px solid var(--hw-border);border-radius:9px;margin-top:22px;">
+                        <i class="bi bi-info-circle me-1" style="color:var(--hw-gold-dark);"></i>
+                        Email is optional but required for receiving notifications and login credentials.
+                    </div>
+                </div>
+            </div>
+            <div class="hw-grid hw-grid-2">
+                <div class="hw-field">
+                    <label asp-for="MobileNumber" class="hw-field-label">Mobile Number <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-phone hw-field-ico"></i>
+                        <input asp-for="MobileNumber" class="hw-input" placeholder="e.g. 0821234567" />
+                    </div>
+                    <span asp-validation-for="MobileNumber" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="AltNumber" class="hw-field-label">Alternative Number</label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-telephone hw-field-ico"></i>
+                        <input asp-for="AltNumber" class="hw-input" placeholder="Optional" />
+                    </div>
+                    <span asp-validation-for="AltNumber" class="hw-field-error"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ══ STEP 4 — ADDRESS ══ *@
+    <div class="hw-panel" id="hw-step-3">
+        <div class="hw-panel-head">
+            <div class="hw-panel-icon dark"><i class="bi bi-geo-alt"></i></div>
+            <div>
+                <div class="hw-panel-title">Residential Address</div>
+                <div class="hw-panel-sub">Physical address used for GPS and provincial reporting</div>
+            </div>
+        </div>
+        <div class="hw-panel-body">
+            <div class="hw-grid hw-grid-1" style="margin-bottom:18px;">
+                <div class="hw-field">
+                    <label asp-for="AddressLine1" class="hw-field-label">Street Address <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-house hw-field-ico"></i>
+                        <input asp-for="AddressLine1" class="hw-input" placeholder="e.g. 12 Elm Street, Soweto" />
+                    </div>
+                    <span asp-validation-for="AddressLine1" class="hw-field-error"></span>
+                </div>
+            </div>
+            <div class="hw-grid hw-grid-3">
+                <div class="hw-field">
+                    <label asp-for="ProvinceId" class="hw-field-label">Province <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-map hw-field-ico"></i>
+                        <select asp-for="ProvinceId" asp-items="Model.Provinces" class="hw-select">
+                            <option value="">— Select province —</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="ProvinceId" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="City" class="hw-field-label">City / Town <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-buildings hw-field-ico"></i>
+                        <input asp-for="City" class="hw-input" placeholder="e.g. Johannesburg" />
+                    </div>
+                    <span asp-validation-for="City" class="hw-field-error"></span>
+                </div>
+                <div class="hw-field">
+                    <label asp-for="PostalCode" class="hw-field-label">Postal Code <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-mailbox hw-field-ico"></i>
+                        <input asp-for="PostalCode" class="hw-input" placeholder="e.g. 1804" maxlength="4" />
+                    </div>
+                    <span asp-validation-for="PostalCode" class="hw-field-error"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ══ STEP 5 — CONSENT ══ *@
+    <div class="hw-panel" id="hw-step-4">
+        <div class="hw-panel-head">
+            <div class="hw-panel-icon gold"><i class="bi bi-shield-check"></i></div>
+            <div>
+                <div class="hw-panel-title">Status &amp; POPIA Consent</div>
+                <div class="hw-panel-sub">Beneficiary active status and Protection of Personal Information Act consent</div>
+            </div>
+        </div>
+        <div class="hw-panel-body">
+
+            @* Active toggle *@
+            <div style="margin-bottom:20px;">
+                <div class="hw-toggle-row">
+                    <div>
+                        <div class="hw-toggle-label"><i class="bi bi-person-check me-2" style="color:var(--hw-green);"></i>Active Status</div>
+                        <div class="hw-toggle-desc">Mark this beneficiary as active in the system. Inactive beneficiaries are excluded from live reports.</div>
+                    </div>
+                    <label class="hw-switch">
+                        <input asp-for="IsActive" type="checkbox" checked />
+                        <span class="hw-switch-slider"></span>
                     </label>
                 </div>
-                <div class="mt-2">
-                    <label asp-for="ConsentDate" class="form-label">Consent Date</label>
-                    <input asp-for="ConsentDate" class="form-control" type="date" />
-                    <span asp-validation-for="ConsentDate" class="text-danger"></span>
+            </div>
+
+            @* POPIA consent *@
+            <div class="hw-popia-box">
+                <div class="hw-popia-head">
+                    <div class="hw-popia-icon"><i class="bi bi-shield-lock"></i></div>
+                    <div>
+                        <div class="hw-popia-title">POPIA Consent — Protection of Personal Information Act</div>
+                        <div class="hw-popia-sub">Consent must be recorded before processing personal information</div>
+                    </div>
+                </div>
+                <label class="hw-popia-check">
+                    <input asp-for="ConsentGiven" type="checkbox" />
+                    <span class="hw-popia-check-label">
+                        I, the beneficiary or authorised representative, consent to the collection, use, and processing
+                        of my personal information by HWSETA for skills development monitoring purposes in accordance
+                        with the Protection of Personal Information Act (POPIA), Act 4 of 2013.
+                    </span>
+                </label>
+                <div class="hw-field">
+                    <label asp-for="ConsentDate" class="hw-field-label">Consent Date <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap" style="max-width:240px;">
+                        <i class="bi bi-calendar-check hw-field-ico"></i>
+                        <input asp-for="ConsentDate" class="hw-input" type="date" />
+                    </div>
+                    <span asp-validation-for="ConsentDate" class="hw-field-error"></span>
                 </div>
             </div>
+
         </div>
-
     </div>
 
-    <div class="mt-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+    @* ── Navigation ── *@
+    <div class="hw-form-nav">
+        <div style="display:flex;gap:10px;">
+            <button type="button" class="hw-btn-sec" id="hw-btn-prev" onclick="hwPrev()" style="display:none;">
+                <i class="bi bi-arrow-left"></i> Previous
+            </button>
+            <a asp-action="Index" class="hw-btn-outline">
+                <i class="bi bi-x"></i> Cancel
+            </a>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+            <span id="hw-step-counter" style="font-size:12px;font-weight:600;color:var(--hw-muted);">Step 1 of 5</span>
+            <button type="button" class="hw-btn-primary" id="hw-btn-next" onclick="hwNext()">
+                Next <i class="bi bi-arrow-right"></i>
+            </button>
+            <button type="submit" class="hw-btn-gold" id="hw-btn-submit" style="display:none;">
+                <i class="bi bi-person-check"></i> Save Beneficiary
+            </button>
+        </div>
     </div>
+
 </form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-
     <script>
-        (function () {
-            // Hide disability type by default; show only when DisabilityStatus indicates "Yes".
-            // Since we don't know your exact "Yes" lookup ID, we show it when the user selects any value
-            // and you can tighten this rule later once you confirm the "Yes" record id.
-            const status = document.getElementById('disabilityStatus');
-            const wrap = document.getElementById('disabilityTypeWrap');
+        var _hwCurrentStep = 0;
+        var _hwTotalSteps  = 5;
 
-            function toggle() {
-                if (!status || !wrap) return;
-                const hasValue = status.value && status.value !== "";
-                wrap.style.display = hasValue ? "" : "none";
+        function hwGoStep(step) {
+            // Hide all panels
+            document.querySelectorAll('.hw-panel').forEach(function(p) {
+                p.classList.remove('hw-panel-active');
+            });
+            // Show target panel
+            document.getElementById('hw-step-' + step).classList.add('hw-panel-active');
+
+            // Update stepper dots
+            document.querySelectorAll('.hw-step').forEach(function(s, i) {
+                s.classList.remove('active','done');
+                if (i < step)  s.classList.add('done');
+                if (i === step) s.classList.add('active');
+                // Update dot icon for done steps
+                var dot = s.querySelector('.hw-step-dot');
+                if (i < step) dot.innerHTML = '<i class="bi bi-check-lg"></i>';
+                else if (i > step) dot.textContent = (i + 1).toString();
+            });
+            // Restore icon for step 0
+            if (step === 0) {
+                document.querySelector('[data-step="0"] .hw-step-dot').innerHTML = '<i class="bi bi-fingerprint"></i>';
             }
 
+            // Progress lines
+            for (var i = 0; i < _hwTotalSteps - 1; i++) {
+                var fill = document.getElementById('hw-line-' + i);
+                if (fill) fill.style.width = i < step ? '100%' : '0%';
+            }
+
+            _hwCurrentStep = step;
+            hwUpdateNav();
+        }
+
+        function hwNext() {
+            if (_hwCurrentStep < _hwTotalSteps - 1) hwGoStep(_hwCurrentStep + 1);
+        }
+        function hwPrev() {
+            if (_hwCurrentStep > 0) hwGoStep(_hwCurrentStep - 1);
+        }
+
+        function hwUpdateNav() {
+            var prev    = document.getElementById('hw-btn-prev');
+            var next    = document.getElementById('hw-btn-next');
+            var submit  = document.getElementById('hw-btn-submit');
+            var counter = document.getElementById('hw-step-counter');
+
+            prev.style.display   = _hwCurrentStep > 0 ? 'inline-flex' : 'none';
+            next.style.display   = _hwCurrentStep < _hwTotalSteps - 1 ? 'inline-flex' : 'none';
+            submit.style.display = _hwCurrentStep === _hwTotalSteps - 1 ? 'inline-flex' : 'none';
+            counter.textContent  = 'Step ' + (_hwCurrentStep + 1) + ' of ' + _hwTotalSteps;
+        }
+
+        // Disability type reveal
+        (function () {
+            var status = document.getElementById('disabilityStatus');
+            var wrap   = document.getElementById('disabilityTypeWrap');
+            function toggle() {
+                if (!status || !wrap) return;
+                if (status.value && status.value !== '') {
+                    wrap.classList.remove('hw-hidden');
+                    wrap.classList.add('hw-visible');
+                } else {
+                    wrap.classList.remove('hw-visible');
+                    wrap.classList.add('hw-hidden');
+                }
+            }
             toggle();
             status?.addEventListener('change', toggle);
         })();
+
+        // Server-side validation: jump to first panel that has errors
+        document.addEventListener('DOMContentLoaded', function () {
+            var stepFields = [
+                ['IdentifierType','IdentifierValue','FirstName','LastName'],
+                ['DateOfBirth','GenderId','RaceId','CitizenshipStatusId','EducationLevelId','EmploymentStatusId','DisabilityStatusId'],
+                ['Email','MobileNumber','AltNumber'],
+                ['AddressLine1','ProvinceId','City','PostalCode'],
+                ['ConsentGiven','ConsentDate']
+            ];
+            var firstErrorStep = -1;
+            stepFields.forEach(function (fields, si) {
+                fields.forEach(function (f) {
+                    var span = document.querySelector('[data-valmsg-for$="' + f + '"]');
+                    if (span && span.textContent.trim() && firstErrorStep === -1) {
+                        firstErrorStep = si;
+                    }
+                    if (span && span.textContent.trim()) {
+                        var inp = document.querySelector('[name$=".' + f + '"],[name="' + f + '"]');
+                        if (inp) inp.classList.add('input-error');
+                    }
+                });
+            });
+            if (firstErrorStep > -1) hwGoStep(firstErrorStep);
+        });
+
+        hwUpdateNav();
     </script>
 }

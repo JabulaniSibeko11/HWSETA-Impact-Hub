@@ -1,0 +1,58 @@
+﻿@model List<HWSETA_Impact_Hub.Models.ViewModels.Enrollment.EnrollmentDocumentRowVm>
+@{
+    ViewData["Title"] = "Enrollment Documents";
+    var enrollmentId = (Guid)ViewBag.EnrollmentId;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Enrollment Documents</h1>
+    <div>
+        <a class="btn btn-primary" asp-action="Upload" asp-route-enrollmentId="@enrollmentId">Upload Document</a>
+        <a class="btn btn-outline-secondary" asp-controller="Enrollments" asp-action="Details" asp-route-id="@enrollmentId">Back to Enrollment</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>File</th>
+            <th>Uploaded (UTC)</th>
+            <th>By</th>
+            <th style="width:180px;"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var d in Model)
+        {
+            <tr>
+                <td>@d.DocumentType</td>
+                <td>@d.FileName</td>
+                <td>@d.UploadedOnUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@d.UploadedByUserId</td>
+                <td class="text-end">
+                    <a class="btn btn-sm btn-outline-primary" asp-action="Download" asp-route-id="@d.Id">Download</a>
+
+                    <form asp-action="Delete" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@d.Id" />
+                        <input type="hidden" name="enrollmentId" value="@enrollmentId" />
+                        <button class="btn btn-sm btn-outline-danger" type="submit"
+                                onclick="return confirm('Delete this document?');">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

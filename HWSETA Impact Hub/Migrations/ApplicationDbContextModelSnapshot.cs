@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace HWSETA_Impact_Hub.Data.Migrations
+namespace HWSETA_Impact_Hub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -540,6 +540,67 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                     b.ToTable("Enrollments", (string)null);
                 });
 
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.EnrollmentDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("DocumentTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("StoredPath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("UploadedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentTypeId");
+
+                    b.HasIndex("EnrollmentId", "DocumentTypeId");
+
+                    b.ToTable("EnrollmentDocuments", (string)null);
+                });
+
             modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.EnrollmentStatusHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -589,6 +650,431 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                     b.HasIndex("EnrollmentId");
 
                     b.ToTable("EnrollmentStatusHistory", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FormFieldId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FormSubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ValueJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormFieldId");
+
+                    b.HasIndex("FormSubmissionId", "FormFieldId");
+
+                    b.ToTable("FormAnswers", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormField", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FieldType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("FormSectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("HelpText")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<decimal?>("MaxDecimal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("MaxInt")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxLength")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("MinDecimal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("MinInt")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RegexPattern")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SettingsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormSectionId", "SortOrder");
+
+                    b.ToTable("FormFields", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormFieldCondition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CompareValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Operator")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<bool>("ShowWhenMatched")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SourceFieldId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TargetFieldId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceFieldId");
+
+                    b.HasIndex("TargetFieldId", "SortOrder");
+
+                    b.ToTable("FormFieldConditions", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormFieldOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FormFieldId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormFieldId", "SortOrder");
+
+                    b.ToTable("FormFieldOptions", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormPublish", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BeneficiaryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CohortId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FormTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsOpen")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("OpenFromUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("OpenToUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PublicToken")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormTemplateId");
+
+                    b.HasIndex("PublicToken")
+                        .IsUnique();
+
+                    b.ToTable("FormPublishes", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormSection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("FormTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormTemplateId", "SortOrder");
+
+                    b.ToTable("FormSections", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BeneficiaryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FormPublishId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SubmittedByUserId")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("SubmittedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormPublishId", "SubmittedOnUtc");
+
+                    b.ToTable("FormSubmissions", (string)null);
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Title", "Version");
+
+                    b.ToTable("FormTemplates", (string)null);
                 });
 
             modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.LookupBase", b =>
@@ -1259,13 +1745,13 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Beneficiary", "Beneficiary")
                         .WithMany()
                         .HasForeignKey("BeneficiaryId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Cohort", "Cohort")
                         .WithMany()
                         .HasForeignKey("CohortId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Employer", "Employer")
@@ -1295,6 +1781,25 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                     b.Navigation("Provider");
                 });
 
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.EnrollmentDocument", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.DocumentType", "DocumentType")
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Enrollment", "Enrollment")
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DocumentType");
+
+                    b.Navigation("Enrollment");
+                });
+
             modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.EnrollmentStatusHistory", b =>
                 {
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Enrollment", "Enrollment")
@@ -1304,6 +1809,99 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Enrollment");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormAnswer", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormField", "FormField")
+                        .WithMany()
+                        .HasForeignKey("FormFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormSubmission", "FormSubmission")
+                        .WithMany("Answers")
+                        .HasForeignKey("FormSubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FormField");
+
+                    b.Navigation("FormSubmission");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormField", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormSection", "FormSection")
+                        .WithMany("Fields")
+                        .HasForeignKey("FormSectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FormSection");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormFieldCondition", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormField", "SourceField")
+                        .WithMany()
+                        .HasForeignKey("SourceFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormField", "TargetField")
+                        .WithMany("Conditions")
+                        .HasForeignKey("TargetFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SourceField");
+
+                    b.Navigation("TargetField");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormFieldOption", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormField", "FormField")
+                        .WithMany("Options")
+                        .HasForeignKey("FormFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FormField");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormPublish", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormTemplate", "FormTemplate")
+                        .WithMany()
+                        .HasForeignKey("FormTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FormTemplate");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormSection", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormTemplate", "FormTemplate")
+                        .WithMany("Sections")
+                        .HasForeignKey("FormTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FormTemplate");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormSubmission", b =>
+                {
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormPublish", "FormPublish")
+                        .WithMany()
+                        .HasForeignKey("FormPublishId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FormPublish");
                 });
 
             modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.Programme", b =>
@@ -1401,6 +1999,28 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormField", b =>
+                {
+                    b.Navigation("Conditions");
+
+                    b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormSection", b =>
+                {
+                    b.Navigation("Fields");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormSubmission", b =>
+                {
+                    b.Navigation("Answers");
+                });
+
+            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.FormTemplate", b =>
+                {
+                    b.Navigation("Sections");
                 });
 #pragma warning restore 612, 618
         }

@@ -93,6 +93,9 @@ builder.Services.AddScoped<IEmployerService, EmployerService>();
 builder.Services.AddScoped<IBeneficiaryService, BeneficiaryService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<ICohortService, CohortService>();
+builder.Services.AddScoped<IEnrollmentDocumentService, EnrollmentDocumentService>();
+builder.Services.AddScoped<IReportingService, ReportingService>();
+builder.Services.AddScoped<IFormTemplateService, FormTemplateService>();
 
 var app = builder.Build();
 await IdentitySeeder.SeedAsync(app.Services);

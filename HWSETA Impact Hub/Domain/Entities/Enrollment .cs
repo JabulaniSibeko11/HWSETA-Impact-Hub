@@ -12,14 +12,15 @@ namespace HWSETA_Impact_Hub.Domain.Entities
 
         public EnrollmentStatus CurrentStatus { get; set; } = EnrollmentStatus.Enrolled;
 
+        // When beneficiary starts within cohort window (default = Cohort.StartDate)
         public DateTime StartDate { get; set; }
+
+        // Actual end date (set when Completed or DroppedOut)
         public DateTime? ActualEndDate { get; set; }
 
         public string? Notes { get; set; }
         public bool IsActive { get; set; } = true;
-
-    
-
+        
         public Guid ProgrammeId { get; set; }
         public Programme Programme { get; set; } = null!;
 

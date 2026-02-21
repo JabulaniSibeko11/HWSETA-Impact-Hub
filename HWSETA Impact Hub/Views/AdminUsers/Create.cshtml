@@ -4,46 +4,403 @@
     var roles = ViewBag.Roles as List<string> ?? new List<string>();
 }
 
-<h1>Create User</h1>
+<style>
+    .hw-create-wrap {
+        display: grid; grid-template-columns: 1fr 380px;
+        gap: 24px; align-items: start;
+    }
+    @@media (max-width: 960px) { .hw-create-wrap { grid-template-columns: 1fr; } }
 
-<form method="post">
-    @Html.AntiForgeryToken()
+    /* Form card */
+    .hw-form-card {
+        background: var(--hw-white);
+        border: 1.5px solid var(--hw-border);
+        border-radius: var(--hw-radius-lg);
+        overflow: hidden;
+    }
+    .hw-form-card-head {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--hw-border);
+        background: var(--hw-offwhite);
+        display: flex; align-items: center; gap: 12px;
+    }
+    .hw-form-card-icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: var(--hw-green-light); color: var(--hw-green);
+        display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .hw-form-card-title { font-size: 15px; font-weight: 700; color: var(--hw-dark); }
+    .hw-form-card-sub   { font-size: 12px; color: var(--hw-muted); margin-top: 1px; }
+    .hw-form-card-body  { padding: 28px 24px; }
 
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    /* Fields */
+    .hw-field { margin-bottom: 22px; }
+    .hw-field:last-of-type { margin-bottom: 0; }
+    .hw-field-label {
+        display: block; font-size: 12px; font-weight: 700;
+        color: var(--hw-dark); margin-bottom: 7px; letter-spacing: .01em;
+    }
+    .hw-field-label .hw-req { color: var(--hw-red); margin-left: 2px; }
+    .hw-field-hint { font-size: 11.5px; color: var(--hw-muted); margin-top: 5px; line-height: 1.5; }
 
-    <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+    .hw-field-wrap { position: relative; }
+    .hw-field-ico {
+        position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+        font-size: 15px; color: var(--hw-muted); pointer-events: none; transition: color .2s;
+    }
+    .hw-field-wrap:focus-within .hw-field-ico { color: var(--hw-green); }
+
+    .hw-input, .hw-select {
+        width: 100%;
+        border: 1.5px solid var(--hw-border); border-radius: 9px;
+        font-size: 14px; font-family: 'Geist Sans','Segoe UI',sans-serif;
+        background: var(--hw-white); color: var(--hw-dark);
+        outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .hw-input  { padding: 11px 13px 11px 38px; }
+    .hw-select { padding: 11px 13px 11px 38px; cursor: pointer; appearance: none; -webkit-appearance: none; }
+    .hw-input:focus, .hw-select:focus {
+        border-color: var(--hw-green);
+        box-shadow: 0 0 0 3px rgba(26,122,60,.1);
+    }
+    .hw-input.input-error, .hw-select.input-error { border-color: var(--hw-red); }
+
+    /* Password wrap with toggle */
+    .hw-pw-wrap { position: relative; }
+    .hw-pw-wrap .hw-input { padding-right: 40px; }
+    .hw-pwd-toggle {
+        position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+        background: none; border: none; cursor: pointer;
+        color: var(--hw-muted); font-size: 15px; padding: 2px; transition: color .2s;
+    }
+    .hw-pwd-toggle:hover { color: var(--hw-green); }
+
+    /* Select chevron */
+    .hw-select-wrap { position: relative; }
+    .hw-select-wrap::after {
+        content: '\F282'; font-family: 'bootstrap-icons';
+        position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+        color: var(--hw-muted); pointer-events: none; font-size: 13px;
+    }
+
+    /* Toggle switch for EmailConfirmed */
+    .hw-toggle-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 16px;
+        border: 1.5px solid var(--hw-border); border-radius: 10px;
+        transition: border-color .2s, background .2s;
+    }
+    .hw-toggle-row:hover { border-color: var(--hw-green); background: var(--hw-green-light); }
+    .hw-toggle-label { font-size: 13.5px; font-weight: 600; color: var(--hw-dark); }
+    .hw-toggle-desc  { font-size: 11.5px; color: var(--hw-muted); margin-top: 2px; }
+    .hw-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .hw-switch input { opacity: 0; width: 0; height: 0; }
+    .hw-switch-slider {
+        position: absolute; inset: 0; background: var(--hw-border);
+        border-radius: 99px; cursor: pointer; transition: background .2s;
+    }
+    .hw-switch-slider::before {
+        content: ''; position: absolute;
+        width: 18px; height: 18px; border-radius: 50%;
+        left: 3px; top: 3px; background: #fff;
+        transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.18);
+    }
+    .hw-switch input:checked + .hw-switch-slider { background: var(--hw-green); }
+    .hw-switch input:checked + .hw-switch-slider::before { transform: translateX(20px); }
+
+    /* Field error */
+    .hw-field-error { font-size: 11.5px; color: var(--hw-red); margin-top: 5px; display: none; }
+    .hw-field-error.field-validation-error { display: block; }
+
+    /* Val summary */
+    .hw-val-summary {
+        background: var(--hw-red-light); border: 1.5px solid #f5c6c2;
+        border-radius: 9px; padding: 12px 16px; margin-bottom: 20px;
+        font-size: 13px; color: var(--hw-red); display: flex; gap: 10px; align-items: flex-start;
+    }
+    .hw-val-summary ul { margin: 4px 0 0; padding-left: 16px; }
+
+    /* Form actions */
+    .hw-form-actions {
+        display: flex; gap: 10px; align-items: center;
+        padding: 18px 24px; border-top: 1px solid var(--hw-border);
+        background: var(--hw-offwhite);
+    }
+    .hw-btn-primary {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 10px 22px; background: var(--hw-green); color: #fff;
+        border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+        font-family: inherit; cursor: pointer; text-decoration: none;
+        transition: background .2s, box-shadow .2s, transform .15s;
+    }
+    .hw-btn-primary:hover { background: var(--hw-green-dark); box-shadow: 0 4px 14px rgba(26,122,60,.3); transform: translateY(-1px); color: #fff; }
+    .hw-btn-outline {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 10px 22px; background: transparent; color: var(--hw-muted);
+        border: 1.5px solid var(--hw-border); border-radius: 8px;
+        font-size: 13px; font-weight: 600; font-family: inherit;
+        cursor: pointer; text-decoration: none;
+        transition: border-color .2s, color .2s;
+    }
+    .hw-btn-outline:hover { border-color: var(--hw-dark); color: var(--hw-dark); }
+
+    /* Info sidebar */
+    .hw-info-card {
+        background: var(--hw-white); border: 1.5px solid var(--hw-border);
+        border-radius: var(--hw-radius-lg); overflow: hidden;
+    }
+    .hw-info-card-head {
+        padding: 16px 20px; border-bottom: 1px solid var(--hw-border);
+        background: var(--hw-offwhite);
+        display: flex; align-items: center; gap: 8px;
+    }
+    .hw-info-card-title { font-size: 13.5px; font-weight: 700; color: var(--hw-dark); }
+    .hw-info-card-title i { color: var(--hw-green); }
+    .hw-info-card-body { padding: 18px 20px; }
+
+    .hw-role-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .hw-role-item {
+        padding: 10px 12px; border: 1.5px solid var(--hw-border);
+        border-radius: 8px; cursor: default;
+        transition: border-color .2s, background .2s;
+    }
+    .hw-role-item:hover { border-color: var(--hw-green); background: var(--hw-green-light); }
+    .hw-role-name { font-size: 13px; font-weight: 700; color: var(--hw-dark); }
+    .hw-role-desc { font-size: 11px; color: var(--hw-muted); margin-top: 1px; }
+
+    .hw-tip-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .hw-tip-item { display: flex; gap: 10px; font-size: 12.5px; color: var(--hw-muted); line-height: 1.55; }
+    .hw-tip-item i { color: var(--hw-green); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+</style>
+
+@* Page header *@
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--hw-gold-dark);margin-bottom:4px;">
+            <i class="bi bi-people me-1"></i>User Management
+        </div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--hw-dark);margin:0;">
+            Create <span style="color:var(--hw-green);">New User</span>
+        </h1>
+        <p style="font-size:13.5px;color:var(--hw-muted);margin-top:4px;">
+            Add a staff account or beneficiary with the appropriate role and permissions.
+        </p>
     </div>
+    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;">
+        <i class="bi bi-arrow-left"></i> Back to Users
+    </a>
+</div>
 
-    <div class="mb-3">
-        <label class="form-label">Temporary Password</label>
-        <input asp-for="TempPassword" class="form-control" />
-        <span asp-validation-for="TempPassword" class="text-danger"></span>
-        <div class="form-text">Give the user this password. They can change it after first login.</div>
-    </div>
+<div class="hw-create-wrap">
 
-    <div class="mb-3">
-        <label class="form-label">Role</label>
-        <select asp-for="Role" class="form-select">
-            @foreach (var r in roles)
+    @* ── FORM ── *@
+    <div class="hw-form-card">
+        <div class="hw-form-card-head">
+            <div class="hw-form-card-icon"><i class="bi bi-person-plus"></i></div>
+            <div>
+                <div class="hw-form-card-title">Account Details</div>
+                <div class="hw-form-card-sub">All fields marked <span style="color:var(--hw-red);">*</span> are required</div>
+            </div>
+        </div>
+
+        <div class="hw-form-card-body">
+
+            @if (!ViewData.ModelState.IsValid &&
+                        ViewData.ModelState.TryGetValue(string.Empty, out var rootEntry) &&
+                        rootEntry.Errors.Count > 0)
             {
-                <option value="@r">@r</option>
+                <div class="hw-val-summary" role="alert">
+                    <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;margin-top:1px;"></i>
+                    <div>
+                        <strong>Please correct the following:</strong>
+                        <ul>
+                            @foreach (var err in rootEntry.Errors)
+                            {
+                                <li>@err.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                </div>
             }
-        </select>
-        <span asp-validation-for="Role" class="text-danger"></span>
+
+            <form method="post" id="hw-create-form">
+                @Html.AntiForgeryToken()
+
+                @* Email *@
+                <div class="hw-field">
+                    <label asp-for="Email" class="hw-field-label">
+                        Email Address <span class="hw-req">*</span>
+                    </label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-envelope hw-field-ico"></i>
+                        <input asp-for="Email" class="hw-input"
+                               placeholder="user@organization.co.za"
+                               autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Email" class="hw-field-error"></span>
+                </div>
+
+                @* Temporary Password *@
+                <div class="hw-field">
+                    <label asp-for="TempPassword" class="hw-field-label">
+                        Temporary Password <span class="hw-req">*</span>
+                    </label>
+                    <div class="hw-field-wrap hw-pw-wrap">
+                        <i class="bi bi-lock hw-field-ico"></i>
+                        <input asp-for="TempPassword" id="hw-temp-pw"
+                               class="hw-input" type="password"
+                               placeholder="Min. 8 characters" autocomplete="off" />
+                        <button type="button" class="hw-pwd-toggle" onclick="hwTogglePwd('hw-temp-pw','hw-temp-pw-eye')">
+                            <i class="bi bi-eye" id="hw-temp-pw-eye"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="TempPassword" class="hw-field-error"></span>
+                    <div class="hw-field-hint">
+                        <i class="bi bi-info-circle me-1" style="color:var(--hw-gold-dark);"></i>
+                        Share this password with the user. They must change it after first login.
+                    </div>
+                </div>
+
+                @* Role *@
+                <div class="hw-field">
+                    <label asp-for="Role" class="hw-field-label">
+                        Role <span class="hw-req">*</span>
+                    </label>
+                    <div class="hw-field-wrap hw-select-wrap">
+                        <i class="bi bi-person-badge hw-field-ico"></i>
+                        <select asp-for="Role" class="hw-select">
+                            <option value="">— Select a role —</option>
+                            @foreach (var r in roles)
+                            {
+                                <option value="@r">@r</option>
+                            }
+                        </select>
+                    </div>
+                    <span asp-validation-for="Role" class="hw-field-error"></span>
+                </div>
+
+                @* Email Confirmed toggle *@
+                <div class="hw-field">
+                    <label class="hw-field-label">Email Confirmation</label>
+                    <div class="hw-toggle-row">
+                        <div>
+                            <div class="hw-toggle-label">Mark email as confirmed</div>
+                            <div class="hw-toggle-desc">
+                                Enable this if the user does not need to verify their email address.
+                            </div>
+                        </div>
+                        <label class="hw-switch">
+                            <input asp-for="EmailConfirmed" type="checkbox" />
+                            <span class="hw-switch-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+        <div class="hw-form-actions">
+            <button type="submit" form="hw-create-form" class="hw-btn-primary" id="hw-submit-btn">
+                <i class="bi bi-person-check"></i> Create User
+            </button>
+            <a asp-action="Index" class="hw-btn-outline">
+                <i class="bi bi-x"></i> Cancel
+            </a>
+        </div>
     </div>
 
-    <div class="form-check mb-3">
-        <input asp-for="EmailConfirmed" class="form-check-input" />
-        <label class="form-check-label" asp-for="EmailConfirmed">Email confirmed</label>
+    @* ── SIDEBAR ── *@
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        @* Role guide *@
+        <div class="hw-info-card">
+            <div class="hw-info-card-head">
+                <div class="hw-info-card-title"><i class="bi bi-person-badge"></i> Role Reference</div>
+            </div>
+            <div class="hw-info-card-body">
+                <ul class="hw-role-list">
+                    @foreach (var r in roles)
+                    {
+                        var icon = r switch
+                        {
+                            "Admin" or "SuperAdmin" => "bi-shield-lock",
+                            "ProjectManager" => "bi-diagram-3",
+                            "DataCapture" or "Capturer" => "bi-pencil-square",
+                            "Beneficiary" => "bi-person",
+                            "Viewer" or "ReadOnly" => "bi-eye",
+                            _ => "bi-person-circle"
+                        };
+                        var desc = r switch
+                        {
+                            "Admin" or "SuperAdmin" => "Full system access",
+                            "ProjectManager" => "Manage programmes & cohorts",
+                            "DataCapture" or "Capturer" => "Capture and edit records",
+                            "Beneficiary" => "View own enrolment only",
+                            "Viewer" or "ReadOnly" => "Read-only access",
+                            _ => "Standard access"
+                        };
+                        <li class="hw-role-item">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <i class="bi @icon" style="color:var(--hw-green);font-size:15px;flex-shrink:0;"></i>
+                                <div>
+                                    <div class="hw-role-name">@r</div>
+                                    <div class="hw-role-desc">@desc</div>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        @* Tips *@
+        <div class="hw-info-card">
+            <div class="hw-info-card-head">
+                <div class="hw-info-card-title"><i class="bi bi-lightbulb"></i> Tips</div>
+            </div>
+            <div class="hw-info-card-body">
+                <ul class="hw-tip-list">
+                    <li class="hw-tip-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Use the organisation email address as the username — it is the unique login identifier.
+                    </li>
+                    <li class="hw-tip-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Set a strong temporary password and share it securely. The user will be prompted to change it on first login.
+                    </li>
+                    <li class="hw-tip-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Tick "Email confirmed" for internal staff. Leave unchecked for external beneficiaries who must verify their email.
+                    </li>
+                    <li class="hw-tip-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Assign the least privileged role necessary — follow the principle of least privilege.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
     </div>
 
-    <button class="btn btn-primary" type="submit">Create</button>
-    <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function hwTogglePwd(inputId, eyeId) {
+            var inp = document.getElementById(inputId);
+            var eye = document.getElementById(eyeId);
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+            eye.className = inp.type === 'text' ? 'bi bi-eye-slash' : 'bi bi-eye';
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('span[data-valmsg-for]').forEach(function (span) {
+                if (span.textContent.trim()) {
+                    var name = span.getAttribute('data-valmsg-for');
+                    var inp  = document.querySelector('[name="' + name + '"]');
+                    if (inp) inp.classList.add('input-error');
+                }
+            });
+        });
+    </script>
 }

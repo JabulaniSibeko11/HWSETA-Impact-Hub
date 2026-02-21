@@ -1,0 +1,59 @@
+﻿@model List<HWSETA_Impact_Hub.Models.ViewModels.Forms.FormTemplateListRowVm>
+@{
+    ViewData["Title"] = "Dynamic Forms";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Dynamic Forms</h1>
+    <a class="btn btn-primary" asp-action="Create">Create Form</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<table id="formsTable" class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Version</th>
+            <th>Active</th>
+            <th>Created</th>
+            <th style="width:220px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var f in Model)
+        {
+            <tr>
+                <td>@f.Title</td>
+                <td>@f.Status</td>
+                <td>@f.Version</td>
+                <td>@(f.IsActive ? "Yes" : "No")</td>
+                <td>@f.CreatedOnUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>
+                    <a class="btn btn-sm btn-outline-primary" asp-action="Builder" asp-route-id="@f.Id">Builder</a>
+                    <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@f.Id">Edit</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#formsTable').DataTable({
+                pageLength: 25,
+                order: [[4, "desc"]],
+                responsive: true
+            });
+        });
+    </script>
+}

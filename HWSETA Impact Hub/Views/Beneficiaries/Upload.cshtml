@@ -2,24 +2,315 @@
     ViewData["Title"] = "Bulk Upload Beneficiaries";
 }
 
-<h1>Bulk Upload Beneficiaries</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-<a class="btn btn-outline-secondary mb-3" asp-action="DownloadTemplate">Download Excel Template</a>
 
-<div class="alert alert-info">
-    Required headers:
-    <strong>IdentifierType</strong> (SaId/Passport),
-    <strong>IdentifierValue</strong>,
-    <strong>FirstName</strong>,
-    <strong>LastName</strong>.
-    Others optional.
+<link href="~/css/uploadbeneficiarycss.css" rel="stylesheet" />
+@* ── PAGE HEADER ── *@
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-person-lines-fill me-1"></i>Beneficiary Management</div>
+        <h1 class="hw-page-title">Bulk <span>Upload</span></h1>
+        <p class="hw-page-desc">Import multiple beneficiaries at once using an Excel spreadsheet.</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+        <a asp-action="DownloadTemplate" class="hw-btn-outline">
+            <i class="bi bi-file-earmark-excel"></i> Download Template
+        </a>
+        <a asp-action="Index" class="hw-btn-outline">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
 </div>
 
-<form method="post" enctype="multipart/form-data">
-    @Html.AntiForgeryToken()
-    <div class="mb-3">
-        <input type="file" name="file" class="form-control" accept=".xlsx" />
+<div class="hw-upload-grid">
+
+    @* ══ LEFT — Upload form ══ *@
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon green"><i class="bi bi-upload"></i></div>
+                <div>
+                    <div class="hw-card-title">Upload Excel File</div>
+                    <div class="hw-card-sub">Accepted format: .xlsx — max 10 MB</div>
+                </div>
+            </div>
+            <div class="hw-card-body">
+                <form method="post" enctype="multipart/form-data" id="hw-upload-form">
+                    @Html.AntiForgeryToken()
+
+                    @* Drop zone *@
+                    <div class="hw-dropzone" id="hw-dropzone">
+                        <input type="file" name="file" id="hw-file-input" accept=".xlsx"
+                               onchange="hwFileSelected(this)" />
+                        <div class="hw-dz-icon"><i class="bi bi-file-earmark-excel"></i></div>
+                        <div class="hw-dz-title">Drop your Excel file here</div>
+                        <div class="hw-dz-sub">
+                            Drag and drop your <strong>.xlsx</strong> file or click to browse.<br />
+                            Maximum file size: <strong>10 MB</strong>
+                        </div>
+                        <span class="hw-dz-badge">
+                            <i class="bi bi-file-earmark-excel"></i> .xlsx only
+                        </span>
+                    </div>
+
+                    @* File selected preview *@
+                    <div class="hw-file-selected" id="hw-file-preview">
+                        <div class="hw-file-row">
+                            <div class="hw-file-icon"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+                            <div style="flex:1;">
+                                <div class="hw-file-name" id="hw-file-name">—</div>
+                                <div class="hw-file-size" id="hw-file-size">—</div>
+                            </div>
+                            <button type="button" class="hw-file-remove" onclick="hwClearFile()" title="Remove file">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    @* Progress bar *@
+                    <div class="hw-upload-progress" id="hw-progress">
+                        <div class="hw-progress-label">
+                            <span>Uploading…</span>
+                            <span id="hw-progress-pct">0%</span>
+                        </div>
+                        <div class="hw-progress-bar">
+                            <div class="hw-progress-fill" id="hw-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+                        <button type="submit" class="hw-btn-primary" id="hw-submit-btn" disabled>
+                            <i class="bi bi-cloud-upload"></i> Upload &amp; Import Beneficiaries
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        @* Required columns info *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon gold"><i class="bi bi-table"></i></div>
+                <div>
+                    <div class="hw-card-title">Required Column Headers</div>
+                    <div class="hw-card-sub">Your spreadsheet must include these exact column names in row 1</div>
+                </div>
+            </div>
+            <div class="hw-card-body" style="padding:0;">
+                <table class="hw-col-table">
+                    <thead>
+                        <tr>
+                            <th>Column Name</th>
+                            <th>Required</th>
+                            <th>Example / Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="hw-col-name">IdentifierType</span></td>
+                            <td><span class="hw-col-req yes"><i class="bi bi-check"></i>Required</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;"><code>SaId</code> or <code>Passport</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">IdentifierValue</span></td>
+                            <td><span class="hw-col-req yes"><i class="bi bi-check"></i>Required</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;">SA ID or Passport number</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">FirstName</span></td>
+                            <td><span class="hw-col-req yes"><i class="bi bi-check"></i>Required</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;">Legal first name</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">LastName</span></td>
+                            <td><span class="hw-col-req yes"><i class="bi bi-check"></i>Required</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;">Legal surname</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">MiddleName</span></td>
+                            <td><span class="hw-col-req no">Optional</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;">Can be blank</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">DateOfBirth</span></td>
+                            <td><span class="hw-col-req no">Optional</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;">Format: <code>yyyy-MM-dd</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">Email</span></td>
+                            <td><span class="hw-col-req no">Optional</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;">Valid email address</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">MobileNumber</span></td>
+                            <td><span class="hw-col-req no">Optional</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;">e.g. 0821234567</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">Province</span></td>
+                            <td><span class="hw-col-req no">Optional</span></td>
+                            <td style="color:var(--hw-muted);font-size:11.5px;">Province code or name</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
-    <button class="btn btn-primary" type="submit">Upload</button>
-    <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
-</form>
+
+    @* ══ RIGHT — Sidebar ══ *@
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        @* Download template *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon gold"><i class="bi bi-file-earmark-arrow-down"></i></div>
+                <div>
+                    <div class="hw-card-title">Excel Template</div>
+                    <div class="hw-card-sub">Pre-formatted with correct headers</div>
+                </div>
+            </div>
+            <div class="hw-card-body">
+                <p style="font-size:12.5px;color:var(--hw-muted);line-height:1.6;margin-bottom:14px;">
+                    Download the official HWSETA template. It contains all required and optional columns with example data and data validation rules pre-applied.
+                </p>
+                <a asp-action="DownloadTemplate" class="hw-btn-gold">
+                    <i class="bi bi-file-earmark-excel"></i> Download Template
+                </a>
+            </div>
+        </div>
+
+        @* Tips *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon dark"><i class="bi bi-lightbulb"></i></div>
+                <div>
+                    <div class="hw-card-title">Upload Guidelines</div>
+                    <div class="hw-card-sub">Follow these steps for a successful import</div>
+                </div>
+            </div>
+            <div class="hw-card-body">
+                <ul class="hw-tip-list">
+                    <li class="hw-tip-item">
+                        <i class="bi bi-1-circle-fill"></i>
+                        Download the official Excel template — do not use your own spreadsheet structure.
+                    </li>
+                    <li class="hw-tip-item">
+                        <i class="bi bi-2-circle-fill"></i>
+                        Fill in the template. The first row must remain the header row — do not delete or rename columns.
+                    </li>
+                    <li class="hw-tip-item">
+                        <i class="bi bi-3-circle-fill"></i>
+                        <strong>IdentifierType</strong> must be exactly <code>SaId</code> or <code>Passport</code> — case-sensitive.
+                    </li>
+                    <li class="hw-tip-item">
+                        <i class="bi bi-4-circle-fill"></i>
+                        Dates must be formatted as <code>yyyy-MM-dd</code> (e.g. <code>1990-01-15</code>).
+                    </li>
+                    <li class="hw-tip-item">
+                        <i class="bi bi-5-circle-fill"></i>
+                        Remove test or sample rows before uploading. Each ID number must be unique.
+                    </li>
+                    <li class="hw-tip-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        After upload, a results summary will show successful imports and any rows that failed with the reason.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        @* Limits *@
+        <div style="padding:14px 16px;background:var(--hw-gold-light);border:1.5px solid #f0d060;border-radius:12px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+                <i class="bi bi-info-circle-fill" style="color:var(--hw-gold-dark);font-size:15px;flex-shrink:0;margin-top:1px;"></i>
+                <div style="font-size:12px;color:var(--hw-dark);line-height:1.6;">
+                    <strong>File limits:</strong> .xlsx only · Max 10 MB · Max 5,000 rows per upload.<br />
+                    For larger datasets contact <a href="mailto:research@hwseta.org.za" style="color:var(--hw-green);font-weight:700;">research@hwseta.org.za</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        var _hwFile = null;
+
+        function hwFileSelected(input) {
+            var file = input.files[0];
+            if (!file) return;
+
+            // Validate extension
+            if (!file.name.toLowerCase().endsWith('.xlsx')) {
+                if (typeof hwToast === 'function')
+                    hwToast('error', 'Invalid File', 'Only .xlsx files are accepted. Please use the Excel template.');
+                hwClearFile(); return;
+            }
+            // Validate size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                if (typeof hwToast === 'function')
+                    hwToast('error', 'File Too Large', 'Maximum file size is 10 MB.');
+                hwClearFile(); return;
+            }
+
+            _hwFile = file;
+            document.getElementById('hw-file-name').textContent = file.name;
+            document.getElementById('hw-file-size').textContent = hwFormatSize(file.size);
+            document.getElementById('hw-file-preview').classList.add('hw-show');
+            document.getElementById('hw-submit-btn').disabled = false;
+
+            if (typeof hwToast === 'function')
+                hwToast('success', 'File Ready', file.name + ' selected. Click Upload to proceed.');
+        }
+
+        function hwClearFile() {
+            _hwFile = null;
+            document.getElementById('hw-file-input').value = '';
+            document.getElementById('hw-file-preview').classList.remove('hw-show');
+            document.getElementById('hw-progress').classList.remove('hw-show');
+            document.getElementById('hw-submit-btn').disabled = true;
+        }
+
+        function hwFormatSize(bytes) {
+            if (bytes < 1024)      return bytes + ' B';
+            if (bytes < 1048576)   return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        // Drag and drop
+        var dz = document.getElementById('hw-dropzone');
+        dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('hw-drag-over'); });
+        dz.addEventListener('dragleave', function()  { dz.classList.remove('hw-drag-over'); });
+        dz.addEventListener('drop', function(e) {
+            e.preventDefault(); dz.classList.remove('hw-drag-over');
+            var files = e.dataTransfer.files;
+            if (files.length) {
+                document.getElementById('hw-file-input').files = files;
+                hwFileSelected(document.getElementById('hw-file-input'));
+            }
+        });
+
+        // Show progress on submit
+        document.getElementById('hw-upload-form').addEventListener('submit', function() {
+            if (!_hwFile) return;
+            var progress = document.getElementById('hw-progress');
+            var fill     = document.getElementById('hw-progress-fill');
+            var pct      = document.getElementById('hw-progress-pct');
+            progress.classList.add('hw-show');
+            var val = 0;
+            var interval = setInterval(function() {
+                val = Math.min(val + Math.random() * 12, 90);
+                fill.style.width = val + '%';
+                pct.textContent  = Math.round(val) + '%';
+                if (val >= 90) clearInterval(interval);
+            }, 180);
+        });
+    </script>
+}

@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace HWSETA_Impact_Hub.Data.Migrations
+namespace HWSETA_Impact_Hub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260221083138_AddCreatedByUserId")]
-    partial class AddCreatedByUserId
+    [Migration("20260221113113_addTable")]
+    partial class addTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1262,13 +1262,13 @@ namespace HWSETA_Impact_Hub.Data.Migrations
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Beneficiary", "Beneficiary")
                         .WithMany()
                         .HasForeignKey("BeneficiaryId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Cohort", "Cohort")
                         .WithMany()
                         .HasForeignKey("CohortId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Employer", "Employer")
