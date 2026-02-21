@@ -4,6 +4,7 @@ using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Models.ViewModels.Forms;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 
 namespace HWSETA_Impact_Hub.Services.Implementations
 {
@@ -18,7 +19,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             _user = user;
         }
 
-        public Task<List<FormTemplateListRowVm>> ListAsync(CancellationToken ct) =>
+        public Task<List<FormTemplateListRowVm>> ListAsync1(CancellationToken ct) =>
             _db.FormTemplates.AsNoTracking()
                 .OrderByDescending(x => x.CreatedOnUtc)
                 .Select(x => new FormTemplateListRowVm
@@ -31,6 +32,59 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                     CreatedOnUtc = x.CreatedOnUtc
                 })
                 .ToListAsync(ct);
+
+
+        public async Task<List<FormTemplateListRowVm>> ListAsync(CancellationToken ct)
+        {
+            var templates = await _db.FormTemplates.AsNoTracking()
+                .OrderByDescending(x => x.CreatedOnUtc)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Title,
+                    Status = x.Status.ToString(),
+                    x.Version,
+                    x.IsActive,
+                    x.CreatedOnUtc
+                })
+                .ToListAsync(ct);
+
+            var ids = templates.Select(x => x.Id).ToList();
+
+            var publishes = await _db.FormPublishes.AsNoTracking()
+                .Where(p => ids.Contains(p.FormTemplateId))
+                .Select(p => new
+                {
+                    p.FormTemplateId,
+                    p.IsPublished,
+                    p.PublicToken
+                })
+                .ToListAsync(ct);
+
+            var pubByTemplate = publishes
+                .GroupBy(x => x.FormTemplateId)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            return templates.Select(t =>
+            {
+                pubByTemplate.TryGetValue(t.Id, out var pub);
+
+                return new FormTemplateListRowVm
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Status = Enum.TryParse<FormStatus>(t.Status, out var status)
+    ? status
+    : FormStatus.Draft,
+                    Version = t.Version,
+                    IsActive = t.IsActive,
+                    CreatedOnUtc = t.CreatedOnUtc,
+
+                    IsPublished = pub?.IsPublished ?? false,
+                    PublicToken = pub?.PublicToken
+                };
+            }).ToList();
+        }
 
         public Task<FormTemplate?> GetEntityAsync(Guid id, CancellationToken ct) =>
             _db.FormTemplates.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -437,6 +491,438 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             await _db.SaveChangesAsync(ct);
             return (true, null);
+        }
+        public async Task<FormPublishVm?> GetPublishVmAsync(Guid templateId, string baseUrl, CancellationToken ct)
+        {
+            var t = await _db.FormTemplates.AsNoTracking().FirstOrDefaultAsync(x => x.Id == templateId, ct);
+            if (t == null) return null;
+
+            var p = await _db.FormPublishes.AsNoTracking().FirstOrDefaultAsync(x => x.FormTemplateId == templateId, ct);
+
+            var token = p?.PublicToken;
+            var url = string.IsNullOrWhiteSpace(token) ? null : $"{baseUrl.TrimEnd('/')}/f/{token}";
+
+            return new FormPublishVm
+            {
+                TemplateId = t.Id,
+                Title = t.Title,
+                IsPublished = p?.IsPublished ?? false,
+                Token = token,
+                OpenFromUtc = p.OpenFromUtc,
+                CloseAtUtc = p.CloseAtUtc,
+                MaxSubmissions = p?.MaxSubmissions,
+                AllowMultipleSubmissions = p?.AllowMultipleSubmissions ?? true,
+                PublicUrl = url
+            };
+        }
+
+        public async Task<(bool ok, string? error)> PublishAsync(FormPublishVm vm, CancellationToken ct)
+        {
+            if (vm.TemplateId == Guid.Empty)
+                return (false, "Invalid template.");
+
+            var t = await _db.FormTemplates.FirstOrDefaultAsync(x => x.Id == vm.TemplateId, ct);
+            if (t == null) return (false, "Template not found.");
+            if (!t.IsActive) return (false, "Template is not active.");
+
+            // Must have at least 1 active field
+            var hasField = await _db.FormFields.AnyAsync(f =>
+                f.IsActive && f.FormSection.FormTemplateId == vm.TemplateId, ct);
+
+            if (!hasField)
+                return (false, "You cannot publish a form with no questions.");
+
+            // Dates are NOT nullable in your VM, so validate directly
+            vm.OpenFromUtc = vm.OpenFromUtc == default ? DateTime.UtcNow : vm.OpenFromUtc;
+            vm.CloseAtUtc = vm.CloseAtUtc == default ? vm.OpenFromUtc.AddDays(30) : vm.CloseAtUtc;
+
+            if (vm.CloseAtUtc <= vm.OpenFromUtc)
+                return (false, "Close date must be after open date.");
+
+            var p = await _db.FormPublishes.FirstOrDefaultAsync(x => x.FormTemplateId == vm.TemplateId, ct);
+
+            if (p == null)
+            {
+                p = new FormPublish
+                {
+                    FormTemplateId = vm.TemplateId,
+                    PublicToken = GenerateToken(),
+                    IsPublished = true,
+
+                    OpenFromUtc = vm.OpenFromUtc,
+                    CloseAtUtc = vm.CloseAtUtc,
+
+                    MaxSubmissions = vm.MaxSubmissions,
+                    AllowMultipleSubmissions = vm.AllowMultipleSubmissions,
+
+                    // optional flags
+                    IsOpen = true,
+
+                    CreatedOnUtc = DateTime.UtcNow,
+                    CreatedByUserId = _user.UserId
+                };
+
+                _db.FormPublishes.Add(p);
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(p.PublicToken))
+                    p.PublicToken = GenerateToken();
+
+                p.IsPublished = true;
+                p.IsOpen = true;
+
+                p.OpenFromUtc = vm.OpenFromUtc;
+                p.CloseAtUtc = vm.CloseAtUtc;
+
+                p.MaxSubmissions = vm.MaxSubmissions;
+                p.AllowMultipleSubmissions = vm.AllowMultipleSubmissions;
+
+                p.UpdatedOnUtc = DateTime.UtcNow;
+                p.UpdatedByUserId = _user.UserId;
+            }
+
+            // keep your template status update
+            t.Status = FormStatus.Published;
+            t.UpdatedOnUtc = DateTime.UtcNow;
+            t.UpdatedByUserId = _user.UserId;
+
+            await _db.SaveChangesAsync(ct);
+            return (true, null);
+        }
+
+        public async Task<(bool ok, string? error)> UnpublishAsync(Guid templateId, CancellationToken ct)
+        {
+            var p = await _db.FormPublishes.FirstOrDefaultAsync(x => x.FormTemplateId == templateId, ct);
+            if (p == null) return (false, "Publish record not found.");
+
+            p.IsPublished = false;
+            p.IsOpen = false;
+
+            p.UpdatedOnUtc = DateTime.UtcNow;
+            p.UpdatedByUserId = _user.UserId;
+
+            var t = await _db.FormTemplates.FirstOrDefaultAsync(x => x.Id == templateId, ct);
+            if (t != null)
+            {
+                t.Status = FormStatus.Draft;
+                t.UpdatedOnUtc = DateTime.UtcNow;
+                t.UpdatedByUserId = _user.UserId;
+            }
+
+            await _db.SaveChangesAsync(ct);
+            return (true, null);
+        }
+
+        public async Task<PublicFormVm?> GetPublicFormAsync(string token, CancellationToken ct)
+        {
+            token = (token ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(token)) return null;
+
+            var pub = await _db.FormPublishes.AsNoTracking()
+                .Include(x => x.FormTemplate)
+                .FirstOrDefaultAsync(x => x.PublicToken == token && x.IsPublished, ct);
+
+            if (pub == null) return null;
+
+            var now = DateTime.UtcNow;
+
+            // check open flag first
+            if (!pub.IsOpen)
+            {
+                return new PublicFormVm
+                {
+                    Token = token,
+                    TemplateId = pub.FormTemplateId,
+                    Title = pub.FormTemplate.Title,
+                    Description = pub.FormTemplate.Description,
+                    IsOpen = false,
+                    ClosedReason = "This form is currently closed."
+                };
+            }
+
+            // time window check
+            if (now < pub.OpenFromUtc)
+            {
+                return new PublicFormVm
+                {
+                    Token = token,
+                    TemplateId = pub.FormTemplateId,
+                    Title = pub.FormTemplate.Title,
+                    Description = pub.FormTemplate.Description,
+                    IsOpen = false,
+                    ClosedReason = "This form is not open yet."
+                };
+            }
+
+            if (now > pub.CloseAtUtc)
+            {
+                return new PublicFormVm
+                {
+                    Token = token,
+                    TemplateId = pub.FormTemplateId,
+                    Title = pub.FormTemplate.Title,
+                    Description = pub.FormTemplate.Description,
+                    IsOpen = false,
+                    ClosedReason = "This form is closed."
+                };
+            }
+
+            if (pub.MaxSubmissions.HasValue)
+            {
+                var count = await _db.FormSubmissions.CountAsync(s => s.FormPublishId == pub.Id, ct);
+                if (count >= pub.MaxSubmissions.Value)
+                {
+                    return new PublicFormVm
+                    {
+                        Token = token,
+                        TemplateId = pub.FormTemplateId,
+                        Title = pub.FormTemplate.Title,
+                        Description = pub.FormTemplate.Description,
+                        IsOpen = false,
+                        ClosedReason = "This form has reached the maximum number of submissions."
+                    };
+                }
+            }
+
+            // Sections
+            var sections = await _db.FormSections.AsNoTracking()
+                .Where(s => s.FormTemplateId == pub.FormTemplateId)
+                .OrderBy(s => s.SortOrder)
+                .Select(s => new PublicSectionVm
+                {
+                    Id = s.Id,
+                    Title = s.Title,
+                    Description = s.Description,
+                    SortOrder = s.SortOrder
+                })
+                .ToListAsync(ct);
+
+            var sectionIds = sections.Select(s => s.Id).ToList();
+
+            // Fields with FormSectionId included so we don't do extra queries
+            var fields = await _db.FormFields.AsNoTracking()
+                .Where(f => sectionIds.Contains(f.FormSectionId) && f.IsActive)
+                .OrderBy(f => f.SortOrder)
+                .Select(f => new
+                {
+                    f.Id,
+                    f.FormSectionId,
+                    f.Label,
+                    f.HelpText,
+                    f.FieldType,
+                    f.IsRequired,
+                    f.SortOrder,
+                    f.MaxLength,
+                    f.MinInt,
+                    f.MaxInt,
+                    f.MinDecimal,
+                    f.MaxDecimal,
+                    f.RegexPattern
+                })
+                .ToListAsync(ct);
+
+            var fieldIds = fields.Select(x => x.Id).ToList();
+
+            var options = await _db.FormFieldOptions.AsNoTracking()
+                .Where(o => fieldIds.Contains(o.FormFieldId) && o.IsActive)
+                .OrderBy(o => o.SortOrder)
+                .Select(o => new { o.FormFieldId, o.Value, o.Text })
+                .ToListAsync(ct);
+
+            var optByField = options
+                .GroupBy(x => x.FormFieldId)
+                .ToDictionary(g => g.Key,
+                    g => g.Select(x => new PublicOptionVm { Value = x.Value, Text = x.Text }).ToList());
+
+            foreach (var s in sections)
+            {
+                s.Questions = fields
+                    .Where(f => f.FormSectionId == s.Id)
+                    .OrderBy(f => f.SortOrder)
+                    .Select(f => new PublicQuestionVm
+                    {
+                        FieldId = f.Id,
+                        Label = f.Label,
+                        HelpText = f.HelpText,
+                        FieldType = (int)f.FieldType,
+                        IsRequired = f.IsRequired,
+                        SortOrder = f.SortOrder,
+                        MaxLength = f.MaxLength,
+                        MinInt = f.MinInt,
+                        MaxInt = f.MaxInt,
+                        MinDecimal = f.MinDecimal,
+                        MaxDecimal = f.MaxDecimal,
+                        RegexPattern = f.RegexPattern,
+                        Options = optByField.TryGetValue(f.Id, out var list) ? list : new List<PublicOptionVm>()
+                    })
+                    .ToList();
+            }
+
+            return new PublicFormVm
+            {
+                Token = token,
+                TemplateId = pub.FormTemplateId,
+                Title = pub.FormTemplate.Title,
+                Description = pub.FormTemplate.Description,
+                IsOpen = true,
+                Sections = sections
+            };
+        }
+
+        public async Task<(bool ok, string? error, Guid? submissionId)> SubmitPublicAsync(
+            PublicFormSubmitVm vm,
+            string? ip,
+            string? userAgent,
+            CancellationToken ct)
+        {
+            var token = (vm.Token ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(token))
+                return (false, "Invalid token.", null);
+
+            // IMPORTANT: Your publish uses PublicToken
+            var pub = await _db.FormPublishes.FirstOrDefaultAsync(x => x.PublicToken == token && x.IsPublished, ct);
+            if (pub == null)
+                return (false, "Form not found or not published.", null);
+
+            var now = DateTime.UtcNow;
+
+            if (!pub.IsOpen) return (false, "This form is closed.", null);
+            if (now < pub.OpenFromUtc) return (false, "This form is not open yet.", null);
+            if (now > pub.CloseAtUtc) return (false, "This form is closed.", null);
+
+            if (pub.MaxSubmissions.HasValue)
+            {
+                var count = await _db.FormSubmissions.CountAsync(s => s.FormPublishId == pub.Id, ct);
+                if (count >= pub.MaxSubmissions.Value)
+                    return (false, "This form has reached the maximum number of submissions.", null);
+            }
+
+            // Load schema fields
+            var fields = await _db.FormFields.AsNoTracking()
+                .Where(f => f.IsActive && f.FormSection.FormTemplateId == pub.FormTemplateId)
+                .Select(f => new
+                {
+                    f.Id,
+                    f.Label,
+                    f.IsRequired,
+                    f.FieldType,
+                    f.MaxLength,
+                    f.MinInt,
+                    f.MaxInt,
+                    f.MinDecimal,
+                    f.MaxDecimal
+                })
+                .ToListAsync(ct);
+
+            // Required validation
+            foreach (var f in fields.Where(x => x.IsRequired))
+            {
+                var hasSingle = vm.Answers.TryGetValue(f.Id, out var v) && !string.IsNullOrWhiteSpace(v);
+                var hasMulti = vm.MultiAnswers.TryGetValue(f.Id, out var m) && m != null && m.Count > 0;
+
+                if (!hasSingle && !hasMulti)
+                    return (false, $"'{f.Label}' is required.", null);
+            }
+
+            var answers = new List<FormAnswer>();
+
+            foreach (var f in fields)
+            {
+                // multi checkbox
+                if (f.FieldType == FormFieldType.Checkbox)
+                {
+                    if (vm.MultiAnswers.TryGetValue(f.Id, out var list) && list != null && list.Count > 0)
+                    {
+                        // store each value as one row OR use ValueJson
+                        // We'll store JSON array in ValueJson (cleaner)
+                        var json = System.Text.Json.JsonSerializer.Serialize(list);
+
+                        answers.Add(new FormAnswer
+                        {
+                            FormFieldId = f.Id,
+                            ValueJson = json,
+                            CreatedOnUtc = DateTime.UtcNow
+                        });
+                    }
+                    continue;
+                }
+
+                vm.Answers.TryGetValue(f.Id, out var raw);
+                raw = raw?.Trim();
+
+                if (string.IsNullOrWhiteSpace(raw))
+                    continue;
+
+                if (f.MaxLength.HasValue && raw.Length > f.MaxLength.Value)
+                    return (false, $"'{f.Label}' exceeds max length {f.MaxLength.Value}.", null);
+
+                if (f.FieldType == FormFieldType.Number)
+                {
+                    if (!int.TryParse(raw, out var n))
+                        return (false, $"'{f.Label}' must be a whole number.", null);
+
+                    if (f.MinInt.HasValue && n < f.MinInt.Value) return (false, $"'{f.Label}' must be >= {f.MinInt.Value}.", null);
+                    if (f.MaxInt.HasValue && n > f.MaxInt.Value) return (false, $"'{f.Label}' must be <= {f.MaxInt.Value}.", null);
+                }
+
+                if (f.FieldType == FormFieldType.Decimal)
+                {
+                    if (!decimal.TryParse(raw, out var d))
+                        return (false, $"'{f.Label}' must be a decimal number.", null);
+
+                    if (f.MinDecimal.HasValue && d < f.MinDecimal.Value) return (false, $"'{f.Label}' must be >= {f.MinDecimal.Value}.", null);
+                    if (f.MaxDecimal.HasValue && d > f.MaxDecimal.Value) return (false, $"'{f.Label}' must be <= {f.MaxDecimal.Value}.", null);
+                }
+
+                answers.Add(new FormAnswer
+                {
+                    FormFieldId = f.Id,
+                    Value = raw,
+                    CreatedOnUtc = DateTime.UtcNow
+                });
+            }
+
+            using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+            // IMPORTANT: Your FormSubmission links to FormPublishId (not template id)
+            var submission = new FormSubmission
+            {
+                FormPublishId = pub.Id,
+                SubmittedOnUtc = DateTime.UtcNow,
+
+                // optional: if you want, store identity
+                SubmittedByUserId = _user.UserId,
+
+                IpAddress = ip,
+                UserAgent = userAgent,
+
+                CreatedOnUtc = DateTime.UtcNow,
+                CreatedByUserId = _user.UserId
+            };
+
+            _db.FormSubmissions.Add(submission);
+            await _db.SaveChangesAsync(ct);
+
+            foreach (var a in answers)
+            {
+                a.FormSubmissionId = submission.Id;
+                _db.FormAnswers.Add(a);
+            }
+
+            await _db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return (true, null, submission.Id);
+        }
+        private static string GenerateToken()
+        {
+            // URL-safe, short
+            var bytes = RandomNumberGenerator.GetBytes(18);
+            return Convert.ToBase64String(bytes)
+                .Replace("+", "-")
+                .Replace("/", "_")
+                .Replace("=", "");
         }
     }
 }

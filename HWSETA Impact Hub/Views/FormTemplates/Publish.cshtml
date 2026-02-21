@@ -1,0 +1,94 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Forms.FormPublishVm
+@{
+    ViewData["Title"] = "Publish Form";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-0">Publish Form</h1>
+        <div class="text-muted">@Model.Title</div>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Builder" asp-route-id="@Model.TemplateId">Back to Builder</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="mb-2">
+            <span class="badge bg-@(Model.IsPublished ? "success" : "secondary")">
+                @(Model.IsPublished ? "Published" : "Not Published")
+            </span>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.PublicUrl))
+        {
+            <div class="mb-3">
+                <label class="form-label">Public Link</label>
+                <div class="input-group">
+                    <input class="form-control" value="@Model.PublicUrl" readonly />
+                    <a class="btn btn-outline-primary" href="@Model.PublicUrl" target="_blank">Open</a>
+                </div>
+            </div>
+        }
+
+        <form method="post" asp-action="Publish">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="TemplateId" />
+            <input type="hidden" asp-for="Title" />
+            <input type="hidden" asp-for="Token" />
+            <input type="hidden" asp-for="IsPublished" />
+            <input type="hidden" asp-for="PublicUrl" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Open From (UTC)</label>
+                    <input asp-for="OpenFromUtc" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Close At (UTC)</label>
+                    <input asp-for="CloseAtUtc" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Max Submissions (optional)</label>
+                    <input asp-for="MaxSubmissions" class="form-control" />
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input asp-for="AllowMultipleSubmissions" class="form-check-input" />
+                        <label asp-for="AllowMultipleSubmissions" class="form-check-label">Allow multiple submissions</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Publish / Update</button>
+            </div>
+        </form>
+
+        <form method="post" asp-action="Unpublish" class="mt-2">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="templateId" value="@Model.TemplateId" />
+            <button class="btn btn-outline-danger" type="submit"
+                    onclick="return confirm('Unpublish this form?');">
+                Unpublish
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

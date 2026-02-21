@@ -1,7 +1,9 @@
-﻿using HWSETA_Impact_Hub.Data;
+﻿using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Infrastructure.Audit;
 using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Infrastructure.RequestContext;
+using HWSETA_Impact_Hub.Infrastructure.Seed;
 using HWSETA_Impact_Hub.Services.Implementations;
 using HWSETA_Impact_Hub.Services.Implementations.HWSETA_Impact_Hub.Services.Implementations;
 using HWSETA_Impact_Hub.Services.Interface;
@@ -74,6 +76,7 @@ builder.Services.AddAuthorization(options =>
     }
 });
 
+
 // HttpContext
 builder.Services.AddHttpContextAccessor();
 
@@ -96,6 +99,7 @@ builder.Services.AddScoped<ICohortService, CohortService>();
 builder.Services.AddScoped<IEnrollmentDocumentService, EnrollmentDocumentService>();
 builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IFormTemplateService, FormTemplateService>();
+builder.Services.AddScoped<IFormSubmissionService, FormSubmissionService>();
 
 var app = builder.Build();
 await IdentitySeeder.SeedAsync(app.Services);
@@ -109,7 +113,15 @@ else
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
+    await db.Database.MigrateAsync();   // ensure schema
+
+    await LookupSeeder.SeedAsync(db);   // add missing rows
+    await db.SaveChangesAsync();        // ✅ CRITICAL
+}
 app.UseHttpsRedirection();
 
 // ✅ required for wwwroot files used by layout

@@ -3,11 +3,22 @@
     ViewData["Title"] = "Reporting";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">Cohort Delivery Reporting</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css" />
 
-    <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary"
+<link href="~/css/cohortdeliveryreportingcss.css" rel="stylesheet" />
+
+@* ══ PAGE HEADER ══════════════════════════════════════════════════ *@
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-bar-chart-line me-1"></i>Reporting &amp; Analytics</div>
+        <h1 class="hw-page-title">Cohort Delivery <span>Report</span></h1>
+        <p class="hw-page-desc">Track enrolment, completion and dropout rates across all cohorts and programmes.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+        <a class="hw-btn-outline"
            asp-action="ExportCsv"
            asp-route-CohortId="@Model.Filters.CohortId"
            asp-route-ProgrammeId="@Model.Filters.ProgrammeId"
@@ -16,10 +27,9 @@
            asp-route-IntakeYear="@Model.Filters.IntakeYear"
            asp-route-StartFrom="@(Model.Filters.StartFrom?.ToString("yyyy-MM-dd"))"
            asp-route-StartTo="@(Model.Filters.StartTo?.ToString("yyyy-MM-dd"))">
-            Export CSV
+            <i class="bi bi-filetype-csv"></i> CSV
         </a>
-
-        <a class="btn btn-outline-secondary"
+        <a class="hw-btn-gold"
            asp-action="ExportExcel"
            asp-route-CohortId="@Model.Filters.CohortId"
            asp-route-ProgrammeId="@Model.Filters.ProgrammeId"
@@ -28,129 +38,282 @@
            asp-route-IntakeYear="@Model.Filters.IntakeYear"
            asp-route-StartFrom="@(Model.Filters.StartFrom?.ToString("yyyy-MM-dd"))"
            asp-route-StartTo="@(Model.Filters.StartTo?.ToString("yyyy-MM-dd"))">
-            Export Excel
+            <i class="bi bi-file-earmark-excel"></i> Excel
         </a>
     </div>
 </div>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Cohort</label>
-                <select class="form-select" name="CohortId" asp-items="Model.Filters.Cohorts">
-                    <option value="">-- All --</option>
-                </select>
+@* ══ KPI STRIP ════════════════════════════════════════════════════ *@
+<div class="hw-kpi-grid">
+    <div class="hw-kpi-card dark">
+        <div class="hw-kpi-icon"><i class="bi bi-diagram-3"></i></div>
+        <div class="hw-kpi-val">@Model.Kpis.TotalCohorts</div>
+        <div class="hw-kpi-label">Total Cohorts</div>
+    </div>
+    <div class="hw-kpi-card blue">
+        <div class="hw-kpi-icon"><i class="bi bi-people"></i></div>
+        <div class="hw-kpi-val">@Model.Kpis.TotalEnrollments</div>
+        <div class="hw-kpi-label">Total Enrolments</div>
+    </div>
+    <div class="hw-kpi-card gold">
+        <div class="hw-kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="hw-kpi-val">@Model.Kpis.ActiveEnrollments</div>
+        <div class="hw-kpi-label">Active</div>
+    </div>
+    <div class="hw-kpi-card green">
+        <div class="hw-kpi-icon"><i class="bi bi-patch-check"></i></div>
+        <div class="hw-kpi-val">@Model.Kpis.CompletedEnrollments</div>
+        <div class="hw-kpi-label">Completed</div>
+    </div>
+    <div class="hw-kpi-card red">
+        <div class="hw-kpi-icon"><i class="bi bi-person-dash"></i></div>
+        <div class="hw-kpi-val">@Model.Kpis.DroppedOutEnrollments</div>
+        <div class="hw-kpi-label">Dropped Out</div>
+    </div>
+    <div class="hw-kpi-card purple">
+        <div class="hw-kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="hw-kpi-val">@Model.Kpis.CompletionRatePct<small style="font-size:14px;font-weight:600;">%</small></div>
+        <div class="hw-kpi-label">Completion Rate</div>
+    </div>
+</div>
+
+@* ══ FILTERS ══════════════════════════════════════════════════════ *@
+<div class="hw-filter-card">
+    <div class="hw-filter-head" onclick="hwToggleFilters()">
+        <span class="hw-filter-head-title">
+            <i class="bi bi-funnel"></i> Filters
+            @{
+                var activeFilters = new List<string>();
+                if (Model.Filters.CohortId.HasValue) activeFilters.Add("Cohort");
+                if (Model.Filters.ProgrammeId.HasValue) activeFilters.Add("Programme");
+                if (Model.Filters.ProviderId.HasValue) activeFilters.Add("Provider");
+                if (Model.Filters.FundingTypeId.HasValue) activeFilters.Add("Funding");
+                if (!string.IsNullOrWhiteSpace(Model.Filters.IntakeYear?.ToString())) activeFilters.Add("Year");
+                if (Model.Filters.StartFrom.HasValue) activeFilters.Add("From");
+                if (Model.Filters.StartTo.HasValue) activeFilters.Add("To");
+            }
+            @if (activeFilters.Any())
+            {
+                <span style="background:var(--hw-green);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;margin-left:4px;">
+                    @activeFilters.Count active
+                </span>
+            }
+        </span>
+        <i class="bi bi-chevron-down hw-filter-toggle-ico" id="hw-filter-ico"></i>
+    </div>
+    <div class="hw-filter-body" id="hw-filter-body">
+        <form method="get" id="hw-filter-form">
+            <div class="hw-filter-grid">
+                <div>
+                    <span class="hw-f-label">Cohort</span>
+                    <select class="hw-select" name="CohortId" asp-items="Model.Filters.Cohorts">
+                        <option value="">— All Cohorts —</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="hw-f-label">Programme</span>
+                    <select class="hw-select" name="ProgrammeId" asp-items="Model.Filters.Programmes">
+                        <option value="">— All Programmes —</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="hw-f-label">Provider</span>
+                    <select class="hw-select" name="ProviderId" asp-items="Model.Filters.Providers">
+                        <option value="">— All Providers —</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="hw-f-label">Funding Type</span>
+                    <select class="hw-select" name="FundingTypeId" asp-items="Model.Filters.FundingTypes">
+                        <option value="">— All Types —</option>
+                    </select>
+                </div>
+            </div>
+            <div class="hw-filter-row2">
+                <div>
+                    <span class="hw-f-label">Intake Year</span>
+                    <input class="hw-input" name="IntakeYear" placeholder="e.g. 2024" value="@Model.Filters.IntakeYear" />
+                </div>
+                <div>
+                    <span class="hw-f-label">Start From</span>
+                    <input class="hw-input" type="date" name="StartFrom" value="@(Model.Filters.StartFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div>
+                    <span class="hw-f-label">Start To</span>
+                    <input class="hw-input" type="date" name="StartTo" value="@(Model.Filters.StartTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div>
+                    <button class="hw-btn-primary" type="submit">
+                        <i class="bi bi-funnel-fill"></i> Apply
+                    </button>
+                </div>
+                <div>
+                    <a class="hw-btn-reset" asp-action="Index">
+                        <i class="bi bi-x-circle"></i> Reset
+                    </a>
+                </div>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label">Programme</label>
-                <select class="form-select" name="ProgrammeId" asp-items="Model.Filters.Programmes">
-                    <option value="">-- All --</option>
-                </select>
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Provider</label>
-                <select class="form-select" name="ProviderId" asp-items="Model.Filters.Providers">
-                    <option value="">-- All --</option>
-                </select>
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Funding Type</label>
-                <select class="form-select" name="FundingTypeId" asp-items="Model.Filters.FundingTypes">
-                    <option value="">-- All --</option>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Intake Year</label>
-                <input class="form-control" name="IntakeYear" value="@Model.Filters.IntakeYear" />
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Start From</label>
-                <input class="form-control" type="date" name="StartFrom" value="@(Model.Filters.StartFrom?.ToString("yyyy-MM-dd"))" />
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Start To</label>
-                <input class="form-control" type="date" name="StartTo" value="@(Model.Filters.StartTo?.ToString("yyyy-MM-dd"))" />
-            </div>
-
-            <div class="col-md-6 d-flex align-items-end gap-2">
-                <button class="btn btn-primary" type="submit">Apply Filters</button>
-                <a class="btn btn-outline-secondary" asp-action="Index">Reset</a>
-            </div>
+            @* Active filter tags *@
+            @if (activeFilters.Any())
+            {
+                <div class="hw-active-filters" style="margin-top:14px;">
+                    @foreach (var tag in activeFilters)
+                    {
+                        <span class="hw-filter-tag">
+                            <i class="bi bi-check-circle-fill" style="font-size:10px;"></i> @tag
+                        </span>
+                    }
+                    <a asp-action="Index" style="font-size:11px;font-weight:600;color:var(--hw-red);text-decoration:none;display:flex;align-items:center;gap:3px;">
+                        <i class="bi bi-x"></i> Clear all
+                    </a>
+                </div>
+            }
         </form>
     </div>
 </div>
 
-<div class="row g-3 mb-3">
-    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Cohorts</div><div>@Model.Kpis.TotalCohorts</div></div></div></div>
-    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Enrollments</div><div>@Model.Kpis.TotalEnrollments</div></div></div></div>
-    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Active</div><div>@Model.Kpis.ActiveEnrollments</div></div></div></div>
-    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Completed</div><div>@Model.Kpis.CompletedEnrollments</div></div></div></div>
-    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Dropped</div><div>@Model.Kpis.DroppedOutEnrollments</div></div></div></div>
-    <div class="col-md-2"><div class="card"><div class="card-body"><div class="fw-bold">Completion %</div><div>@Model.Kpis.CompletionRatePct</div></div></div></div>
+@* ══ TABLE ════════════════════════════════════════════════════════ *@
+<div class="hw-table-card">
+    <div class="hw-table-card-head">
+        <span class="hw-table-card-title">
+            <i class="bi bi-table"></i> Cohort Delivery Data
+            <span style="font-size:11px;font-weight:600;color:var(--hw-muted);margin-left:4px;">(@Model.Rows.Count row@(Model.Rows.Count == 1 ? "" : "s"))</span>
+        </span>
+        <div style="display:flex;gap:8px;">
+            <button class="hw-btn-outline" style="font-size:11px;padding:5px 10px;" onclick="hwExport('csv')"><i class="bi bi-filetype-csv"></i></button>
+            <button class="hw-btn-outline" style="font-size:11px;padding:5px 10px;" onclick="hwExport('excel')"><i class="bi bi-file-earmark-excel"></i></button>
+            <button class="hw-btn-outline" style="font-size:11px;padding:5px 10px;" onclick="window.print()"><i class="bi bi-printer"></i></button>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table id="cohortDeliveryTable" class="hw-dt">
+            <thead>
+                <tr>
+                    <th>Cohort</th>
+                    <th>Intake</th>
+                    <th>Start</th>
+                    <th>Planned End</th>
+                    <th>Programme</th>
+                    <th>Qualification</th>
+                    <th>Provider</th>
+                    <th>Funding</th>
+                    <th>Employer</th>
+                    <th style="text-align:center;">Total</th>
+                    <th style="text-align:center;">Active</th>
+                    <th style="text-align:center;">Completed</th>
+                    <th style="text-align:center;">Dropped</th>
+                    <th>Completion %</th>
+                    <th>Dropout %</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var completionPct = 0.0;
+                    var dropoutPct = 0.0;
+                    double.TryParse(r.CompletionRatePct.ToString()?.Replace("%", ""), out completionPct);
+                    double.TryParse(r.DropoutRatePct.ToString()?.Replace("%", ""), out dropoutPct);
+
+                    <tr>
+                        <td><span class="hw-cohort-chip"><i class="bi bi-diagram-3" style="font-size:10px;"></i> @r.CohortCode</span></td>
+                        <td style="font-weight:700;color:var(--hw-muted);">@r.IntakeYear</td>
+                        <td style="font-size:11.5px;color:var(--hw-muted);font-weight:600;">@r.StartDate.ToString("dd MMM yyyy")</td>
+                        <td style="font-size:11.5px;color:var(--hw-muted);font-weight:600;">@r.PlannedEndDate.ToString("dd MMM yyyy")</td>
+                        <td style="font-weight:600;max-width:180px;white-space:normal;font-size:12px;">@r.ProgrammeName</td>
+                        <td style="font-size:11.5px;">
+                            <span style="background:#ede9fe;color:#6d28d9;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;">@r.QualificationType</span>
+                        </td>
+                        <td style="font-size:12px;max-width:140px;white-space:normal;">@r.ProviderName</td>
+                        <td style="font-size:11.5px;">
+                            <span style="background:var(--hw-gold-light);color:var(--hw-gold-dark);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;">@r.FundingType</span>
+                        </td>
+                        <td style="font-size:11.5px;color:var(--hw-muted);font-weight:600;">@r.EmployerCode</td>
+                        <td><div class="hw-num" style="text-align:center;">@r.Total</div></td>
+                        <td><div class="hw-num active" style="text-align:center;">@r.Active</div></td>
+                        <td><div class="hw-num completed" style="text-align:center;">@r.Completed</div></td>
+                        <td><div class="hw-num dropped" style="text-align:center;">@r.DroppedOut</div></td>
+                        <td>
+                            <div class="hw-rate-cell">
+                                <div class="hw-rate-bar"><div class="hw-rate-fill green" style="width:@(Math.Min(completionPct, 100))%;"></div></div>
+                                <span class="hw-rate-val green" data-sort="@completionPct">@r.CompletionRatePct%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="hw-rate-cell">
+                                <div class="hw-rate-bar"><div class="hw-rate-fill red" style="width:@(Math.Min(dropoutPct, 100))%;"></div></div>
+                                <span class="hw-rate-val red" data-sort="@dropoutPct">@r.DropoutRatePct%</span>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="9" style="font-size:11.5px;color:var(--hw-muted);">Totals</td>
+                    <td style="text-align:center;">@Model.Kpis.TotalEnrollments</td>
+                    <td style="text-align:center;color:#3b82f6;">@Model.Kpis.ActiveEnrollments</td>
+                    <td style="text-align:center;color:var(--hw-green);">@Model.Kpis.CompletedEnrollments</td>
+                    <td style="text-align:center;color:var(--hw-red);">@Model.Kpis.DroppedOutEnrollments</td>
+                    <td style="color:var(--hw-green);">@Model.Kpis.CompletionRatePct%</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
 
-<table id="cohortDeliveryTable" class="table table-striped table-bordered">
-    <thead>
-        <tr>
-            <th>Cohort</th>
-            <th>Intake</th>
-            <th>Start</th>
-            <th>Planned End</th>
-            <th>Programme</th>
-            <th>Qualification</th>
-            <th>Provider</th>
-            <th>Funding</th>
-            <th>Employer</th>
-            <th>Total</th>
-            <th>Active</th>
-            <th>Completed</th>
-            <th>Dropped</th>
-            <th>Completion %</th>
-            <th>Dropout %</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var r in Model.Rows)
-        {
-            <tr>
-                <td>@r.CohortCode</td>
-                <td>@r.IntakeYear</td>
-                <td>@r.StartDate.ToString("yyyy-MM-dd")</td>
-                <td>@r.PlannedEndDate.ToString("yyyy-MM-dd")</td>
-                <td>@r.ProgrammeName</td>
-                <td>@r.QualificationType</td>
-                <td>@r.ProviderName</td>
-                <td>@r.FundingType</td>
-                <td>@r.EmployerCode</td>
-                <td>@r.Total</td>
-                <td>@r.Active</td>
-                <td>@r.Completed</td>
-                <td>@r.DroppedOut</td>
-                <td>@r.CompletionRatePct</td>
-                <td>@r.DropoutRatePct</td>
-            </tr>
-        }
-    </tbody>
-</table>
-
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
-    <!-- DataTables (assumes you already use it elsewhere; otherwise add CDN in _Layout) -->
     <script>
+        var _hwTable;
+
         $(document).ready(function () {
-            $('#cohortDeliveryTable').DataTable({
+            _hwTable = $('#cohortDeliveryTable').DataTable({
                 pageLength: 25,
-                order: [[2, "desc"]],
-                responsive: true
+                lengthMenu: [[10,25,50,100,-1],[10,25,50,100,'All']],
+                order: [[2, 'desc']],
+                columnDefs: [
+                    { targets: [13,14], type: 'num', orderDataType: 'dom-data-sort' }
+                ],
+                dom: '<"hw-dt-toolbar"lf>t<"hw-dt-foot"ip>',
+                buttons: ['csvHtml5','excelHtml5','print'],
+                language: {
+                    search: '',
+                    searchPlaceholder: 'Search table…',
+                    lengthMenu: 'Show _MENU_ rows',
+                    info: 'Showing _START_–_END_ of _TOTAL_ cohorts',
+                    infoEmpty: 'No cohorts found',
+                    zeroRecords: 'No matching cohorts',
+                    paginate: { previous: '‹', next: '›' }
+                }
             });
         });
+
+        function hwExport(type) {
+            if (type === 'csv')   _hwTable.button('.buttons-csv').trigger();
+            if (type === 'excel') _hwTable.button('.buttons-excel').trigger();
+            if (type === 'print') _hwTable.button('.buttons-print').trigger();
+        }
+
+        // Collapse/expand filter panel
+        var _hwFiltersOpen = true;
+        function hwToggleFilters() {
+            var body = document.getElementById('hw-filter-body');
+            var ico  = document.getElementById('hw-filter-ico');
+            _hwFiltersOpen = !_hwFiltersOpen;
+            body.style.display = _hwFiltersOpen ? 'block' : 'none';
+            ico.classList.toggle('open', _hwFiltersOpen);
+        }
+        // Start open if any filters active
+        @if (activeFilters.Any())
+        {
+                <text>document.getElementById('hw-filter-ico').classList.add('open');</text>
+        }
     </script>
 }

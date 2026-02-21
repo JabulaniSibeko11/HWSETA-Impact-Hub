@@ -3,83 +3,210 @@
     ViewData["Title"] = "Add Cohort";
 }
 
-<h1 class="mb-3">Add Cohort</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-<form method="post">
-    @Html.AntiForgeryToken()
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<link href="~/css/createcohortcss.css" rel="stylesheet" />
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-diagram-3 me-1"></i>Programme Management</div>
+        <h1 class="hw-page-title">Add <span>Cohort</span></h1>
+    </div>
+    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;">
+        <i class="bi bi-arrow-left"></i> Back to Cohorts
+    </a>
+</div>
 
-    <div class="row g-3">
-        <div class="col-md-4">
-            <label asp-for="CohortCode" class="form-label">Cohort Code</label>
-            <input asp-for="CohortCode" class="form-control" />
-            <span asp-validation-for="CohortCode" class="text-danger"></span>
+<div class="hw-layout">
+    <div class="hw-card">
+        <div class="hw-card-head">
+            <div class="hw-card-icon green"><i class="bi bi-diagram-3"></i></div>
+            <div>
+                <div class="hw-card-title">Cohort Details</div>
+                <div class="hw-card-sub">Fields marked <span style="color:var(--hw-red);">*</span> are required</div>
+            </div>
         </div>
+        <div class="hw-card-body">
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.TryGetValue(string.Empty, out var re) && re.Errors.Count > 0)
+            {
+                <div class="hw-val-summary" role="alert">
+                    <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;font-size:16px;margin-top:1px;"></i>
+                    <div><strong>Please fix:</strong><ul>@foreach (var e in re.Errors) {
+                    <li>@e.ErrorMessage</li>
+                }
+</ul></div>
+            </div>
+                        }
+            <form method="post" id="hw-cohort-form">
+                @Html.AntiForgeryToken()
 
-        <div class="col-md-4">
-            <label asp-for="IntakeYear" class="form-label">Intake Year</label>
-            <input asp-for="IntakeYear" class="form-control" />
-            <span asp-validation-for="IntakeYear" class="text-danger"></span>
+                @* ── Identity ── *@
+                <div class="hw-grid-3" style="margin-bottom:16px;">
+                    <div class="hw-field">
+                        <label asp-for="CohortCode" class="hw-field-label">Cohort Code <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-hash hw-field-ico"></i>
+                            <input asp-for="CohortCode" class="hw-input" placeholder="e.g. CHT-2024-001" />
+                        </div>
+                        <span asp-validation-for="CohortCode" class="hw-field-error"></span>
+                    </div>
+                    <div class="hw-field">
+                        <label asp-for="IntakeYear" class="hw-field-label">Intake Year <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-calendar3 hw-field-ico"></i>
+                            <input asp-for="IntakeYear" class="hw-input" placeholder="e.g. 2024" />
+                        </div>
+                        <span asp-validation-for="IntakeYear" class="hw-field-error"></span>
+                    </div>
+                    <div class="hw-field">
+                        <label class="hw-field-label" style="margin-bottom:6px;">Status</label>
+                        <div class="hw-toggle-row">
+                            <div>
+                                <div class="hw-toggle-label">Active</div>
+                                <div class="hw-toggle-desc">Enable to activate cohort</div>
+                            </div>
+                            <label class="hw-switch">
+                                <input asp-for="IsActive" type="checkbox" checked />
+                                <span class="hw-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Programme & Funding ── *@
+                <div class="hw-section-divider">
+                    <div class="hw-section-divider-line"></div>
+                    <span class="hw-section-divider-label"><i class="bi bi-mortarboard me-1"></i>Programme &amp; Funding</span>
+                    <div class="hw-section-divider-line"></div>
+                </div>
+                <div class="hw-grid-2" style="margin-bottom:16px;">
+                    <div class="hw-field">
+                        <label asp-for="ProgrammeId" class="hw-field-label">Programme <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-mortarboard hw-field-ico"></i>
+                            <select asp-for="ProgrammeId" asp-items="Model.Programmes" class="hw-select">
+                                <option value="">— Select programme —</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="ProgrammeId" class="hw-field-error"></span>
+                    </div>
+                    <div class="hw-field">
+                        <label asp-for="FundingTypeId" class="hw-field-label">Funding Type <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-cash-coin hw-field-ico"></i>
+                            <select asp-for="FundingTypeId" asp-items="Model.FundingTypes" class="hw-select">
+                                <option value="">— Select funding —</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="FundingTypeId" class="hw-field-error"></span>
+                    </div>
+                </div>
+
+                @* ── Delivery partners ── *@
+                <div class="hw-section-divider">
+                    <div class="hw-section-divider-line"></div>
+                    <span class="hw-section-divider-label"><i class="bi bi-building me-1"></i>Delivery Partners</span>
+                    <div class="hw-section-divider-line"></div>
+                </div>
+                <div class="hw-grid-2" style="margin-bottom:16px;">
+                    <div class="hw-field">
+                        <label asp-for="ProviderId" class="hw-field-label">Provider <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-building hw-field-ico"></i>
+                            <select asp-for="ProviderId" asp-items="Model.Providers" class="hw-select">
+                                <option value="">— Select provider —</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="ProviderId" class="hw-field-error"></span>
+                    </div>
+                    <div class="hw-field">
+                        <label asp-for="EmployerId" class="hw-field-label">Employer <span style="font-weight:400;color:var(--hw-muted);text-transform:none;font-size:10px;">(optional)</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-briefcase hw-field-ico"></i>
+                            <select asp-for="EmployerId" asp-items="Model.Employers" class="hw-select">
+                                <option value="">— No employer —</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="EmployerId" class="hw-field-error"></span>
+                    </div>
+                </div>
+
+                @* ── Dates ── *@
+                <div class="hw-section-divider">
+                    <div class="hw-section-divider-line"></div>
+                    <span class="hw-section-divider-label"><i class="bi bi-calendar-range me-1"></i>Delivery Dates</span>
+                    <div class="hw-section-divider-line"></div>
+                </div>
+                <div class="hw-grid-2">
+                    <div class="hw-field">
+                        <label asp-for="StartDate" class="hw-field-label">Start Date <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-play-circle hw-field-ico"></i>
+                            <input asp-for="StartDate" type="date" class="hw-input" />
+                        </div>
+                        <span asp-validation-for="StartDate" class="hw-field-error"></span>
+                    </div>
+                    <div class="hw-field">
+                        <label asp-for="PlannedEndDate" class="hw-field-label">Planned End Date <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-flag hw-field-ico"></i>
+                            <input asp-for="PlannedEndDate" type="date" class="hw-input" />
+                        </div>
+                        <span asp-validation-for="PlannedEndDate" class="hw-field-error"></span>
+                    </div>
+                </div>
+            </form>
         </div>
+        <div class="hw-card-foot">
+            <button type="submit" form="hw-cohort-form" class="hw-btn-primary">
+                <i class="bi bi-check-lg"></i> Save Cohort
+            </button>
+            <a asp-action="Index" class="hw-btn-outline">
+                <i class="bi bi-x"></i> Cancel
+            </a>
+        </div>
+    </div>
 
-        <div class="col-md-4">
-            <div class="form-check mt-4">
-                <input asp-for="IsActive" class="form-check-input" />
-                <label asp-for="IsActive" class="form-check-label">Active</label>
+    @* Sidebar *@
+    <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon gold"><i class="bi bi-lightbulb"></i></div>
+                <div><div class="hw-card-title">Cohort Setup Guide</div></div>
+            </div>
+            <div class="hw-card-body" style="padding:16px 20px;">
+                <ul class="hw-tip-list">
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>Use a consistent code format, e.g. <code>CHT-2024-001</code> for easy filtering in reports.</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>Select the <strong>Programme</strong> first — this determines the qualification type shown in reports.</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>Employer is optional — only required for workplace-based learning cohorts.</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>Dates drive the progress bar and delivery timeline shown in Cohort Details.</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>After saving, enrol beneficiaries via the Enrolment module using this cohort.</li>
+                </ul>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <label asp-for="ProgrammeId" class="form-label">Programme</label>
-            <select asp-for="ProgrammeId" asp-items="Model.Programmes" class="form-select">
-                <option value="">-- Select programme --</option>
-            </select>
-            <span asp-validation-for="ProgrammeId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="FundingTypeId" class="form-label">Funding Type</label>
-            <select asp-for="FundingTypeId" asp-items="Model.FundingTypes" class="form-select">
-                <option value="">-- Select funding type --</option>
-            </select>
-            <span asp-validation-for="FundingTypeId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="ProviderId" class="form-label">Provider</label>
-            <select asp-for="ProviderId" asp-items="Model.Providers" class="form-select">
-                <option value="">-- Select provider --</option>
-            </select>
-            <span asp-validation-for="ProviderId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="EmployerId" class="form-label">Employer (optional)</label>
-            <select asp-for="EmployerId" asp-items="Model.Employers" class="form-select">
-                <option value="">-- None --</option>
-            </select>
-            <span asp-validation-for="EmployerId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="StartDate" class="form-label">Start Date</label>
-            <input asp-for="StartDate" type="date" class="form-control" />
-            <span asp-validation-for="StartDate" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="PlannedEndDate" class="form-label">Planned End Date</label>
-            <input asp-for="PlannedEndDate" type="date" class="form-control" />
-            <span asp-validation-for="PlannedEndDate" class="text-danger"></span>
+        <div style="padding:14px 16px;background:var(--hw-green-light);border:1.5px solid var(--hw-green);border-radius:12px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+                <i class="bi bi-info-circle-fill" style="color:var(--hw-green);font-size:15px;flex-shrink:0;margin-top:1px;"></i>
+                <div style="font-size:12px;color:var(--hw-dark);line-height:1.6;">
+                    <strong>After creating a cohort</strong>, enrolment of beneficiaries and assignment of forms happens in the respective modules. Cohorts appear immediately in Cohort Delivery Reports.
+                </div>
+            </div>
         </div>
     </div>
-
-    <div class="mt-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('span[data-valmsg-for]').forEach(function (span) {
+                if (span.textContent.trim()) {
+                    var inp = document.querySelector('[name="' + span.getAttribute('data-valmsg-for') + '"]');
+                    if (inp) inp.classList.add('input-error');
+                }
+            });
+        });
+    </script>
 }

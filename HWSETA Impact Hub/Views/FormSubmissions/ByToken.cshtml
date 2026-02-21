@@ -1,0 +1,44 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Forms.FormSubmissionsListVm
+@{
+    ViewData["Title"] = "Form Submissions";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-0">@Model.Title</h1>
+        <div class="text-muted">Token: @Model.Token • Total: @Model.Total</div>
+    </div>
+</div>
+
+<table class="table table-striped" id="submissionsTable">
+    <thead>
+        <tr>
+            <th>Submitted (UTC)</th>
+            <th>User</th>
+            <th>BeneficiaryId</th>
+            <th>IP</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model.Rows)
+        {
+            <tr>
+                <td>@r.SubmittedOnUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@r.SubmittedByUserId</td>
+                <td>@(r.BeneficiaryId?.ToString() ?? "")</td>
+                <td>@r.IpAddress</td>
+                <td>
+                    <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@r.SubmissionId">View</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        // If you already have DataTables globally, initialise here.
+        // $("#submissionsTable").DataTable();
+    </script>
+}

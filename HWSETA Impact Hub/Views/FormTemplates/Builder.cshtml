@@ -4,202 +4,348 @@
     ViewData["Title"] = "Form Builder";
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h1 class="mb-0">@Model.Title</h1>
-        <div class="text-muted">Status: @Model.Status | Version: @Model.Version</div>
-    </div>
-    <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
-        <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.TemplateId">Edit Template</a>
-    </div>
-</div>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
+<link href="~/css/builderformcss.css" rel="stylesheet" />
+
+@* ── TempData toasts ── *@
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <script>window.addEventListener('load',function(){if(typeof hwToast==='function')hwToast('success','Done','@Html.Raw(TempData["Success"])')});</script>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    <script>window.addEventListener('load',function(){if(typeof hwToast==='function')hwToast('error','Error','@Html.Raw(TempData["Error"])')});</script>
 }
 
-<div class="card mb-3">
-    <div class="card-body">
-        <h5 class="card-title">Add Section</h5>
-        <form asp-action="AddSection" method="post" class="row g-2">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="FormTemplateId" value="@Model.TemplateId" />
-            <div class="col-md-4">
-                <input class="form-control" name="Title" placeholder="Section title" />
-            </div>
-            <div class="col-md-6">
-                <input class="form-control" name="Description" placeholder="Optional description" />
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-primary w-100" type="submit">Add</button>
-            </div>
-        </form>
+@* ══ PAGE HEADER ══════════════════════════════════════════════════ *@
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-ui-checks-grid me-1"></i>Forms Builder</div>
+        <h1 class="hw-page-title">@Model.Title</h1>
+        <div class="hw-meta-pills">
+            @{
+                var statusClass = Model.Status.ToString()?.ToLower() switch {
+                    "published" => "published",
+                    "archived"  => "archived",
+                    _           => "draft"
+                };
+                var statusIcon = Model.Status.ToString()?.ToLower() switch {
+                    "published" => "bi-broadcast",
+                    "archived"  => "bi-archive",
+                    _           => "bi-pencil-square"
+                };
+            }
+            <span class="hw-pill @statusClass">
+                <i class="bi @statusIcon"></i> @Model.Status
+            </span>
+            <span class="hw-pill version">
+                <i class="bi bi-layers"></i> Version @Model.Version
+            </span>
+            <span class="hw-sections-counter">
+                <i class="bi bi-layout-text-sidebar"></i> @Model.Sections.Count section@(Model.Sections.Count == 1 ? "" : "s")
+            </span>
+        </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+        <a asp-action="Index" class="hw-btn-outline">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <a asp-action="Edit" asp-route-id="@Model.TemplateId" class="hw-btn-outline">
+            <i class="bi bi-pencil"></i> Edit Template
+        </a>
+        <a asp-action="Publish" asp-route-id="@Model.TemplateId" class="hw-btn-gold">
+            <i class="bi bi-broadcast"></i> Publish
+        </a>
     </div>
 </div>
 
+@* ══ ADD SECTION ══════════════════════════════════════════════════ *@
+<div class="hw-add-section-card">
+    <div class="hw-add-section-title">
+        <i class="bi bi-plus-square"></i> Add New Section
+    </div>
+    <form asp-action="AddSection" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="FormTemplateId" value="@Model.TemplateId" />
+        <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:10px;align-items:end;">
+            <div>
+                <span class="hw-field-label-sm">Section Title <span style="color:var(--hw-red);">*</span></span>
+                <input class="hw-input" name="Title" placeholder="e.g. Personal Information" />
+            </div>
+            <div>
+                <span class="hw-field-label-sm">Description (optional)</span>
+                <input class="hw-input" name="Description" placeholder="Brief description of this section" />
+            </div>
+            <button class="hw-btn-primary" type="submit" style="white-space:nowrap;">
+                <i class="bi bi-plus-lg"></i> Add Section
+            </button>
+        </div>
+    </form>
+</div>
+
+@* ══ SECTIONS ══════════════════════════════════════════════════════ *@
+@if (!Model.Sections.Any())
+{
+    <div style="background:var(--hw-white);border:1.5px solid var(--hw-border);border-radius:var(--hw-radius-lg);padding:52px 32px;text-align:center;">
+        <div style="width:64px;height:64px;border-radius:18px;background:var(--hw-offwhite);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--hw-border);margin:0 auto 16px;">
+            <i class="bi bi-layout-text-sidebar-reverse"></i>
+        </div>
+        <div style="font-size:15px;font-weight:800;color:var(--hw-dark);margin-bottom:6px;">No sections yet</div>
+        <div style="font-size:13px;color:var(--hw-muted);max-width:340px;margin:0 auto;">
+            Add a section above to start building your form. Sections group related questions together.
+        </div>
+    </div>
+}
+
+@{ var sectionIndex = 0; }
 @foreach (var s in Model.Sections)
 {
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <div class="fw-bold">@s.Title</div>
-                @if (!string.IsNullOrWhiteSpace(s.Description))
-                {
-                    <div class="text-muted">@s.Description</div>
-                }
+    sectionIndex++;
+    <div class="hw-section-card">
+
+        @* Section header *@
+        <div class="hw-section-head">
+            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                <div class="hw-section-num">@sectionIndex</div>
+                <div style="min-width:0;">
+                    <div class="hw-section-name">@s.Title</div>
+                    @if (!string.IsNullOrWhiteSpace(s.Description))
+                    {
+                        <div class="hw-section-desc">@s.Description</div>
+                    }
+                </div>
             </div>
-            <div class="d-flex gap-2">
-                <form asp-action="DeleteSection" method="post" class="d-inline">
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+                <span style="font-size:11px;font-weight:600;color:var(--hw-muted);">
+                    @s.Fields.Count field@(s.Fields.Count == 1 ? "" : "s")
+                </span>
+                <form asp-action="DeleteSection" method="post" style="display:inline;">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="sectionId" value="@s.Id" />
                     <input type="hidden" name="templateId" value="@Model.TemplateId" />
-                    <button class="btn btn-sm btn-outline-danger" type="submit"
-                            onclick="return confirm('Delete this section?');">
-                        Delete Section
+                    <button class="hw-btn-danger" type="submit"
+                            onclick="return confirm('Delete section \'@s.Title\' and all its questions?')">
+                        <i class="bi bi-trash"></i> Delete Section
                     </button>
                 </form>
             </div>
         </div>
 
-        <div class="card-body">
+        <div class="hw-section-body">
 
-            <!-- Add Field -->
-            <div class="border rounded p-3 mb-3">
-                <div class="fw-bold mb-2">Add Question</div>
-
-                <form asp-action="AddField" method="post" class="row g-2">
+            @* ── Add Question ── *@
+            <div class="hw-add-question">
+                <div class="hw-add-q-title">
+                    <i class="bi bi-plus-circle"></i> Add Question
+                </div>
+                <form asp-action="AddField" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="templateId" value="@Model.TemplateId" />
                     <input type="hidden" name="FormSectionId" value="@s.Id" />
 
-                    <div class="col-md-5">
-                        <input class="form-control" name="Label" placeholder="Question label" />
-                    </div>
-
-                    <div class="col-md-3">
-                        <select class="form-select" name="FieldType">
-                            <option value="@FormFieldType.ShortText">Short Text</option>
-                            <option value="@FormFieldType.LongText">Long Text</option>
-                            <option value="@FormFieldType.Email">Email</option>
-                            <option value="@FormFieldType.Phone">Phone</option>
-                            <option value="@FormFieldType.Url">URL</option>
-
-                            <option value="@FormFieldType.Number">Number</option>
-                            <option value="@FormFieldType.Decimal">Decimal</option>
-                            <option value="@FormFieldType.Date">Date</option>
-                            <option value="@FormFieldType.Time">Time</option>
-
-                            <option value="@FormFieldType.Dropdown">Dropdown</option>
-                            <option value="@FormFieldType.Radio">Radio</option>
-                            <option value="@FormFieldType.Checkbox">Checkbox</option>
-                            <option value="@FormFieldType.YesNo">Yes/No</option>
-
-                            <option value="@FormFieldType.Rating">Rating</option>
-                            <option value="@FormFieldType.FileUpload">File Upload</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-2 d-flex align-items-center">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="IsRequired" value="true" />
-                            <label class="form-check-label">Required</label>
+                    <div class="hw-add-q-grid">
+                        <div>
+                            <span class="hw-field-label-sm">Question Label <span style="color:var(--hw-red);">*</span></span>
+                            <input class="hw-input" name="Label" placeholder="e.g. What is your current employment status?" />
+                        </div>
+                        <div>
+                            <span class="hw-field-label-sm">Field Type</span>
+                            <select class="hw-select" name="FieldType">
+                                <optgroup label="Text">
+                                    <option value="@FormFieldType.ShortText">Short Text</option>
+                                    <option value="@FormFieldType.LongText">Long Text (Paragraph)</option>
+                                    <option value="@FormFieldType.Email">Email</option>
+                                    <option value="@FormFieldType.Phone">Phone</option>
+                                    <option value="@FormFieldType.Url">URL</option>
+                                </optgroup>
+                                <optgroup label="Numeric &amp; Date">
+                                    <option value="@FormFieldType.Number">Number (Integer)</option>
+                                    <option value="@FormFieldType.Decimal">Decimal</option>
+                                    <option value="@FormFieldType.Date">Date</option>
+                                    <option value="@FormFieldType.Time">Time</option>
+                                </optgroup>
+                                <optgroup label="Choice">
+                                    <option value="@FormFieldType.Dropdown">Dropdown</option>
+                                    <option value="@FormFieldType.Radio">Radio Buttons</option>
+                                    <option value="@FormFieldType.Checkbox">Checkboxes</option>
+                                    <option value="@FormFieldType.YesNo">Yes / No</option>
+                                </optgroup>
+                                <optgroup label="Other">
+                                    <option value="@FormFieldType.Rating">Star Rating</option>
+                                    <option value="@FormFieldType.FileUpload">File Upload</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div>
+                            <span class="hw-field-label-sm">&nbsp;</span>
+                            <label class="hw-req-toggle">
+                                <input type="checkbox" name="IsRequired" value="true" />
+                                <i class="bi bi-asterisk" style="font-size:10px;"></i> Required
+                            </label>
+                        </div>
+                        <div>
+                            <span class="hw-field-label-sm">&nbsp;</span>
+                            <button class="hw-btn-sm-add" type="submit">
+                                <i class="bi bi-plus-lg"></i> Add
+                            </button>
                         </div>
                     </div>
 
-                    <div class="col-md-2">
-                        <button class="btn btn-outline-primary w-100" type="submit">Add</button>
-                    </div>
-
-                    <div class="col-12">
-                        <input class="form-control" name="HelpText" placeholder="Help text (optional)" />
+                    <div>
+                        <span class="hw-field-label-sm">Help Text (optional)</span>
+                        <input class="hw-input" name="HelpText" placeholder="Hint shown below the question to guide respondents" />
                     </div>
                 </form>
             </div>
 
-            <!-- Fields list -->
-            @if (s.Fields.Count == 0)
+            @* ── Field list ── *@
+            @if (!s.Fields.Any())
             {
-                <div class="text-muted">No questions yet.</div>
+                <div class="hw-empty">
+                    <i class="bi bi-question-circle"></i>
+                    No questions in this section yet — add one above.
+                </div>
             }
             else
             {
-                <div class="list-group">
+                <div class="hw-field-list">
                     @foreach (var f in s.Fields.OrderBy(x => x.SortOrder))
                     {
-                        <div class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <div class="fw-bold">@f.Label</div>
-                                    <div class="text-muted">
-                                        Type: @f.FieldType @(f.IsRequired ? "| Required" : "")
-                                    </div>
-                                    @if (!string.IsNullOrWhiteSpace(f.HelpText))
-                                    {
-                                        <div class="small">@f.HelpText</div>
-                                    }
-                                </div>
+                        
+                            var ftIcon = f.FieldType switch {
+                                FormFieldType.ShortText  or FormFieldType.LongText => "bi-text-left",
+                                FormFieldType.Email      => "bi-envelope",
+                                FormFieldType.Phone      => "bi-telephone",
+                                FormFieldType.Url        => "bi-link-45deg",
+                                FormFieldType.Number     or FormFieldType.Decimal => "bi-hash",
+                                FormFieldType.Date       => "bi-calendar3",
+                                FormFieldType.Time       => "bi-clock",
+                                FormFieldType.Dropdown   => "bi-chevron-down",
+                                FormFieldType.Radio      => "bi-record-circle",
+                                FormFieldType.Checkbox   => "bi-check-square",
+                                FormFieldType.YesNo      => "bi-toggle-on",
+                                FormFieldType.Rating     => "bi-star",
+                                FormFieldType.FileUpload => "bi-upload",
+                                _                        => "bi-input-cursor-text"
+                            };
+                            var ftCss = f.FieldType switch {
+                                FormFieldType.Email or FormFieldType.YesNo     => "ft-email",
+                                FormFieldType.Number or FormFieldType.Decimal  => "ft-number",
+                                FormFieldType.Date  or FormFieldType.Time      => "ft-date",
+                                FormFieldType.Dropdown or FormFieldType.Radio or FormFieldType.Checkbox => "ft-select",
+                                FormFieldType.FileUpload => "ft-file",
+                                FormFieldType.Rating     => "ft-rating",
+                                _                        => "ft-text"
+                            };
+                            var hasOptions = f.FieldType == FormFieldType.Dropdown ||
+                                            f.FieldType == FormFieldType.Radio    ||
+                                            f.FieldType == FormFieldType.Checkbox;
+                        
 
-                                <div class="d-flex gap-2">
-                                    <form asp-action="DeleteField" method="post">
+                        <div class="hw-field-item">
+                            <div class="hw-field-item-head">
+                                <i class="bi bi-grip-vertical hw-drag-handle"></i>
+                                <div class="hw-field-type-icon @ftCss">
+                                    <i class="bi @ftIcon"></i>
+                                </div>
+                                <span class="hw-field-label-text">@f.Label</span>
+                                <div class="hw-field-meta">
+                                    <span class="hw-field-type-pill">
+                                        <i class="bi @ftIcon"></i> @f.FieldType
+                                    </span>
+                                    @if (f.IsRequired)
+                                    {
+                                        <span class="hw-req-pill">
+                                            <i class="bi bi-asterisk" style="font-size:8px;"></i> Required
+                                        </span>
+                                    }
+                                    <form asp-action="DeleteField" method="post" style="display:inline;">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="fieldId" value="@f.Id" />
                                         <input type="hidden" name="templateId" value="@Model.TemplateId" />
-                                        <button class="btn btn-sm btn-outline-danger" type="submit"
-                                                onclick="return confirm('Remove this question?');">
-                                            Remove
+                                        <button class="hw-option-del" type="submit"
+                                                onclick="return confirm('Remove question \'@f.Label\'?')"
+                                                title="Remove question">
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
                                 </div>
                             </div>
-
-                            @if (f.FieldType == FormFieldType.Dropdown || f.FieldType == FormFieldType.Radio || f.FieldType == FormFieldType.Checkbox)
+                            @if (!string.IsNullOrWhiteSpace(f.HelpText))
                             {
-                                <hr />
-                                <div class="fw-bold mb-2">Options</div>
+                                <div class="hw-help-text">
+                                    <i class="bi bi-info-circle me-1" style="color:var(--hw-gold-dark);"></i>@f.HelpText
+                                </div>
+                            }
 
-                                <form asp-action="AddOption" method="post" class="row g-2 mb-2">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="templateId" value="@Model.TemplateId" />
-                                    <input type="hidden" name="FormFieldId" value="@f.Id" />
+                            @* Options panel for choice fields *@
+                            @if (hasOptions)
+                            {
+                                <div class="hw-options-panel">
+                                    <div class="hw-options-title">
+                                        <i class="bi bi-list-ul"></i> Answer Options
+                                    </div>
 
-                                    <div class="col-md-4">
-                                        <input class="form-control" name="Text" placeholder="Option text" />
-                                    </div>
-                                    <div class="col-md-4">
-                                        <input class="form-control" name="Value" placeholder="Optional value (defaults to text)" />
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button class="btn btn-outline-primary w-100" type="submit">Add</button>
-                                    </div>
-                                </form>
+                                    @* Add option *@
+                                    <form asp-action="AddOption" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="templateId" value="@Model.TemplateId" />
+                                        <input type="hidden" name="FormFieldId" value="@f.Id" />
+                                        <div class="hw-add-option-row">
+                                            <div>
+                                                <span class="hw-field-label-sm">Option Text <span style="color:var(--hw-red);">*</span></span>
+                                                <input class="hw-input" name="Text" placeholder="e.g. Full-time Employed" />
+                                            </div>
+                                            <div>
+                                                <span class="hw-field-label-sm">Value (optional)</span>
+                                                <input class="hw-input" name="Value" placeholder="Defaults to option text" />
+                                            </div>
+                                            <div style="align-self:end;">
+                                                <button class="hw-btn-sm-add" type="submit">
+                                                    <i class="bi bi-plus-lg"></i> Add Option
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
 
-                                @if (f.Options.Count == 0)
-                                {
-                                    <div class="text-muted">No options yet.</div>
-                                }
-                                else
-                                {
-                                    <ul class="mb-0">
-                                        @foreach (var o in f.Options.OrderBy(x => x.SortOrder))
-                                        {
-                                            <li class="d-flex justify-content-between align-items-center">
-                                                <span>@o.Text <span class="text-muted">(@o.Value)</span></span>
-                                                <form asp-action="DeleteOption" method="post">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="optionId" value="@o.Id" />
-                                                    <input type="hidden" name="templateId" value="@Model.TemplateId" />
-                                                    <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
-                                                </form>
-                                            </li>
-                                        }
-                                    </ul>
-                                }
+                                    @* Options list *@
+                                    @if (!f.Options.Any())
+                                    {
+                                        <div style="font-size:12px;color:var(--hw-muted);padding:6px 0;font-style:italic;">
+                                            No options yet — add at least one option above.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="hw-options-list">
+                                            @foreach (var o in f.Options.OrderBy(x => x.SortOrder))
+                                            {
+                                                <div class="hw-option-item">
+                                                    <div style="display:flex;align-items:center;gap:6px;">
+                                                        <i class="bi @(f.FieldType == FormFieldType.Checkbox ? "bi-check-square" : "bi-record-circle")"
+                                                           style="color:var(--hw-green);font-size:13px;"></i>
+                                                        <span class="hw-option-text">@o.Text</span>
+                                                        @if (!string.IsNullOrWhiteSpace(o.Value) && o.Value != o.Text)
+                                                        {
+                                                            <span class="hw-option-val">(value: @o.Value)</span>
+                                                        }
+                                                    </div>
+                                                    <form asp-action="DeleteOption" method="post" style="display:inline;">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="optionId" value="@o.Id" />
+                                                        <input type="hidden" name="templateId" value="@Model.TemplateId" />
+                                                        <button class="hw-option-del" type="submit" title="Remove option">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
                             }
                         </div>
                     }

@@ -11,6 +11,10 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
         public int Version { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedOnUtc { get; set; }
+
+        public bool IsPublished { get; set; } = false;
+
+        public string PublicToken { get; set; }
     }
 
     public sealed class FormTemplateCreateVm

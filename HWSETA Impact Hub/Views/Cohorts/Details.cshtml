@@ -1,53 +1,261 @@
 ﻿@model HWSETA_Impact_Hub.Domain.Entities.Cohort
 @{
     ViewData["Title"] = "Cohort Details";
+    var durationDays = (Model.PlannedEndDate - Model.StartDate).Days;
+    var durationMonths = Math.Round(durationDays / 30.44, 1);
+    var today = DateTime.Today;
+    var isOngoing = Model.StartDate <= today && Model.PlannedEndDate >= today;
+    var isCompleted = today > Model.PlannedEndDate;
+    var progressPct = isCompleted ? 100 :
+                      isOngoing ? (int)(((today - Model.StartDate).Days / (double)(Model.PlannedEndDate - Model.StartDate).Days) * 100) : 0;
 }
 
-<h1 class="mb-3">Cohort Details</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-<div class="card">
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">Cohort Code</dt>
-            <dd class="col-sm-9">@Model.CohortCode</dd>
+<link href="~/css/cohortdetailscss.css" rel="stylesheet" />
 
-            <dt class="col-sm-3">Programme</dt>
-            <dd class="col-sm-9">@Model.Programme?.ProgrammeName</dd>
-
-            <dt class="col-sm-3">Qualification Type</dt>
-            <dd class="col-sm-9">@Model.Programme?.QualificationType?.Name</dd>
-
-            <dt class="col-sm-3">Provider</dt>
-            <dd class="col-sm-9">@Model.Provider?.ProviderName</dd>
-
-            <dt class="col-sm-3">Employer</dt>
-            <dd class="col-sm-9">@((Model.Employer == null) ? "-" : $"{Model.Employer.EmployerCode} - {Model.Employer.RegistrationNumber}")</dd>
-
-            <dt class="col-sm-3">Funding Type</dt>
-            <dd class="col-sm-9">@Model.FundingType?.Name</dd>
-
-            <dt class="col-sm-3">Intake Year</dt>
-            <dd class="col-sm-9">@Model.IntakeYear</dd>
-
-            <dt class="col-sm-3">Dates</dt>
-            <dd class="col-sm-9">@Model.StartDate.ToString("yyyy-MM-dd") → @Model.PlannedEndDate.ToString("yyyy-MM-dd")</dd>
-
-            <dt class="col-sm-3">Status</dt>
-            <dd class="col-sm-9">
-                @if (Model.IsActive)
-                {
-                    <span class="badge bg-success">Active</span>
-                }
-                else
-                {
-
-                    <span class="badge bg-secondary">Inactive</span>
-                }
-            </dd>
-        </dl>
+@* Header *@
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-diagram-3 me-1"></i>Programme Management</div>
+        <h1 class="hw-page-title">Cohort <span>Details</span></h1>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+        <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-arrow-left"></i> All Cohorts</a>
+        <a asp-action="Create" class="hw-btn-primary"><i class="bi bi-plus-lg"></i> Add Cohort</a>
     </div>
 </div>
 
-<div class="mt-3">
-    <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+@* Hero *@
+<div class="hw-hero">
+    <div class="hw-hero-code">Cohort Code</div>
+    <div class="hw-hero-title">@Model.CohortCode</div>
+    <div class="hw-hero-sub">@Model.Programme?.ProgrammeName</div>
+    <div class="hw-hero-pills">
+        <span class="hw-hero-pill"><i class="bi bi-calendar3"></i> @Model.IntakeYear</span>
+        <span class="hw-hero-pill"><i class="bi bi-building"></i> @Model.Provider?.ProviderName</span>
+        @if (Model.FundingType != null)
+        {
+            <span class="hw-hero-pill gold"><i class="bi bi-cash"></i> @Model.FundingType.Name</span>
+        }
+        @if (Model.IsActive)
+        {
+            <span class="hw-hero-pill"><i class="bi bi-broadcast"></i> Active</span>
+        }
+    </div>
+</div>
+
+<div class="hw-details-grid">
+
+    @* Main details *@
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+        @* Identity & Programme *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon green"><i class="bi bi-mortarboard"></i></div>
+                <div>
+                    <div class="hw-card-title">Programme &amp; Identity</div>
+                    <div class="hw-card-sub">Cohort classification and academic details</div>
+                </div>
+            </div>
+            <div class="hw-card-body">
+                <div class="hw-detail-list">
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon green"><i class="bi bi-diagram-3"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Cohort Code</div>
+                            <div class="hw-detail-val mono">@Model.CohortCode</div>
+                        </div>
+                    </div>
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon green"><i class="bi bi-mortarboard"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Programme</div>
+                            <div class="hw-detail-val">@Model.Programme?.ProgrammeName</div>
+                        </div>
+                    </div>
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon blue"><i class="bi bi-award"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Qualification Type</div>
+                            <div class="hw-detail-val">
+                                @if (Model.Programme?.QualificationType != null)
+                                {
+                                    <span class="hw-qual-pill">@Model.Programme.QualificationType.Name</span>
+                                }
+                                else
+                                {
+
+                                    <span style="color:var(--hw-muted);">—</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon gold"><i class="bi bi-cash-coin"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Funding Type</div>
+                            <div class="hw-detail-val">
+                                @if (Model.FundingType != null)
+                                {
+                                    <span style="background:var(--hw-gold-light);color:var(--hw-gold-dark);padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;">@Model.FundingType.Name</span>
+                                }
+                                else
+                                {
+
+                                    <span style="color:var(--hw-muted);">—</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon blue"><i class="bi bi-calendar-check"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Intake Year</div>
+                            <div class="hw-detail-val">
+                                <span style="background:#e0f2fe;color:#0369a1;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800;">@Model.IntakeYear</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Delivery *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon gold"><i class="bi bi-building"></i></div>
+                <div>
+                    <div class="hw-card-title">Delivery Partners</div>
+                    <div class="hw-card-sub">Provider and employer linked to this cohort</div>
+                </div>
+            </div>
+            <div class="hw-card-body">
+                <div class="hw-detail-list">
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon gold"><i class="bi bi-building"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Training Provider</div>
+                            <div class="hw-detail-val">@Model.Provider?.ProviderName</div>
+                        </div>
+                    </div>
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon dark"><i class="bi bi-briefcase"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Employer</div>
+                            @if (Model.Employer != null)
+                            {
+                                <div class="hw-detail-val">
+                                    <span class="hw-detail-val mono">@Model.Employer.EmployerCode</span>
+                                    <span style="font-size:11.5px;color:var(--hw-muted);margin-left:6px;">@Model.Employer.RegistrationNumber</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="hw-detail-val" style="color:var(--hw-muted);">No employer linked</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    @* Sidebar *@
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        @* Timeline *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon blue"><i class="bi bi-calendar-range"></i></div>
+                <div>
+                    <div class="hw-card-title">Delivery Timeline</div>
+                    <div class="hw-card-sub">@durationMonths months · @durationDays days</div>
+                </div>
+            </div>
+            <div class="hw-card-body">
+                <div class="hw-detail-list">
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon green"><i class="bi bi-play-circle"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Start Date</div>
+                            <div class="hw-detail-val">@Model.StartDate.ToString("dd MMMM yyyy")</div>
+                        </div>
+                    </div>
+                    <div class="hw-detail-row">
+                        <div class="hw-detail-icon red"><i class="bi bi-flag"></i></div>
+                        <div>
+                            <div class="hw-detail-key">Planned End</div>
+                            <div class="hw-detail-val">@Model.PlannedEndDate.ToString("dd MMMM yyyy")</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hw-prog-wrap">
+                    <div class="hw-prog-label">
+                        <span>Progress</span>
+                        <span style="font-weight:800;color:var(--hw-green);">@progressPct%</span>
+                    </div>
+                    <div class="hw-prog-bar">
+                        <div class="hw-prog-fill" style="width:@progressPct%;"></div>
+                    </div>
+                    <div style="font-size:11px;color:var(--hw-muted);margin-top:6px;">
+                        @if (isCompleted)
+                        {
+                            <text><i class="bi bi-check-circle-fill" style="color:var(--hw-green);"></i> Delivery period completed</text>
+                        }
+                        else if (isOngoing)
+                        {
+
+                            <text><i class="bi bi-hourglass-split" style="color:var(--hw-gold-dark);"></i> @((Model.PlannedEndDate - today).Days) days remaining</text>
+                        }
+                        else
+                        {
+
+                            <text><i class="bi bi-clock" style="color:var(--hw-muted);"></i> Starts in @((Model.StartDate - today).Days) days</text>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Status *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon @(Model.IsActive ? "green" : "dark")"><i class="bi bi-broadcast"></i></div>
+                <div><div class="hw-card-title">Status</div></div>
+            </div>
+            <div class="hw-card-body" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start;">
+                @if (Model.IsActive)
+                {
+                    <span class="hw-status-big active"><i class="bi bi-check-circle-fill"></i> Active</span>
+                }
+                else
+                {
+                    <span class="hw-status-big inactive"><i class="bi bi-dash-circle"></i> Inactive</span>
+                }
+                @if (isOngoing)
+                {
+                    <span class="hw-status-big ongoing"><i class="bi bi-hourglass-split"></i> In Progress</span>
+                }
+                else if (isCompleted)
+                {
+                    <span class="hw-status-big completed"><i class="bi bi-patch-check-fill"></i> Period Complete</span>
+                }
+                else
+                {
+                    <span style="font-size:12px;color:var(--hw-muted);font-weight:600;"><i class="bi bi-clock me-1"></i> Not started yet</span>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div style="margin-top:4px;">
+    <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-arrow-left"></i> Back to Cohorts</a>
 </div>

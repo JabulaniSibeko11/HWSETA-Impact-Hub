@@ -2,114 +2,216 @@
 @{
     ViewData["Title"] = "Create Enrollment";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/enrollmentcreate.css" rel="stylesheet" />
 
-<h1 class="mb-3">Create Enrollment</h1>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-person-check me-1"></i>Programme Management</div>
+        <h1 class="hw-page-title">Enrol <span>Beneficiary</span></h1>
+    </div>
+    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
 
-<form method="post">
-    @Html.AntiForgeryToken()
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div class="hw-layout">
+    <div>
+        <form method="post" id="hw-enrol-form">
+            @Html.AntiForgeryToken()
 
-    <div class="card mb-3">
-        <div class="card-header">Filter Cohorts</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Programme</label>
-                    <select asp-for="ProgrammeId" asp-items="Model.Programmes" class="form-select" id="programmeFilter">
-                        <option value="">-- Any programme --</option>
-                    </select>
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.TryGetValue(string.Empty, out var re) && re.Errors.Count > 0)
+            {
+                <div class="hw-val-summary"><i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;font-size:16px;margin-top:1px;"></i><div><strong>Please fix:</strong><ul>@foreach(var err in re.Errors){
+                <li>@err.ErrorMessage</li>
+            }
+</ul></div></div>
+                        }
+
+            @* ── Step 1: Filter cohorts ── *@
+            <div class="hw-filter-card">
+                <div class="hw-card-head">
+                    <div class="hw-card-icon green"><i class="bi bi-funnel"></i></div>
+                    <div>
+                        <div class="hw-card-title">Step 1 — Filter Cohorts</div>
+                        <div class="hw-card-sub">Narrow down the cohort list using one or more filters</div>
+                    </div>
                 </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Provider</label>
-                    <select asp-for="ProviderId" asp-items="Model.Providers" class="form-select" id="providerFilter">
-                        <option value="">-- Any provider --</option>
-                    </select>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Employer</label>
-                    <select asp-for="EmployerId" asp-items="Model.Employers" class="form-select" id="employerFilter">
-                        <option value="">-- Any employer --</option>
-                    </select>
+                <div class="hw-card-body">
+                    <div class="hw-g3">
+                        <div class="hw-field">
+                            <label class="hw-field-label">Programme</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-mortarboard hw-field-ico"></i>
+                                <select asp-for="ProgrammeId" asp-items="Model.Programmes" class="hw-select" id="programmeFilter">
+                                    <option value="">— Any —</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="hw-field">
+                            <label class="hw-field-label">Provider</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-building hw-field-ico"></i>
+                                <select asp-for="ProviderId" asp-items="Model.Providers" class="hw-select" id="providerFilter">
+                                    <option value="">— Any —</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="hw-field">
+                            <label class="hw-field-label">Employer</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-briefcase hw-field-ico"></i>
+                                <select asp-for="EmployerId" asp-items="Model.Employers" class="hw-select" id="employerFilter">
+                                    <option value="">— Any —</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hw-filter-tip">
+                        <i class="bi bi-lightbulb-fill"></i>
+                        Select a Programme and/or Provider to narrow down the cohort list below. Cohorts update automatically — no page reload needed.
+                    </div>
                 </div>
             </div>
 
-            <div class="mt-3 small text-muted">
-                Tip: Choose Programme + Provider to narrow down cohorts, then pick the correct cohort below.
+            @* ── Step 2: Cohort & Beneficiary ── *@
+            <div class="hw-card">
+                <div class="hw-card-head">
+                    <div class="hw-card-icon blue"><i class="bi bi-person-plus"></i></div>
+                    <div>
+                        <div class="hw-card-title">Step 2 — Cohort &amp; Beneficiary <span id="hw-cohort-count" class="hw-cohort-count" style="display:none;"></span></div>
+                        <div class="hw-card-sub">Select the cohort and the beneficiary to enrol</div>
+                    </div>
+                </div>
+                <div class="hw-card-body">
+                    <div class="hw-g2" style="margin-bottom:16px;">
+                        <div class="hw-field">
+                            <label asp-for="CohortId" class="hw-field-label">Cohort <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-diagram-3 hw-field-ico"></i>
+                                <select asp-for="CohortId" class="hw-select" id="cohortSelect">
+                                    <option value="">— Select cohort —</option>
+                                </select>
+                            </div>
+                            <div class="hw-cohort-loading" id="hw-cohort-loading">
+                                <div class="hw-spinner"></div> Loading cohorts…
+                            </div>
+                            <span asp-validation-for="CohortId" class="hw-field-error"></span>
+                        </div>
+                        <div class="hw-field">
+                            <label asp-for="BeneficiaryId" class="hw-field-label">Beneficiary <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-person hw-field-ico"></i>
+                                <select asp-for="BeneficiaryId" asp-items="Model.Beneficiaries" class="hw-select">
+                                    <option value="">— Select beneficiary —</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="BeneficiaryId" class="hw-field-error"></span>
+                        </div>
+                    </div>
+                    <div class="hw-g2">
+                        <div class="hw-field">
+                            <label asp-for="StartDate" class="hw-field-label">Start Date <span style="font-weight:400;text-transform:none;font-size:9.5px;">(optional)</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-calendar-event hw-field-ico"></i>
+                                <input asp-for="StartDate" type="date" class="hw-input" />
+                            </div>
+                            <div class="hw-field-hint"><i class="bi bi-info-circle me-1" style="color:var(--hw-gold-dark);"></i>If blank, the cohort start date is used automatically.</div>
+                        </div>
+                        <div class="hw-field">
+                            <label asp-for="Notes" class="hw-field-label">Notes</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-chat-left-text hw-field-ico"></i>
+                                <input asp-for="Notes" class="hw-input" placeholder="Optional notes about this enrolment" />
+                            </div>
+                            <span asp-validation-for="Notes" class="hw-field-error"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hw-card-foot">
+                    <button type="submit" form="hw-enrol-form" class="hw-btn-primary">
+                        <i class="bi bi-person-check"></i> Save Enrolment
+                    </button>
+                    <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-x"></i> Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @* Sidebar tips *@
+    <div>
+        <div style="background:var(--hw-white);border:1.5px solid var(--hw-border);border-radius:var(--hw-radius-lg);overflow:hidden;">
+            <div class="hw-card-head" style="padding:14px 18px;">
+                <div class="hw-card-icon gold"><i class="bi bi-lightbulb"></i></div>
+                <div><div class="hw-card-title">Enrolment Guide</div></div>
+            </div>
+            <div style="padding:16px 18px;">
+                <ul class="hw-tip-list">
+                    <li class="hw-tip-item"><i class="bi bi-1-circle-fill"></i>Use the <strong>filters</strong> to narrow the cohort list — select Programme + Provider for best results.</li>
+                    <li class="hw-tip-item"><i class="bi bi-2-circle-fill"></i>Select the <strong>Cohort</strong> from the filtered list, then pick the <strong>Beneficiary</strong>.</li>
+                    <li class="hw-tip-item"><i class="bi bi-3-circle-fill"></i>A beneficiary can only be enrolled in a cohort once. Duplicate enrolments are blocked automatically.</li>
+                    <li class="hw-tip-item"><i class="bi bi-4-circle-fill"></i>Leave <strong>Start Date</strong> blank to inherit the cohort's start date.</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>After saving, update the enrolment status (Active, Completed etc.) via the Details page.</li>
+                </ul>
             </div>
         </div>
     </div>
-
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label asp-for="CohortId" class="form-label">Cohort</label>
-            <select asp-for="CohortId" class="form-select" id="cohortSelect">
-                <option value="">-- Select cohort (use filters above) --</option>
-            </select>
-            <span asp-validation-for="CohortId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="BeneficiaryId" class="form-label">Beneficiary</label>
-            <select asp-for="BeneficiaryId" asp-items="Model.Beneficiaries" class="form-select">
-                <option value="">-- Select beneficiary --</option>
-            </select>
-            <span asp-validation-for="BeneficiaryId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="StartDate" class="form-label">Start Date (optional)</label>
-            <input asp-for="StartDate" type="date" class="form-control" />
-            <div class="form-text">If empty, the cohort start date will be used.</div>
-        </div>
-
-        <div class="col-md-8">
-            <label asp-for="Notes" class="form-label">Notes</label>
-            <input asp-for="Notes" class="form-control" />
-            <span asp-validation-for="Notes" class="text-danger"></span>
-        </div>
-    </div>
-
-    <div class="mt-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-
     <script>
         async function loadCohorts() {
             const programmeId = document.getElementById('programmeFilter').value;
-            const providerId = document.getElementById('providerFilter').value;
-            const employerId = document.getElementById('employerFilter').value;
+            const providerId  = document.getElementById('providerFilter').value;
+            const employerId  = document.getElementById('employerFilter').value;
+            const sel     = document.getElementById('cohortSelect');
+            const loading = document.getElementById('hw-cohort-loading');
+            const badge   = document.getElementById('hw-cohort-count');
+
+            loading.classList.add('show');
+            sel.disabled = true;
 
             const url = '@Url.Action("GetCohorts", "Enrollments")'
                 + '?programmeId=' + encodeURIComponent(programmeId)
-                + '&providerId=' + encodeURIComponent(providerId)
-                + '&employerId=' + encodeURIComponent(employerId);
+                + '&providerId='  + encodeURIComponent(providerId)
+                + '&employerId='  + encodeURIComponent(employerId);
 
-            const res = await fetch(url);
-            const data = await res.json();
-
-            const sel = document.getElementById('cohortSelect');
-            sel.innerHTML = '<option value="">-- Select cohort --</option>';
-
-            for (const item of data) {
-                const opt = document.createElement('option');
-                opt.value = item.id;
-                opt.text = item.text;
-                sel.appendChild(opt);
+            try {
+                const res  = await fetch(url);
+                const data = await res.json();
+                sel.innerHTML = '<option value="">— Select cohort —</option>';
+                for (const item of data) {
+                    const opt = document.createElement('option');
+                    opt.value = item.id; opt.text = item.text;
+                    sel.appendChild(opt);
+                }
+                if (data.length > 0) {
+                    badge.textContent = data.length + ' cohort' + (data.length > 1 ? 's' : '');
+                    badge.style.display = 'inline-flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (e) {
+                if (typeof hwToast === 'function') hwToast('error','Error','Could not load cohorts. Please try again.');
+            } finally {
+                loading.classList.remove('show');
+                sel.disabled = false;
             }
         }
-
         document.getElementById('programmeFilter').addEventListener('change', loadCohorts);
-        document.getElementById('providerFilter').addEventListener('change', loadCohorts);
-        document.getElementById('employerFilter').addEventListener('change', loadCohorts);
-
-        // Load cohorts on page load if filters are pre-selected
+        document.getElementById('providerFilter').addEventListener('change',  loadCohorts);
+        document.getElementById('employerFilter').addEventListener('change',  loadCohorts);
         loadCohorts();
+
+        // Mark error inputs on server-side validation
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('span[data-valmsg-for]').forEach(function(span) {
+                if (span.textContent.trim()) {
+                    var inp = document.querySelector('[name="' + span.getAttribute('data-valmsg-for') + '"]');
+                    if (inp) inp.classList.add('input-error');
+                }
+            });
+        });
     </script>
 }

@@ -1,0 +1,29 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Forms.FormSubmissionDetailsVm
+@{
+    ViewData["Title"] = "Submission Details";
+}
+
+<h1 class="mb-0">@Model.FormTitle</h1>
+<div class="text-muted mb-3">Submitted: @Model.SubmittedOnUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th style="width:25%">Section</th>
+            <th style="width:35%">Question</th>
+            <th>Answer</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var a in Model.Answers)
+        {
+            <tr>
+                <td>@a.SectionTitle</td>
+                <td>@a.QuestionLabel</td>
+                <td>@a.Value</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a class="btn btn-outline-secondary" href="javascript:history.back()">Back</a>

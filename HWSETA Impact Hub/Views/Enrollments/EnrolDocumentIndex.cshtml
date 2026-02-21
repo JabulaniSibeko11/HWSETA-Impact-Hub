@@ -4,55 +4,556 @@
     var enrollmentId = (Guid)ViewBag.EnrollmentId;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">Enrollment Documents</h1>
-    <div>
-        <a class="btn btn-primary" asp-action="Upload" asp-route-enrollmentId="@enrollmentId">Upload Document</a>
-        <a class="btn btn-outline-secondary" asp-controller="Enrollments" asp-action="Details" asp-route-id="@enrollmentId">Back to Enrollment</a>
-    </div>
-</div>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<style>
+    #hw-body, #hw-body * {
+        font-family: 'Montserrat','Segoe UI',sans-serif !important;
+    }
+
+    .hw-page-eyebrow {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--hw-gold-dark);
+        margin-bottom: 4px;
+    }
+
+    .hw-page-title {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -.02em;
+        color: var(--hw-dark);
+        margin: 0;
+    }
+
+        .hw-page-title span {
+            color: var(--hw-green);
+        }
+
+    /* Stat strip */
+    .hw-stat-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .hw-strip-card {
+        background: var(--hw-white);
+        border: 1.5px solid var(--hw-border);
+        border-radius: var(--hw-radius-lg);
+        padding: 15px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: box-shadow .2s,border-color .2s;
+    }
+
+        .hw-strip-card:hover {
+            box-shadow: var(--hw-shadow-sm);
+            border-color: var(--hw-green);
+        }
+
+    .hw-strip-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+    }
+
+        .hw-strip-icon.green {
+            background: var(--hw-green-light);
+            color: var(--hw-green);
+        }
+
+        .hw-strip-icon.gold {
+            background: var(--hw-gold-light);
+            color: var(--hw-gold-dark);
+        }
+
+        .hw-strip-icon.blue {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .hw-strip-icon.dark {
+            background: #f1f2f5;
+            color: var(--hw-dark);
+        }
+
+    .hw-strip-val {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--hw-dark);
+        letter-spacing: -.03em;
+        line-height: 1;
+    }
+
+    .hw-strip-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--hw-muted);
+        margin-top: 3px;
+    }
+
+    /* Buttons */
+    .hw-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        background: var(--hw-green);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 700;
+        font-family: 'Montserrat',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .2s,box-shadow .2s,transform .15s;
+    }
+
+        .hw-btn-primary:hover {
+            background: var(--hw-green-dark);
+            box-shadow: 0 4px 14px rgba(26,122,60,.3);
+            transform: translateY(-1px);
+            color: #fff;
+        }
+
+    .hw-btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 15px;
+        background: transparent;
+        color: var(--hw-muted);
+        border: 1.5px solid var(--hw-border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'Montserrat',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: border-color .2s,color .2s;
+    }
+
+        .hw-btn-outline:hover {
+            border-color: var(--hw-green);
+            color: var(--hw-green);
+        }
+
+    .hw-btn-dl {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        background: var(--hw-green-light);
+        color: var(--hw-green);
+        border: 1.5px solid rgba(26,122,60,.25);
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 700;
+        font-family: 'Montserrat',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .18s,border-color .18s;
+    }
+
+        .hw-btn-dl:hover {
+            background: var(--hw-green);
+            color: #fff;
+            border-color: var(--hw-green);
+        }
+
+    .hw-btn-del {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        background: transparent;
+        color: var(--hw-red);
+        border: 1.5px solid var(--hw-red-light);
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 600;
+        font-family: 'Montserrat',sans-serif;
+        cursor: pointer;
+        transition: background .18s,border-color .18s;
+    }
+
+        .hw-btn-del:hover {
+            background: var(--hw-red-light);
+            border-color: var(--hw-red);
+        }
+
+    /* Table card */
+    .hw-table-card {
+        background: var(--hw-white);
+        border: 1.5px solid var(--hw-border);
+        border-radius: var(--hw-radius-lg);
+        overflow: hidden;
+    }
+
+    .hw-table-card-head {
+        padding: 14px 22px;
+        border-bottom: 1px solid var(--hw-border);
+        background: var(--hw-offwhite);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .hw-table-card-title {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--hw-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .hw-table-card-title i {
+            color: var(--hw-green);
+        }
+
+    /* Table */
+    .hw-dt {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .hw-dt thead th {
+            padding: 11px 16px;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--hw-muted);
+            border-bottom: 2px solid var(--hw-border);
+            background: var(--hw-offwhite);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .hw-dt tbody tr {
+            border-bottom: 1px solid var(--hw-border);
+            transition: background .14s;
+        }
+
+            .hw-dt tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .hw-dt tbody tr:hover {
+                background: #f7fdf9;
+            }
+
+        .hw-dt td {
+            padding: 13px 16px;
+            font-size: 12.5px;
+            color: var(--hw-dark);
+            vertical-align: middle;
+        }
+
+    /* File row */
+    .hw-file-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .hw-file-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+        .hw-file-icon.pdf {
+            background: #fce7f3;
+            color: #be185d;
+        }
+
+        .hw-file-icon.doc {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .hw-file-icon.xls {
+            background: var(--hw-green-light);
+            color: var(--hw-green);
+        }
+
+        .hw-file-icon.img {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        .hw-file-icon.gen {
+            background: #f1f2f5;
+            color: var(--hw-muted);
+        }
+
+    .hw-file-name {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--hw-dark);
+        word-break: break-all;
+    }
+
+    .hw-file-size {
+        font-size: 10.5px;
+        color: var(--hw-muted);
+        margin-top: 1px;
+    }
+
+    /* Doc type pill */
+    .hw-doc-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 9px;
+        border-radius: 99px;
+        background: var(--hw-gold-light);
+        color: var(--hw-gold-dark);
+        border: 1px solid #f0d060;
+        font-size: 10.5px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    /* Uploader cell */
+    .hw-uploader {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .hw-uploader-av {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: linear-gradient(135deg,var(--hw-green),var(--hw-green-dark));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 800;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    /* Date cell */
+    .hw-date-cell {
+        font-size: 11.5px;
+        color: var(--hw-muted);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* Actions cell */
+    .hw-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Empty state */
+    .hw-empty {
+        text-align: center;
+        padding: 52px 24px;
+    }
+
+    .hw-empty-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: var(--hw-offwhite);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        color: var(--hw-border);
+        margin: 0 auto 16px;
+    }
+
+    .hw-empty-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--hw-dark);
+        margin-bottom: 6px;
+    }
+
+    .hw-empty-desc {
+        font-size: 13px;
+        color: var(--hw-muted);
+        max-width: 320px;
+        margin: 0 auto 18px;
+    }
+</style>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <script>window.addEventListener('load',function(){if(typeof hwToast==='function')hwToast('success','Done','@Html.Raw(TempData["Success"])')});</script>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    <script>window.addEventListener('load',function(){if(typeof hwToast==='function')hwToast('error','Error','@Html.Raw(TempData["Error"])')});</script>
 }
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Type</th>
-            <th>File</th>
-            <th>Uploaded (UTC)</th>
-            <th>By</th>
-            <th style="width:180px;"></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var d in Model)
-        {
-            <tr>
-                <td>@d.DocumentType</td>
-                <td>@d.FileName</td>
-                <td>@d.UploadedOnUtc.ToString("yyyy-MM-dd HH:mm")</td>
-                <td>@d.UploadedByUserId</td>
-                <td class="text-end">
-                    <a class="btn btn-sm btn-outline-primary" asp-action="Download" asp-route-id="@d.Id">Download</a>
+@* ── Header ── *@
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-folder2-open me-1"></i>Enrolment Management</div>
+        <h1 class="hw-page-title">Enrolment <span>Documents</span></h1>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+        <a asp-controller="Enrollments" asp-action="Details" asp-route-id="@enrollmentId" class="hw-btn-outline">
+            <i class="bi bi-arrow-left"></i> Back to Enrolment
+        </a>
+        <a asp-action="Upload" asp-route-enrollmentId="@enrollmentId" class="hw-btn-primary">
+            <i class="bi bi-upload"></i> Upload Document
+        </a>
+    </div>
+</div>
 
-                    <form asp-action="Delete" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@d.Id" />
-                        <input type="hidden" name="enrollmentId" value="@enrollmentId" />
-                        <button class="btn btn-sm btn-outline-danger" type="submit"
-                                onclick="return confirm('Delete this document?');">
-                            Delete
-                        </button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+@* ── Stats ── *@
+@{
+    var totalDocs = Model.Count;
+    var docTypes = Model.Select(d => d.DocumentType).Distinct().Count();
+    var latestUpload = Model.OrderByDescending(d => d.UploadedOnUtc).FirstOrDefault()?.UploadedOnUtc;
+}
+<div class="hw-stat-strip">
+    <div class="hw-strip-card">
+        <div class="hw-strip-icon dark"><i class="bi bi-files"></i></div>
+        <div><div class="hw-strip-val">@totalDocs</div><div class="hw-strip-label">Total Documents</div></div>
+    </div>
+    <div class="hw-strip-card">
+        <div class="hw-strip-icon gold"><i class="bi bi-tags"></i></div>
+        <div><div class="hw-strip-val">@docTypes</div><div class="hw-strip-label">Document Types</div></div>
+    </div>
+    <div class="hw-strip-card">
+        <div class="hw-strip-icon blue"><i class="bi bi-clock-history"></i></div>
+        <div>
+            <div class="hw-strip-val" style="font-size:15px;font-weight:700;">
+                @(latestUpload.HasValue? latestUpload.Value.ToString("dd MMM") : "—")
+            </div>
+            <div class="hw-strip-label">Last Upload</div>
+        </div>
+    </div>
+    <div class="hw-strip-card">
+        <div class="hw-strip-icon green"><i class="bi bi-people"></i></div>
+        <div><div class="hw-strip-val">@Model.Select(d => d.UploadedByUserId).Distinct().Count()</div><div class="hw-strip-label">Uploaders</div></div>
+    </div>
+</div>
+
+@* ── Documents table ── *@
+<div class="hw-table-card">
+    <div class="hw-table-card-head">
+        <span class="hw-table-card-title"><i class="bi bi-folder2-open"></i> All Documents</span>
+        <a asp-action="Upload" asp-route-enrollmentId="@enrollmentId" class="hw-btn-primary" style="font-size:11.5px;padding:7px 14px;">
+            <i class="bi bi-plus-lg"></i> Upload
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="hw-empty">
+            <div class="hw-empty-icon"><i class="bi bi-folder2-open"></i></div>
+            <div class="hw-empty-title">No documents uploaded yet</div>
+            <div class="hw-empty-desc">Upload proof-of-completion, ID copies, consent forms, and other supporting files for this enrolment.</div>
+            <a asp-action="Upload" asp-route-enrollmentId="@enrollmentId" class="hw-btn-primary">
+                <i class="bi bi-upload"></i> Upload First Document
+            </a>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x:auto;">
+            <table class="hw-dt">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Document Type</th>
+                        <th>Uploaded</th>
+                        <th>By</th>
+                        <th style="width:160px;text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model)
+                    {
+                        var ext = System.IO.Path.GetExtension(d.FileName)?.ToLower().TrimStart('.');
+                        var (iconCss, iconClass) = ext switch
+                        {
+                            "pdf" => ("pdf", "bi-file-earmark-pdf"),
+                            "doc" or "docx" => ("doc", "bi-file-earmark-word"),
+                            "xls" or "xlsx" => ("xls", "bi-file-earmark-excel"),
+                            "jpg" or "jpeg" or "png" or "webp" => ("img", "bi-file-earmark-image"),
+                            _ => ("gen", "bi-file-earmark")
+                        };
+                        var uploaderInitials = (d.UploadedByUserId ?? "U").Length >= 2
+                        ? d.UploadedByUserId!.Substring(0, 2).ToUpper()
+                        : (d.UploadedByUserId ?? "U").ToUpper();
+
+                        <tr>
+                            <td>
+                                <div class="hw-file-cell">
+                                    <div class="hw-file-icon @iconCss"><i class="bi @iconClass"></i></div>
+                                    <div>
+                                        <div class="hw-file-name">@d.FileName</div>
+                                        <div class="hw-file-size" style="text-transform:uppercase;font-size:9.5px;font-weight:700;">@(ext?.ToUpper() ?? "FILE")</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="hw-doc-type"><i class="bi bi-tag" style="font-size:9px;"></i> @d.DocumentType</span></td>
+                            <td>
+                                <div class="hw-date-cell">
+                                    <i class="bi bi-calendar3" style="color:var(--hw-green);margin-right:4px;"></i>@d.UploadedOnUtc.ToString("dd MMM yyyy")
+                                    <div style="font-size:10.5px;color:var(--hw-border);margin-top:1px;">@d.UploadedOnUtc.ToString("HH:mm") UTC</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="hw-uploader">
+                                    <div class="hw-uploader-av">@uploaderInitials</div>
+                                    <span style="font-size:11.5px;font-weight:600;color:var(--hw-muted);">@d.UploadedByUserId</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="hw-actions" style="justify-content:flex-end;">
+                                    <a class="hw-btn-dl" asp-action="Download" asp-route-id="@d.Id">
+                                        <i class="bi bi-download"></i> Download
+                                    </a>
+                                    <form asp-action="Delete" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@d.Id" />
+                                        <input type="hidden" name="enrollmentId" value="@enrollmentId" />
+                                        <button class="hw-btn-del" type="submit"
+                                                onclick="return confirm('Permanently delete \'@d.FileName\'? This cannot be undone.')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

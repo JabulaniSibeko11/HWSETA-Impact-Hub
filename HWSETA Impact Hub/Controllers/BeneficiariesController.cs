@@ -1,8 +1,11 @@
 ﻿using ClosedXML.Excel;
+using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace HWSETA_Impact_Hub.Controllers
 {
@@ -11,11 +14,12 @@ namespace HWSETA_Impact_Hub.Controllers
     {
         private readonly IBeneficiaryService _svc;
         private readonly IAuditService _audit;
-
-        public BeneficiariesController(IBeneficiaryService svc, IAuditService audit)
+        private readonly ApplicationDbContext _db;
+        public BeneficiariesController(IBeneficiaryService svc, IAuditService audit, ApplicationDbContext db)
         {
             _svc = svc;
             _audit = audit;
+            _db = db;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -25,14 +29,21 @@ namespace HWSETA_Impact_Hub.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create() => View(new BeneficiaryCreateVm());
+        public async Task<IActionResult> Create(CancellationToken ct)
+        {
+            var vm = new BeneficiaryCreateVm();
+
+            await LoadDropdowns(vm, ct);
+
+            return View(vm);
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BeneficiaryCreateVm vm, CancellationToken ct)
         {
             if (!ModelState.IsValid) return View(vm);
-
+            await LoadDropdowns(vm, ct);
             var (ok, error) = await _svc.CreateAsync(vm, ct);
 
             await _audit.LogViewAsync(
@@ -130,5 +141,55 @@ namespace HWSETA_Impact_Hub.Controllers
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 fileName);
         }
+        private async Task LoadDropdowns(BeneficiaryCreateVm vm, CancellationToken ct)
+        {
+            vm.Genders = await _db.Genders.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync(ct);
+
+            vm.Races = await _db.Races.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync(ct);
+
+            vm.CitizenshipStatuses = await _db.CitizenshipStatuses.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync(ct);
+
+            vm.DisabilityStatuses = await _db.DisabilityStatuses.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync(ct);
+
+            vm.DisabilityTypes = await _db.DisabilityTypes.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync(ct);
+
+            vm.EducationLevels = await _db.EducationLevels.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync(ct);
+
+            vm.EmploymentStatuses = await _db.EmploymentStatuses.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync(ct);
+
+            vm.Provinces = await _db.Provinces.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync(ct);
+        } 
     }
 }

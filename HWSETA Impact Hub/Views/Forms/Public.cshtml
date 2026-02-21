@@ -1,0 +1,169 @@
+﻿@using HWSETA_Impact_Hub.Domain.Entities
+@model HWSETA_Impact_Hub.Models.ViewModels.Forms.PublicFormVm
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+
+<div class="container" style="max-width: 860px;">
+    <div class="my-4">
+        <h1 class="mb-1">@Model.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <p class="text-muted">@Model.Description</p>
+        }
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <form method="post" action="/f/@Model.Token">
+        @Html.AntiForgeryToken()
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Email (optional)</label>
+                        <input class="form-control" name="Email" value="@Model.PrefillEmail" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone (optional)</label>
+                        <input class="form-control" name="Phone" value="@Model.PrefillPhone" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @foreach (var s in Model.Sections.OrderBy(x => x.SortOrder))
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <div class="fw-bold">@s.Title</div>
+                    @if (!string.IsNullOrWhiteSpace(s.Description))
+                    {
+                        <div class="text-muted">@s.Description</div>
+                    }
+                </div>
+
+                <div class="card-body">
+                    @foreach (var q in s.Questions.OrderBy(x => x.SortOrder))
+                    {
+                        var fid = q.FieldId;
+                        var requiredMark = q.IsRequired ? " *" : "";
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">@q.Label@requiredMark</label>
+                            @if (!string.IsNullOrWhiteSpace(q.HelpText))
+                            {
+                                <div class="form-text">@q.HelpText</div>
+                            }
+
+                            @{
+                                var type = (FormFieldType)q.FieldType;
+                                var nameSingle = $"Answers[{fid}]";
+                                var nameMulti = $"MultiAnswers[{fid}]";
+                                var fId = q.FieldId;
+                                string IdSafe(string? s) => (s ?? "").Replace(" ", "_").Replace("/", "_");
+                            }
+                            
+                            @switch (type)
+                            {
+                                case FormFieldType.ShortText:
+                                case FormFieldType.Email:
+                                case FormFieldType.Phone:
+                                case FormFieldType.Url:
+                                    <input class="form-control" name="@nameSingle" />
+                                    break;
+
+                                case FormFieldType.LongText:
+                                    <textarea class="form-control" rows="3" name="@nameSingle"></textarea>
+                                    break;
+
+                                case FormFieldType.Date:
+                                    <input type="date" class="form-control" name="@nameSingle" />
+                                    break;
+
+                                case FormFieldType.Time:
+                                    <input type="time" class="form-control" name="@nameSingle" />
+                                    break;
+
+                                case FormFieldType.Number:
+                                    <input type="number" class="form-control" name="@nameSingle" />
+                                    break;
+
+                                case FormFieldType.Decimal:
+                                    <input type="number" step="0.01" class="form-control" name="@nameSingle" />
+                                    break;
+
+                                case FormFieldType.YesNo:
+                                    <select class="form-select" name="@nameSingle">
+                                        <option value="">-- Select --</option>
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                    </select>
+                                    break;
+
+                                case FormFieldType.Dropdown:
+                                    <select class="form-select" name="@nameSingle">
+                                        <option value="">-- Select --</option>
+                                        @foreach (var o in q.Options)
+                                        {
+                                            <option value="@o.Value">@o.Text</option>
+                                        }
+                                    </select>
+                                    break;
+
+                                case FormFieldType.Radio:
+                                    <div>
+                                        @foreach (var o in q.Options)
+                                        {
+                                            var opt = IdSafe(o.Value);
+                                            var htmlId = $"r_{fid}_{opt}";
+
+                                            <div class="form-check">
+                                                <input class="form-check-input"
+                                                       type="radio"
+                                                       name="@nameSingle"
+                                                       value="@o.Value"
+                                                       id="@htmlId" />
+                                                <label class="form-check-label" for="@htmlId">@o.Text</label>
+                                            </div>
+                                        }
+                                    </div>
+                                    break;
+
+                                case FormFieldType.Checkbox:
+                                    <div>
+                                        @foreach (var o in q.Options)
+                                        {
+                                            var opt = IdSafe(o.Value);
+                                            var htmlId = $"c_{fid}_{opt}";
+
+                                            <div class="form-check">
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       name="@nameMulti"
+                                                       value="@o.Value"
+                                                       id="@htmlId" />
+                                                <label class="form-check-label" for="@htmlId">@o.Text</label>
+                                            </div>
+                                        }
+                                    </div>
+                                    break;
+                                default:
+                                    <input class="form-control" name="@nameSingle" />
+                                    break;
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="my-4">
+            <button class="btn btn-primary btn-lg" type="submit">Submit</button>
+        </div>
+    </form>
+</div>

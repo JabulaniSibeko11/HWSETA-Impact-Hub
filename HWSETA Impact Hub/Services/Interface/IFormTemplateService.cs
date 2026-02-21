@@ -27,5 +27,14 @@ namespace HWSETA_Impact_Hub.Services.Interface
         Task<(bool ok, string? error)> UpdateOptionAsync(FormFieldOptionEditVm vm, CancellationToken ct);
         Task<(bool ok, string? error)> DeleteOptionAsync(Guid optionId, CancellationToken ct);
         Task<(bool ok, string? error)> ReorderOptionsAsync(Guid fieldId, List<Guid> orderedOptionIds, CancellationToken ct);
+
+
+        Task<FormPublishVm?> GetPublishVmAsync(Guid templateId, string baseUrl, CancellationToken ct);
+        Task<(bool ok, string? error)> PublishAsync(FormPublishVm vm, CancellationToken ct);
+        Task<(bool ok, string? error)> UnpublishAsync(Guid templateId, CancellationToken ct);
+
+        Task<PublicFormVm?> GetPublicFormAsync(string token, CancellationToken ct);
+        Task<(bool ok, string? error, Guid? submissionId)> SubmitPublicAsync(PublicFormSubmitVm vm, string? ip, string? userAgent, CancellationToken ct);
+
     }
 }

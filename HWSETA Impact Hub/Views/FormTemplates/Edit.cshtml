@@ -3,33 +3,157 @@
     ViewData["Title"] = "Edit Form";
 }
 
-<h1>Edit Form</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-<form method="post" class="mt-3">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Id" />
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<link href="~/css/editformcss.css" rel="stylesheet" />
 
-    <div class="mb-3">
-        <label class="form-label">Title</label>
-        <input asp-for="Title" class="form-control" />
-        <span asp-validation-for="Title" class="text-danger"></span>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-ui-checks-grid me-1"></i>Form Management</div>
+        <h1 class="hw-page-title">Edit <span>Form</span></h1>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+        <a asp-action="Builder" asp-route-id="@Model.Id" class="hw-btn-outline">
+            <i class="bi bi-tools"></i> Open Builder
+        </a>
+        <a asp-action="Index" class="hw-btn-outline">
+            <i class="bi bi-arrow-left"></i> All Forms
+        </a>
+    </div>
+</div>
+
+<div class="hw-edit-wrap">
+
+    @* ── Form ── *@
+    <div class="hw-card">
+        <div class="hw-card-head">
+            <div class="hw-card-icon green"><i class="bi bi-pencil-square"></i></div>
+            <div>
+                <div class="hw-card-title">Edit Form Details</div>
+                <div class="hw-card-sub">Changes are saved immediately on submit</div>
+            </div>
+        </div>
+        <div class="hw-card-body">
+            @if (!ViewData.ModelState.IsValid &&
+                        ViewData.ModelState.TryGetValue(string.Empty, out var rootEntry) &&
+                        rootEntry.Errors.Count > 0)
+            {
+                <div class="hw-val-summary" role="alert">
+                    <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;margin-top:1px;font-size:16px;"></i>
+                    <div><strong>Please fix:</strong><ul>@foreach (var e in rootEntry.Errors) {
+                    <li>@e.ErrorMessage</li>
+                }
+</ul></div>
+            </div>
+                        }
+            <form method="post" id="hw-edit-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div class="hw-field">
+                    <label asp-for="Title" class="hw-field-label">Form Title <span class="hw-req">*</span></label>
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-file-earmark-text hw-field-ico"></i>
+                        <input asp-for="Title" class="hw-input"
+                               id="hw-edit-title"
+                               placeholder="Form title"
+                               oninput="hwUpdatePreview()" />
+                    </div>
+                    <span asp-validation-for="Title" class="hw-field-error"></span>
+                </div>
+
+                <div class="hw-field">
+                    <label asp-for="Description" class="hw-field-label">Description <span style="font-weight:400;color:var(--hw-muted);">(optional)</span></label>
+                    <textarea asp-for="Description" class="hw-textarea"
+                              rows="4"
+                              id="hw-edit-desc"
+                              placeholder="Brief description shown to respondents"
+                              oninput="hwUpdatePreview()"></textarea>
+                    <span asp-validation-for="Description" class="hw-field-error"></span>
+                </div>
+
+                <div class="hw-field" style="margin-bottom:0;">
+                    <label class="hw-field-label">Active Status</label>
+                    <div class="hw-toggle-row">
+                        <div>
+                            <div class="hw-toggle-label"><i class="bi bi-broadcast me-2" style="color:var(--hw-green);"></i>Form Active</div>
+                            <div class="hw-toggle-desc">Inactive forms are hidden from the public and cannot receive new submissions.</div>
+                        </div>
+                        <label class="hw-switch">
+                            <input asp-for="IsActive" type="checkbox" />
+                            <span class="hw-switch-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="hw-card-foot">
+            <button type="submit" form="hw-edit-form" class="hw-btn-primary">
+                <i class="bi bi-check-lg"></i> Save Changes
+            </button>
+            <a asp-action="Builder" asp-route-id="@Model.Id" class="hw-btn-outline">
+                <i class="bi bi-tools"></i> Back to Builder
+            </a>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Description</label>
-        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-    </div>
+    @* ── Sidebar ── *@
+    <div style="display:flex;flex-direction:column;gap:16px;">
 
-    <div class="form-check mb-3">
-        <input asp-for="IsActive" class="form-check-input" />
-        <label asp-for="IsActive" class="form-check-label">Active</label>
-    </div>
+        @* Live preview *@
+        <div class="hw-preview-strip">
+            <div class="hw-preview-label">Form Preview</div>
+            <div class="hw-preview-name" id="hw-prev-title">@Model.Title</div>
+            <div class="hw-preview-desc" id="hw-prev-desc">@(string.IsNullOrWhiteSpace(Model.Description) ? "No description." : Model.Description)</div>
+        </div>
 
-    <button class="btn btn-primary" type="submit">Save</button>
-    <a class="btn btn-outline-secondary" asp-action="Builder" asp-route-id="@Model.Id">Back to Builder</a>
-</form>
+        @* What changes ── *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon gold"><i class="bi bi-info-circle"></i></div>
+                <div><div class="hw-card-title">Editing Notes</div></div>
+            </div>
+            <div class="hw-card-body" style="padding:16px 20px;">
+                <ul class="hw-log-list">
+                    <li class="hw-log-item"><i class="bi bi-check-circle-fill"></i>Changing the title does not affect existing submissions — they retain the version at time of submission.</li>
+                    <li class="hw-log-item"><i class="bi bi-check-circle-fill"></i>Deactivating a form immediately hides it from public access.</li>
+                    <li class="hw-log-item"><i class="bi bi-check-circle-fill"></i>To add, remove or reorder questions, use the <strong>Builder</strong>.</li>
+                    <li class="hw-log-item"><i class="bi bi-check-circle-fill"></i>To publish or unpublish, use the <strong>Publish</strong> button in the Builder header.</li>
+                </ul>
+            </div>
+        </div>
+
+        @* Danger zone *@
+        <div class="hw-danger-zone">
+            <div class="hw-danger-title"><i class="bi bi-exclamation-triangle-fill"></i> Danger Zone</div>
+            <div class="hw-danger-desc">Deactivating will hide this form from all public links immediately. This cannot be undone without re-activating manually.</div>
+            <button class="hw-btn-danger-sm" type="button"
+                    onclick="if(confirm('Are you sure you want to deactivate this form?')) document.getElementById('hw-edit-form').submit();">
+                <i class="bi bi-slash-circle"></i> Deactivate Form
+            </button>
+        </div>
+
+    </div>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function hwUpdatePreview() {
+            var t = document.getElementById('hw-edit-title').value.trim();
+            var d = document.getElementById('hw-edit-desc').value.trim();
+            document.getElementById('hw-prev-title').textContent = t || 'Form title…';
+            document.getElementById('hw-prev-desc').textContent  = d || 'No description.';
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('span[data-valmsg-for]').forEach(function (span) {
+                if (span.textContent.trim()) {
+                    var inp = document.querySelector('[name="' + span.getAttribute('data-valmsg-for') + '"]');
+                    if (inp) inp.classList.add('input-error');
+                }
+            });
+        });
+    </script>
 }

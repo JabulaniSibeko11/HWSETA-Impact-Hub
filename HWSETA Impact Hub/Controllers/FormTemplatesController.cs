@@ -185,5 +185,42 @@ namespace HWSETA_Impact_Hub.Controllers
 
             return RedirectToAction(nameof(Builder), new { id = templateId });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Publish(Guid id, CancellationToken ct)
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var vm = await _svc.GetPublishVmAsync(id, baseUrl, ct);
+            if (vm == null) return NotFound();
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Publish(FormPublishVm vm, CancellationToken ct)
+        {
+            if (!ModelState.IsValid) return View(vm);
+
+            var (ok, error) = await _svc.PublishAsync(vm, ct);
+            if (!ok)
+            {
+                ModelState.AddModelError("", error ?? "Unable to publish.");
+                return View(vm);
+            }
+
+            TempData["Success"] = "Form published.";
+            return RedirectToAction(nameof(Publish), new { id = vm.TemplateId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Unpublish(Guid templateId, CancellationToken ct)
+        {
+            var (ok, error) = await _svc.UnpublishAsync(templateId, ct);
+            if (!ok) TempData["Error"] = error ?? "Unable to unpublish.";
+            else TempData["Success"] = "Form unpublished.";
+
+            return RedirectToAction(nameof(Publish), new { id = templateId });
+        }
     }
 }

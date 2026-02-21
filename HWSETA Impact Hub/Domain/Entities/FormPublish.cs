@@ -13,11 +13,18 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public DateTime OpenFromUtc { get; set; } = DateTime.UtcNow;
         public DateTime? OpenToUtc { get; set; }
 
+        public bool IsPublished { get; set; } = false;
         public bool IsOpen { get; set; } = true;
 
         // Optional targeting (future)
         public Guid? CohortId { get; set; }
         public Guid? BeneficiaryId { get; set; }
+
+        public DateTime CloseAtUtc { get; set; }
+
+        public int? MaxSubmissions { get; set; }
+
+        public bool AllowMultipleSubmissions { get; set; } = true;
     }
 
     public sealed class FormSubmission : BaseEntity
@@ -37,6 +44,8 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
 
+        public string? IpAddress { get; set; }
+        public string? UserAgent { get; set; }
         public List<FormAnswer> Answers { get; set; } = new();
     }
 
