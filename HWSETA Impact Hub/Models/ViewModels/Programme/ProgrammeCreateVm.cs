@@ -17,25 +17,24 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Programme
         public List<SelectListItem> QualificationTypes { get; set; } = new();
 
         public bool IsActive { get; set; } = true;
-       
 
-        
-        public string? QualificationType { get; set; }   // lookup name (or Guid QualificationTypeId)
-     
 
-       
-
-    
 
         [MaxLength(20)]
         public string? NqfLevel { get; set; }
+        public int? Credits { get; set; }
+        public string? SAQAId { get; set; }
+        public string? OFOCode { get; set; }
 
 
         [Range(1, 60)]
         public int? DurationMonths { get; set; }
 
-     
+        [Required] public Guid ProvinceId { get; set; }
+        public List<SelectListItem> Provinces { get; set; } = new();
 
-  
+
+
+
     }
 }

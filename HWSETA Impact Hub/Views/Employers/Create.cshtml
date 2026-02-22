@@ -21,15 +21,29 @@
         </div>
 
         <div class="col-md-6">
+            <label asp-for="RegistrationTypeId" class="form-label">Registration Type</label>
+            <select asp-for="RegistrationTypeId" asp-items="Model.RegistrationTypes" class="form-select">
+                <option value="">-- Select Registration type --</option>
+            </select>
+            <span asp-validation-for="RegistrationTypeId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
             <label class="form-label">Sector</label>
             <input asp-for="Sector" class="form-control" />
             <span asp-validation-for="Sector" class="text-danger"></span>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Province</label>
-            <input asp-for="Province" class="form-control" />
-            <span asp-validation-for="Province" class="text-danger"></span>
+        <div class="col-md-3">
+            <label class="form-label">Registration Number</label>
+            <input asp-for="RegistrationNumber" class="form-control" />
+            <span asp-validation-for="RegistrationNumber" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Seta Levy Number</label>
+            <input asp-for="SetaLevyNumber" class="form-control" />
+            <span asp-validation-for="SetaLevyNumber" class="text-danger"></span>
         </div>
 
         <div class="col-md-4">
@@ -42,9 +56,47 @@
             <span asp-validation-for="ContactEmail" class="text-danger"></span>
         </div>
         <div class="col-md-4">
+            <label class="form-label">ContactPhone</label>
+            <input asp-for="ContactPhone" class="form-control" />
+        </div>
+        <div class="col-md-4">
             <label class="form-label">Phone</label>
             <input asp-for="Phone" class="form-control" />
         </div>
+
+
+        <div class="col-md-6">
+            <label class="form-label">Street Address</label>
+            <input asp-for="AddressLine1" class="form-control" />
+            <span asp-validation-for="AddressLine1" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="ProvinceId" class="form-label">Province</label>
+            <select asp-for="ProvinceId" asp-items="Model.Provinces" class="form-select">
+                <option value="">-- Select Province --</option>
+            </select>
+            <span asp-validation-for="ProvinceId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">City</label>
+            <input asp-for="City" class="form-control" />
+            <span asp-validation-for="City" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">PostalCode</label>
+            <input asp-for="PostalCode" class="form-control" />
+            <span asp-validation-for="PostalCode" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <div class="form-check mt-4">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label">Active</label>
+            </div>
+        </div>
+
     </div>
 
     <div class="mt-3">

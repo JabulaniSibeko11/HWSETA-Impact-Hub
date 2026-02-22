@@ -30,8 +30,12 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (string.IsNullOrWhiteSpace(vm.ProgrammeName))
                 return (false, "ProgrammeName is required.");
 
-            if (string.IsNullOrWhiteSpace(vm.QualificationType))
-                return (false, "QualificationType is required.");
+            //if (string.IsNullOrWhiteSpace(vm.QualificationType))
+            //    return (false, "QualificationType is required.");
+
+            if (vm.QualificationTypeId == Guid.Empty)
+                return (false, $"QualificationType is required.");
+
 
             var name = vm.ProgrammeName.Trim();
 
@@ -44,21 +48,34 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             }
 
             // QualificationType lookup (by Name) -> REQUIRED
-            var qName = vm.QualificationType.Trim();
+            //var qName = vm.QualificationType.Trim();
 
-            var qualificationTypeId = await _db.QualificationTypes
-                .Where(x => x.IsActive && x.Name == qName)
-                .Select(x => x.Id)
-                .FirstOrDefaultAsync(ct);
+            //var qualificationTypeId = await _db.QualificationTypes
+            //    .Where(x => x.IsActive && x.Name == qName)
+            //    .Select(x => x.Id)
+            //    .FirstOrDefaultAsync(ct);
 
-            if (qualificationTypeId == Guid.Empty)
-                return (false, $"QualificationType '{qName}' not found in lookup.");
+            //if (qualificationTypeId == Guid.Empty)
+            //    return (false, $"QualificationType '{qName}' not found in lookup.");
+
+
+            //Province Lookup
+            var provinceName = vm.ProvinceId != Guid.Empty ? (await _db.Provinces.Where(x => x.Id == vm.ProvinceId).Select(x => x.Name).FirstOrDefaultAsync(ct)) : null;
 
             var p = new Programme
             {
                 ProgrammeName = name,
                 ProgrammeCode = code,
-                QualificationTypeId = qualificationTypeId,   // Guid (required)
+                QualificationTypeId = vm.QualificationTypeId,   // Guid (required)
+                
+                NqfLevel = vm.NqfLevel?.Trim(),
+                SAQAId = string.IsNullOrWhiteSpace(vm.SAQAId) ? null : vm.SAQAId.Trim(),
+                OFOCode = string.IsNullOrWhiteSpace(vm.OFOCode) ? null : vm.OFOCode.Trim(),
+                Credits = vm.Credits,
+                DurationMonths = vm.DurationMonths,
+                Province = provinceName,
+
+
                 IsActive = vm.IsActive,
                 CreatedOnUtc = DateTime.UtcNow,
                 CreatedByUserId = _user.UserId
@@ -225,7 +242,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                         QualificationTypeId = qualId,      // Guid (required)
                         IsActive = isActive,
                         CreatedOnUtc = DateTime.UtcNow,
-                        CreatedByUserId = _user.UserId
+                        //CreatedByUserId = _user.UserId
                     };
 
                     _db.Programmes.Add(entity);

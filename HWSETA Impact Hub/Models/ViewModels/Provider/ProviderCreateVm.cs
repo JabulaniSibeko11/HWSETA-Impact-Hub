@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 
 namespace HWSETA_Impact_Hub.Models.ViewModels.Provider
 {
@@ -13,16 +14,28 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Provider
         [Required, MaxLength(80)]
         public string AccreditationNo { get; set; } = "";
 
-        [Required, MaxLength(60)]
-        public string Province { get; set; } = "";
 
         [MaxLength(120)]
-        public string? ContactName { get; set; }
+        public string ContactName { get; set; }
 
         [EmailAddress, MaxLength(256)]
-        public string? ContactEmail { get; set; }
+        public string ContactEmail { get; set; }
+        public string ContactPhone { get; set; }
 
         [MaxLength(30)]
         public string? Phone { get; set; }
+
+        public DateTime? AccreditationStartDate { get; set; }
+        public DateTime? AccreditationEndDate { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        //Address fields (creates Address entity)
+        [Required, MaxLength(80)] public string City { get; set; } = "";
+        [Required, MaxLength(200)] public string AddressLine1 { get; set; } = "";
+        [Required, MaxLength(12)] public string PostalCode { get; set; } = "";
+
+        [Required] public Guid ProvinceId { get; set; }
+        public List<SelectListItem> Provinces { get; set; } = new();
     }
 }

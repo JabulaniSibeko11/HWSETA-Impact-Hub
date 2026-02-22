@@ -1,9 +1,13 @@
 ﻿using ClosedXML.Excel;
 using DocumentFormat.OpenXml.Presentation;
+using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Models.ViewModels.Employers;
+using HWSETA_Impact_Hub.Models.ViewModels.Provider;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace HWSETA_Impact_Hub.Controllers
 {
@@ -13,11 +17,13 @@ namespace HWSETA_Impact_Hub.Controllers
     {
         private readonly IEmployerService _svc;
         private readonly IAuditService _audit;
+        private readonly ApplicationDbContext _db;
 
-        public EmployersController(IEmployerService svc, IAuditService audit)
+        public EmployersController(IEmployerService svc, IAuditService audit, ApplicationDbContext db)
         {
             _svc = svc;
             _audit = audit;
+            _db = db;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -27,7 +33,15 @@ namespace HWSETA_Impact_Hub.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create() => View(new EmployerCreateVm());
+        public async Task<IActionResult> CreateAsync()
+        {
+            var vm = new EmployerCreateVm();
+
+            await LoadDropdowns(vm);
+
+            return View(vm);
+
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -124,6 +138,21 @@ namespace HWSETA_Impact_Hub.Controllers
             return File(bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 fileName);
+        }
+
+        private async Task LoadDropdowns(EmployerCreateVm vm)
+        {
+            vm.Provinces = await _db.Provinces.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync();
+
+            vm.RegistrationTypes = await _db.EmployerRegistrationTypes.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync();
         }
     }
 

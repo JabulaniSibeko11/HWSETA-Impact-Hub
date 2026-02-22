@@ -4,6 +4,7 @@ using HWSETA_Impact_Hub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HWSETA_Impact_Hub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260222191045_RedesignedProgrammeTable")]
+    partial class RedesignedProgrammeTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -404,8 +407,16 @@ namespace HWSETA_Impact_Hub.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("EmployerNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<string>("LegalName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
                         .HasColumnType("nvarchar(max)");
@@ -1129,8 +1140,8 @@ namespace HWSETA_Impact_Hub.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("CreatedByUserId")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedOnUtc")
                         .HasColumnType("datetime2");
@@ -1198,7 +1209,7 @@ namespace HWSETA_Impact_Hub.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("AccreditationEndDate")
+                    b.Property<DateTime>("AccreditationEndDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("AccreditationNo")
@@ -1206,7 +1217,7 @@ namespace HWSETA_Impact_Hub.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
 
-                    b.Property<DateTime?>("AccreditationStartDate")
+                    b.Property<DateTime>("AccreditationStartDate")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("AddressId")
@@ -1248,6 +1259,9 @@ namespace HWSETA_Impact_Hub.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid>("ProviderTypeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Province")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1274,6 +1288,8 @@ namespace HWSETA_Impact_Hub.Migrations
                     b.HasIndex("ProviderCode")
                         .IsUnique()
                         .HasFilter("[ProviderCode] IS NOT NULL");
+
+                    b.HasIndex("ProviderTypeId");
 
                     b.ToTable("Providers", (string)null);
                 });
@@ -1857,7 +1873,15 @@ namespace HWSETA_Impact_Hub.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.LookupBase", "ProviderType")
+                        .WithMany()
+                        .HasForeignKey("ProviderTypeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.Navigation("Address");
+
+                    b.Navigation("ProviderType");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

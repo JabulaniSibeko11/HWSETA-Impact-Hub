@@ -6,7 +6,7 @@ namespace HWSETA_Impact_Hub.Domain.Entities
     {
 
         public string EmployerCode { get; set; } = ""; // unique
-        public string LegalName { get; set; } = "";
+        public string EmployerName { get; set; } = "";
         public string? TradingName { get; set; }
 
         public Guid RegistrationTypeId { get; set; }
@@ -23,8 +23,6 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public string ContactPhone { get; set; } = "";
 
         public bool IsActive { get; set; } = true;
-        public string EmployerNumber { get; set; } = "";
-        public string EmployerName { get; set; } = "";
         public string Sector { get; set; } = "";
         public string Province { get; set; } = "";
       

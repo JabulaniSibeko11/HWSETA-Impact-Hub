@@ -2,6 +2,7 @@
 
 namespace HWSETA_Impact_Hub.Domain.Entities
 {
+    public enum EnrollmentStatus { Enrolled = 1, InTraining = 2, DroppedOut = 3, Completed = 4 }
     public sealed class Enrollment : BaseEntity
     {
         public Guid BeneficiaryId { get; set; }
@@ -21,14 +22,14 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public string? Notes { get; set; }
         public bool IsActive { get; set; } = true;
         
-        public Guid ProgrammeId { get; set; }
-        public Programme Programme { get; set; } = null!;
+        //public Guid ProgrammeId { get; set; }
+        //public Programme Programme { get; set; } = null!;
 
-        public Guid ProviderId { get; set; }
-        public Provider Provider { get; set; } = null!;
+        //public Guid ProviderId { get; set; }
+        //public Provider Provider { get; set; } = null!;
 
-        public Guid? EmployerId { get; set; }
-        public Employer? Employer { get; set; }
+        //public Guid? EmployerId { get; set; }
+        //public Employer? Employer { get; set; }
 
         
         public DateTime? EndDate { get; set; }

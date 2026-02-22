@@ -36,16 +36,37 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 if (await _db.Providers.AnyAsync(x => x.ProviderCode == code, ct))
                     return (false, "ProviderCode already exists.");
             }
+            //Province Lookup
+            var provinceName = vm.ProvinceId != Guid.Empty ? (await _db.Provinces.Where(x => x.Id == vm.ProvinceId).Select(x => x.Name).FirstOrDefaultAsync(ct)) : null;
+
+            //Save Address
+            // Create Address first (required)
+            var addr = new Address
+            {
+                AddressLine1 = vm.AddressLine1.Trim(),
+                City = vm.City.Trim(),
+                PostalCode = vm.PostalCode.Trim(),
+                ProvinceId = vm.ProvinceId,
+                CreatedOnUtc = DateTime.UtcNow,
+                CreatedByUserId = _user.UserId
+            };
+            _db.Addresses.Add(addr);
 
             var p = new Provider
             {
                 ProviderName = vm.ProviderName.Trim(),
                 ProviderCode = string.IsNullOrWhiteSpace(vm.ProviderCode) ? null : vm.ProviderCode.Trim(),
                 AccreditationNo = acc,
-                Province = vm.Province.Trim(),
+                AccreditationStartDate = vm.AccreditationStartDate,
+                AccreditationEndDate = vm.AccreditationEndDate,
+                AddressId = addr.Id,
+                Province = provinceName,
                 ContactName = vm.ContactName?.Trim(),
                 ContactEmail = vm.ContactEmail?.Trim(),
+                ContactPhone = vm.ContactPhone?.Trim(),
                 Phone = vm.Phone?.Trim(),
+
+                IsActive = vm.IsActive,
                 CreatedOnUtc = DateTime.UtcNow,
                 CreatedByUserId = _user.UserId
             };

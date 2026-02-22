@@ -1,9 +1,13 @@
 ﻿using ClosedXML.Excel;
+using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Domain.Entities;
+using HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries;
 using HWSETA_Impact_Hub.Models.ViewModels.Programme;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace HWSETA_Impact_Hub.Controllers
 {
@@ -12,11 +16,13 @@ namespace HWSETA_Impact_Hub.Controllers
     {
         private readonly IProgrammeService _svc;
         private readonly IAuditService _audit;
+        private readonly ApplicationDbContext _db;
 
-        public ProgrammesController(IProgrammeService svc, IAuditService audit)
+        public ProgrammesController(IProgrammeService svc, IAuditService audit, ApplicationDbContext db)
         {
             _svc = svc;
             _audit = audit;
+            _db = db;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -26,7 +32,17 @@ namespace HWSETA_Impact_Hub.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create() => View(new ProgrammeCreateVm());
+        //public IActionResult Create() => View(new ProgrammeCreateVm());
+
+        public async Task<IActionResult> CreateAsync()
+        {
+            var vm = new ProgrammeCreateVm();
+
+            await LoadDropdowns(vm);
+
+            return View(vm);
+
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -115,6 +131,23 @@ namespace HWSETA_Impact_Hub.Controllers
             return File(bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 fileName);
+        }
+
+
+
+        private async Task LoadDropdowns(ProgrammeCreateVm vm)
+        {
+            vm.QualificationTypes = await _db.QualificationTypes.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync();
+
+            vm.Provinces = await _db.Provinces.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync();
         }
     }
 }

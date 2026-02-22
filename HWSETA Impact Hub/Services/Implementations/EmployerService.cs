@@ -32,15 +32,39 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 if (existsCode) return (false, "EmployerCode already exists.");
             }
 
+            //Province Lookup
+            var provinceName = vm.ProvinceId != Guid.Empty ? (await _db.Provinces.Where(x => x.Id == vm.ProvinceId).Select(x => x.Name).FirstOrDefaultAsync(ct)) : null;
+
+            //Save Address
+            // Create Address first (required)
+            var addr = new Address
+            {
+                AddressLine1 = vm.AddressLine1.Trim(),
+                City = vm.City.Trim(),
+                PostalCode = vm.PostalCode.Trim(),
+                ProvinceId = vm.ProvinceId,
+                CreatedOnUtc = DateTime.UtcNow,
+                CreatedByUserId = _user.UserId
+            };
+            _db.Addresses.Add(addr);
+
             var e = new Employer
             {
                 EmployerName = vm.EmployerName.Trim(),
                 EmployerCode = string.IsNullOrWhiteSpace(vm.EmployerCode) ? null : vm.EmployerCode.Trim(),
+                TradingName = vm.EmployerName.Trim(),
                 Sector = vm.Sector.Trim(),
-                Province = vm.Province.Trim(),
+                RegistrationTypeId = vm.RegistrationTypeId,
+                RegistrationNumber = vm.RegistrationNumber.Trim(),
+                SetaLevyNumber = vm.SetaLevyNumber.Trim(),
+                AddressId = addr.Id,
+                Province = provinceName,
                 ContactName = vm.ContactName?.Trim(),
                 ContactEmail = vm.ContactEmail?.Trim(),
+                ContactPhone = vm.ContactPhone.Trim(),
                 Phone = vm.Phone?.Trim(),
+
+                IsActive = vm.IsActive,
                 CreatedOnUtc = DateTime.UtcNow,
                 CreatedByUserId = _user.UserId
             };

@@ -181,10 +181,6 @@ namespace HWSETA_Impact_Hub.Data
                  .WithMany()
                  .HasForeignKey(x => x.AddressId)
                  .OnDelete(DeleteBehavior.NoAction);
-                e.HasOne(x => x.ProviderType)
-                 .WithMany()
-                 .HasForeignKey(x => x.ProviderTypeId)
-                 .OnDelete(DeleteBehavior.NoAction);
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
         }

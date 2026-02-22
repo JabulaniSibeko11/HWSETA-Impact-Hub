@@ -30,6 +30,41 @@
             <span asp-validation-for="QualificationTypeId" class="text-danger"></span>
         </div>
 
+        <div class="col-md-3">
+            <label asp-for="NqfLevel" class="form-label">NQF Level</label>
+            <input asp-for="NqfLevel" class="form-control" />
+            <span asp-validation-for="NqfLevel" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label asp-for="Credits" class="form-label">Credits</label>
+            <input asp-for="Credits" type="number" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="DurationMonths" class="form-label">Duration (Months)</label>
+            <input asp-for="DurationMonths" type="number" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="SAQAId" class="form-label">SAQA ID</label>
+            <input asp-for="SAQAId" class="form-control" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="OFOCode" class="form-label">OFO Code</label>
+            <input asp-for="OFOCode" class="form-control" />
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="ProvinceId" class="form-label">Province</label>
+            <select asp-for="ProvinceId" asp-items="Model.Provinces" class="form-select">
+                <option value="">-- Select Province --</option>
+            </select>
+            <span asp-validation-for="ProvinceId" class="text-danger"></span>
+        </div>
+
+
         <div class="col-md-6">
             <div class="form-check mt-4">
                 <input asp-for="IsActive" class="form-check-input" />
