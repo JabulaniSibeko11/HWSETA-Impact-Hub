@@ -25,6 +25,8 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public int? MaxSubmissions { get; set; }
 
         public bool AllowMultipleSubmissions { get; set; } = true;
+
+     
     }
 
     public sealed class FormSubmission : BaseEntity

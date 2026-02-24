@@ -4,6 +4,7 @@ using HWSETA_Impact_Hub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HWSETA_Impact_Hub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260224081208_AddInvationFunction")]
+    partial class AddInvationFunction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -211,9 +214,6 @@ namespace HWSETA_Impact_Hub.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<string>("Employer")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Guid>("EmploymentStatusId")
                         .HasColumnType("uniqueidentifier");
 
@@ -270,9 +270,6 @@ namespace HWSETA_Impact_Hub.Migrations
                     b.Property<string>("PostalCode")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Programme")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("ProofOfCompletionPath")
                         .HasColumnType("nvarchar(max)");
 
@@ -296,9 +293,6 @@ namespace HWSETA_Impact_Hub.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
-
-                    b.Property<string>("TrainingProvider")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UpdatedByUserId")
                         .HasColumnType("nvarchar(max)");
@@ -333,81 +327,6 @@ namespace HWSETA_Impact_Hub.Migrations
                         .IsUnique();
 
                     b.ToTable("Beneficiaries", (string)null);
-                });
-
-            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.BeneficiaryFormInvite", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Attempts")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("BeneficiaryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Channel")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("CompletedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedByUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("DeliveryStatus")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("FormPublishId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("FormSubmissionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("InviteToken")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastAttemptAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LastError")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<DateTime?>("SentAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("SentByUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UpdatedByUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FormPublishId");
-
-                    b.HasIndex("InviteToken")
-                        .IsUnique();
-
-                    b.HasIndex("BeneficiaryId", "FormPublishId", "Channel");
-
-                    b.ToTable("BeneficiaryFormInvites");
                 });
 
             modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.BeneficiaryInvite", b =>
@@ -863,9 +782,6 @@ namespace HWSETA_Impact_Hub.Migrations
                     b.Property<DateTime>("CreatedOnUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FieldCode")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("FieldType")
                         .HasColumnType("int");
 
@@ -1225,19 +1141,6 @@ namespace HWSETA_Impact_Hub.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<DateTime?>("OpenFromUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("OpenToUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PublicToken")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("PublishedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<int>("Purpose")
                         .HasColumnType("int");
 
@@ -1254,9 +1157,6 @@ namespace HWSETA_Impact_Hub.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UnpublishedAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1909,25 +1809,6 @@ namespace HWSETA_Impact_Hub.Migrations
                     b.Navigation("Race");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.BeneficiaryFormInvite", b =>
-                {
-                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.Beneficiary", "Beneficiary")
-                        .WithMany()
-                        .HasForeignKey("BeneficiaryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("HWSETA_Impact_Hub.Domain.Entities.FormPublish", "FormPublish")
-                        .WithMany()
-                        .HasForeignKey("FormPublishId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Beneficiary");
-
-                    b.Navigation("FormPublish");
                 });
 
             modelBuilder.Entity("HWSETA_Impact_Hub.Domain.Entities.BeneficiaryInvite", b =>

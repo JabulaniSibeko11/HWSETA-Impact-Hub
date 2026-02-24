@@ -614,15 +614,14 @@
                                         <i class="bi bi-inbox"></i>
                                     </span>
                                 }
+                             
                                 @if (f.IsPublished && !string.IsNullOrWhiteSpace(f.PublicToken))
                                 {
                                     <a class="hw-btn-gold"
-                                       asp-controller="PublicForms"
-                                       asp-action="Index"
-                                       asp-route-token="@f.PublicToken"
-                                       target="_blank"
-                                       title="Open Public Form">
-                                        <i class="bi bi-box-arrow-up-right"></i>
+                                       asp-action="SendCenter"
+                                       asp-route-id="@f.Id"
+                                       title="Send invites / Bulk send">
+                                        <i class="bi bi-send"></i> Send
                                     </a>
                                 }
                             </div>

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using HWSETA_Impact_Hub.Domain.Entities;
+using System.ComponentModel.DataAnnotations;
 
 namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
 {
@@ -23,6 +24,10 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
 
         // convenience
         public string? PublicUrl { get; set; }
+
+        public FormPurpose Purpose { get; set; }
+        public FormStatus Status { get; set; }
+        public FormSendBulkVm Bulk { get; set; } = new();
     }
 
     // -------- Public render --------
@@ -42,6 +47,14 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
         // Captured at submit time
         public string? PrefillEmail { get; set; }
         public string? PrefillPhone { get; set; }
+        public bool PrefillFromBeneficiary { get; set; }
+
+        public string? InviteToken { get; set; }    
+
+
+        public BeneficiaryPrefillVm? Prefill { get; set; }
+
+        public Guid BeneficiaryId { get; set; }
     }
 
     public sealed class PublicSectionVm
@@ -69,7 +82,9 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
         public decimal? MinDecimal { get; set; }
         public decimal? MaxDecimal { get; set; }
         public string? RegexPattern { get; set; }
-
+        public bool IsReadOnly { get; set; }
+        public string? PrefillValue { get; set; }
+        public string? FieldCode { get; set; } // if you added FieldCode to FormField (recommended)
         public List<PublicOptionVm> Options { get; set; } = new();
     }
 
@@ -94,6 +109,8 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
         // optional capture (if you want)
         public string? Email { get; set; }
         public string? Phone { get; set; }
+
+        public string? InviteToken { get; set; }
     }
 
 }

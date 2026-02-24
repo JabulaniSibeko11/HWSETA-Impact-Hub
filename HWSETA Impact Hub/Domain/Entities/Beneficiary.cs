@@ -8,6 +8,15 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         SaId = 1,
         Passport = 2
     }
+    public enum BeneficiaryRegistrationStatus
+    {
+        AddedByAdmin = 1,
+        InviteSent = 2,
+        PasswordSet = 3,
+        LocationCaptured = 4,
+        RegistrationSubmitted = 5,
+        Completed = 6
+    }
 
     public sealed class Beneficiary : BaseEntity
     {
@@ -70,6 +79,26 @@ namespace HWSETA_Impact_Hub.Domain.Entities
        
         public ApplicationUser? User { get; set; }
 
-        
+
+
+        public BeneficiaryRegistrationStatus RegistrationStatus { get; set; } = BeneficiaryRegistrationStatus.AddedByAdmin;
+
+        public DateTime? InvitedAt { get; set; }
+        public DateTime? PasswordSetAt { get; set; }
+        public DateTime? LocationCapturedAt { get; set; }
+        public DateTime? RegistrationSubmittedAt { get; set; }
+
+        // GPS
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+
+        // If registration indicates “Completed”, we require proof upload:
+        public string? ProofOfCompletionPath { get; set; }
+        public DateTime? ProofUploadedAt { get; set; }
+
+        public string? Programme { get; set; }          // e.g. "Community Health Worker"
+        public string? TrainingProvider { get; set; }   // provider name (MVP string)
+        public string? Employer { get; set; }
+
     }
 }

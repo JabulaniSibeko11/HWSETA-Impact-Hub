@@ -1,0 +1,205 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Forms.SendCenterVm
+@using HWSETA_Impact_Hub.Domain.Entities
+
+@{
+    ViewData["Title"] = "Send Centre";
+}
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-send me-1"></i>Form Operations</div>
+        <h1 class="hw-page-title">Send <span>Centre</span></h1>
+        <p class="hw-page-desc">Filter beneficiaries, preview recipients, then send single or bulk invites.</p>
+    </div>
+    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;">
+        <i class="bi bi-arrow-left"></i> Back to Forms
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="hw-card" style="margin-bottom:16px;">
+    <div class="hw-card-head">
+        <div class="hw-card-icon gold"><i class="bi bi-funnel"></i></div>
+        <div>
+            <div class="hw-card-title">Choose Template + Filters</div>
+            <div class="hw-card-sub">Preview shows top 50 matches. Bulk send will send to all matches.</div>
+        </div>
+    </div>
+
+    <div class="hw-card-body">
+        <form asp-action="PreviewSend" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Published Template</label>
+                    <select class="form-select" name="SelectedTemplateId">
+                        @foreach (var t in Model.Templates)
+                        {
+                            <option value="@t.TemplateId" selected="@(t.TemplateId == Model.SelectedTemplateId)">
+                                @t.Title (@t.Purpose)
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="Filters.Status">
+                        <option value="">(Any)</option>
+                        @foreach (var s in Enum.GetValues(typeof(BeneficiaryRegistrationStatus)).Cast<BeneficiaryRegistrationStatus>())
+                        {
+                            <option value="@((int)s)">@s</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Province</label>
+                    <input class="form-control" name="Filters.Province" value="@Model.Filters.Province" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Programme</label>
+                    <input class="form-control" name="Filters.Programme" value="@Model.Filters.Programme" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Training Provider</label>
+                    <input class="form-control" name="Filters.Provider" value="@Model.Filters.Provider" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Employer</label>
+                    <input class="form-control" name="Filters.Employer" value="@Model.Filters.Employer" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <input class="form-control" name="Filters.Search" value="@Model.Filters.Search"
+                           placeholder="Name / Email / Mobile / ID" />
+                </div>
+
+                <div class="col-md-6 d-flex align-items-end gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="Filters.OnlyNotInvitedYet" value="true" @(Model.Filters.OnlyNotInvitedYet ? "checked" : "") />
+                        <label class="form-check-label">Only not invited yet</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="Filters.OnlyMissingPasswordOrUser" value="true" @(Model.Filters.OnlyMissingPasswordOrUser ? "checked" : "") />
+                        <label class="form-check-label">Only missing password/user</label>
+                    </div>
+                </div>
+
+                <div class="col-md-6 d-flex align-items-end gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="Filters.SendEmail" value="true" @(Model.Filters.SendEmail ? "checked" : "") />
+                        <label class="form-check-label">Send Email</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="Filters.SendSms" value="true" @(Model.Filters.SendSms ? "checked" : "") />
+                        <label class="form-check-label">Send SMS</label>
+                    </div>
+                </div>
+
+                <div class="col-md-6 d-flex align-items-end justify-content-end gap-2">
+                    <button type="submit" class="hw-btn-outline">
+                        <i class="bi bi-search"></i> Preview
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <hr />
+
+        <form asp-action="SendBulkNow" method="post">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="TemplateId" value="@Model.SelectedTemplateId" />
+
+            <input type="hidden" name="Status" value="@Model.Filters.Status" />
+            <input type="hidden" name="Province" value="@Model.Filters.Province" />
+            <input type="hidden" name="Programme" value="@Model.Filters.Programme" />
+            <input type="hidden" name="Provider" value="@Model.Filters.Provider" />
+            <input type="hidden" name="Employer" value="@Model.Filters.Employer" />
+            <input type="hidden" name="Search" value="@Model.Filters.Search" />
+            <input type="hidden" name="OnlyNotInvitedYet" value="@(Model.Filters.OnlyNotInvitedYet)" />
+            <input type="hidden" name="OnlyMissingPasswordOrUser" value="@(Model.Filters.OnlyMissingPasswordOrUser)" />
+            <input type="hidden" name="SendEmail" value="@(Model.Filters.SendEmail)" />
+            <input type="hidden" name="SendSms" value="@(Model.Filters.SendSms)" />
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <b>Matches:</b> @Model.PreviewTotal
+                    <span style="color:var(--hw-muted);font-size:12px;">(Preview shows top 50)</span>
+                </div>
+                <button class="hw-btn-gold" type="submit">
+                    <i class="bi bi-send"></i> Send Bulk Now
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="hw-table-card">
+    <div class="hw-table-card-head">
+        <span class="hw-table-card-title"><i class="bi bi-people"></i> Preview Recipients</span>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="hw-dt">
+            <thead>
+                <tr>
+                    <th>Beneficiary</th>
+                    <th>Email</th>
+                    <th>Mobile</th>
+                    <th>Province</th>
+                    <th>Programme</th>
+                    <th>Provider</th>
+                    <th>Employer</th>
+                    <th>Status</th>
+                    <th>Invited</th>
+                    <th>Send One</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.PreviewRows)
+                {
+                    <tr>
+                        <td>@r.FullName</td>
+                        <td>@r.Email</td>
+                        <td>@r.Mobile</td>
+                        <td>@r.Province</td>
+                        <td>@r.Programme</td>
+                        <td>@r.TrainingProvider</td>
+                        <td>@r.Employer</td>
+                        <td>@r.Status</td>
+                        <td>@(r.InvitedAt.HasValue? r.InvitedAt.Value.ToString("dd MMM yyyy") : "-")</td>
+                        <td>
+                            <form asp-action="SendOne" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="templateId" value="@Model.SelectedTemplateId" />
+                                <input type="hidden" name="beneficiaryId" value="@r.BeneficiaryId" />
+                                <input type="hidden" name="sendEmail" value="true" />
+                                <input type="hidden" name="sendSms" value="true" />
+                                <button class="hw-btn-outline" type="submit">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

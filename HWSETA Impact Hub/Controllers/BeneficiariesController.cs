@@ -1,5 +1,6 @@
 ﻿using ClosedXML.Excel;
 using HWSETA_Impact_Hub.Data;
+using HWSETA_Impact_Hub.Domain.Entities;
 using HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
@@ -15,11 +16,14 @@ namespace HWSETA_Impact_Hub.Controllers
         private readonly IBeneficiaryService _svc;
         private readonly IAuditService _audit;
         private readonly ApplicationDbContext _db;
-        public BeneficiariesController(IBeneficiaryService svc, IAuditService audit, ApplicationDbContext db)
+        private readonly IBeneficiaryInviteService _invites;
+
+        public BeneficiariesController(IBeneficiaryService svc, IAuditService audit, ApplicationDbContext db, IBeneficiaryInviteService invites)
         {
             _svc = svc;
             _audit = audit;
             _db = db;
+            _invites = invites;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -190,6 +194,30 @@ namespace HWSETA_Impact_Hub.Controllers
                 .OrderBy(x => x.Name)
                 .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
                 .ToListAsync(ct);
-        } 
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendInvite(Guid id, bool sendEmail = true, bool sendSms = true, CancellationToken ct = default)
+        {
+            // Ensure exactly one Registration form exists & is published & active
+            var registrationTemplateExists = await _db.FormTemplates
+                .AnyAsync(t =>
+                    t.IsActive &&
+                    t.Status == FormStatus.Published &&
+                    t.Purpose == FormPurpose.Registration,
+                    ct);
+
+            if (!registrationTemplateExists)
+            {
+                TempData["Error"] = "No ACTIVE PUBLISHED Registration Form found. Please publish the Registration Form first.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var (ok, err) = await _invites.SendInviteAsync(id, sendEmail, sendSms, ct);
+            TempData[ok ? "Success" : "Error"] = ok ? "Invite sent successfully." : err;
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

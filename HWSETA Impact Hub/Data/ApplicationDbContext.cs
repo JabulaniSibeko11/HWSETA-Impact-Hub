@@ -31,9 +31,10 @@ namespace HWSETA_Impact_Hub.Data
         public DbSet<EmployerRegistrationType> EmployerRegistrationTypes => Set<EmployerRegistrationType>();
         public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
         public DbSet<EnrollmentDocument> EnrollmentDocuments => Set<EnrollmentDocument>();
+        public DbSet<BeneficiaryFormInvite> BeneficiaryFormInvites => Set<BeneficiaryFormInvite>();
 
-
-
+        public DbSet<BeneficiaryInvite> BeneficiaryInvites => Set<BeneficiaryInvite>();
+        public DbSet<OutboundMessageLog> OutboundMessageLogs => Set<OutboundMessageLog>();
         public DbSet<FormTemplate> FormTemplates => Set<FormTemplate>();
         public DbSet<FormSection> FormSections => Set<FormSection>();
         public DbSet<FormField> FormFields => Set<FormField>();
@@ -480,6 +481,44 @@ namespace HWSETA_Impact_Hub.Data
 
                 e.HasIndex(x => new { x.FormSubmissionId, x.FormFieldId });
                 e.Property(x => x.RowVersion).IsRowVersion();
+            });
+
+            b.Entity<BeneficiaryInvite>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TokenHash).HasMaxLength(128).IsRequired();
+
+                e.HasOne(x => x.Beneficiary)
+                 .WithMany()
+                 .HasForeignKey(x => x.BeneficiaryId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasIndex(x => x.TokenHash).IsUnique(false);
+            });
+
+            b.Entity<OutboundMessageLog>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.To).HasMaxLength(200).IsRequired();
+            });
+            b.Entity<BeneficiaryFormInvite>(e =>
+            {
+                e.HasIndex(x => x.InviteToken).IsUnique();
+
+                // prevents duplicates for same beneficiary+publish+channel (optional)
+                e.HasIndex(x => new { x.BeneficiaryId, x.FormPublishId, x.Channel });
+
+                e.Property(x => x.InviteToken).HasMaxLength(64).IsRequired();
+
+                e.HasOne(x => x.Beneficiary)
+                    .WithMany()
+                    .HasForeignKey(x => x.BeneficiaryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(x => x.FormPublish)
+                    .WithMany()
+                    .HasForeignKey(x => x.FormPublishId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

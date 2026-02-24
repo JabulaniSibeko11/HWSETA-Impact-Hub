@@ -700,9 +700,13 @@
                             {
                                 <span class="hw-status-badge active">Active</span>
                             }
-                            else
+                            else if (!b.IsActive)
                             {
                                 <span class="hw-status-badge inactive">Inactive</span>
+                            }
+                            else
+                            {
+                               <span class="badge bg-secondary">@b.RegistrationStatus</span>
                             }
                         </td>
                         <td>
@@ -719,6 +723,15 @@
                                         onclick="hwConfirmDeactivate('@b.Id', '@b.FirstName @b.LastName')">
                                     <i class="bi bi-person-dash"></i>
                                 </button>
+                                <form asp-action="SendInvite" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@b.Id" />
+                                    <input type="hidden" name="sendEmail" value="true" />
+                                    <input type="hidden" name="sendSms" value="true" />
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        Send
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

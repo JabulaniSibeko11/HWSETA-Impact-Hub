@@ -33,6 +33,9 @@ namespace HWSETA_Impact_Hub.Domain.Entities
 
         // Visibility rules: show/hide this field based on another field answer
         public List<FormFieldCondition> Conditions { get; set; } = new();
+
+        public string? FieldCode { get; set; }
+        // e.g. "ProgressStatus", "Programme", "Provider"
     }
 
     public sealed class FormFieldOption : BaseEntity

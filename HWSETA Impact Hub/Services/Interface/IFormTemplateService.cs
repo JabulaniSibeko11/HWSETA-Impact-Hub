@@ -33,8 +33,12 @@ namespace HWSETA_Impact_Hub.Services.Interface
         Task<(bool ok, string? error)> PublishAsync(FormPublishVm vm, CancellationToken ct);
         Task<(bool ok, string? error)> UnpublishAsync(Guid templateId, CancellationToken ct);
 
-        Task<PublicFormVm?> GetPublicFormAsync(string token, CancellationToken ct);
-        Task<(bool ok, string? error, Guid? submissionId)> SubmitPublicAsync(PublicFormSubmitVm vm, string? ip, string? userAgent, CancellationToken ct);
+        Task<PublicFormVm?> GetPublicFormAsync(string token, string? prefillEmail, string? prefillPhone, CancellationToken ct);
 
+        
+        Task<(bool ok, string? error, Guid? submissionId, string? nextUrl)> SubmitPublicAsync(PublicFormSubmitVm vm, string? ip, string? userAgent, CancellationToken ct);
+
+
+     
     }
 }

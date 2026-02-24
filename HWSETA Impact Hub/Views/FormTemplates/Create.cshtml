@@ -70,6 +70,24 @@
                         After creating the form you'll be taken directly to the Builder to add sections and questions.
                     </div>
                 </div>
+
+                <div class="hw-field">
+                    <label asp-for="Purpose" class="hw-field-label">Form Type <span class="hw-req">*</span></label>
+
+                    <div class="hw-field-wrap">
+                        <i class="bi bi-diagram-3 hw-field-ico"></i>
+                        <select asp-for="Purpose" class="hw-input"
+                                asp-items="Html.GetEnumSelectList<HWSETA_Impact_Hub.Domain.Entities.FormPurpose>()">
+                        </select>
+                    </div>
+
+                    <div class="hw-field-hint">
+                        <i class="bi bi-lock-fill me-1" style="color:var(--hw-gold-dark);"></i>
+                        This cannot be changed after creation.
+                    </div>
+
+                    <span asp-validation-for="Purpose" class="hw-field-error"></span>
+                </div>
             </form>
         </div>
         <div class="hw-card-foot">

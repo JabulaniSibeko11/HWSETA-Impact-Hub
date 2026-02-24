@@ -1,6 +1,7 @@
 ﻿using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Infrastructure.Audit;
+using HWSETA_Impact_Hub.Infrastructure.Confugations;
 using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Infrastructure.RequestContext;
 using HWSETA_Impact_Hub.Infrastructure.Seed;
@@ -18,6 +19,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 // Bind Security settings
 builder.Services.Configure<SecurityOptions>(builder.Configuration.GetSection("Security"));
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection("Sms"));
 
 // MVC + Razor Pages (Identity UI)
 builder.Services.AddControllersWithViews();
@@ -100,6 +103,27 @@ builder.Services.AddScoped<IEnrollmentDocumentService, EnrollmentDocumentService
 builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IFormTemplateService, FormTemplateService>();
 builder.Services.AddScoped<IFormSubmissionService, FormSubmissionService>();
+
+builder.Services.AddScoped<IEmailSenderService, SmtpEmailSenderService>();
+
+// SMS sender selection:
+builder.Services.AddHttpClient(); // for gateway sender
+builder.Services.AddScoped<GatewaySmsSenderService>();
+builder.Services.AddScoped<DevSmsSenderService>();
+builder.Services.AddScoped<ISmsSenderService>(sp =>
+{
+    var opt = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SmsOptions>>().Value;
+    if (string.Equals(opt.Provider, "Gateway", StringComparison.OrdinalIgnoreCase))
+        return sp.GetRequiredService<GatewaySmsSenderService>();
+
+    return sp.GetRequiredService<DevSmsSenderService>();
+});
+
+builder.Services.AddScoped<IBeneficiaryInviteService, BeneficiaryInviteService>();
+builder.Services.AddScoped<IRegistrationService, RegistrationService>();
+
+
+
 
 var app = builder.Build();
 await IdentitySeeder.SeedAsync(app.Services);

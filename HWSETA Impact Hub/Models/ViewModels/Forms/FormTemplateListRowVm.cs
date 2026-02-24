@@ -24,6 +24,8 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
 
         [MaxLength(2000)]
         public string? Description { get; set; }
+
+        public FormPurpose Purpose { get; set; } = FormPurpose.Tracking;
     }
 
     public sealed class FormTemplateEditVm
