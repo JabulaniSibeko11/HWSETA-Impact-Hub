@@ -94,10 +94,19 @@ namespace HWSETA_Impact_Hub.Controllers
                 "ProviderCode",
                 "ProviderName",
                 "AccreditationNo",
-                "Province",
+                "AccreditationStartDate",
+                "AccreditationEndDate",
+                
                 "ContactName",
                 "ContactEmail",
-                "Phone"
+                "ContactPhone",
+
+                "AddressLine1",
+                "Suburb",
+                "City",
+                "PostalCode",
+                "Province",
+                "IsActive"
             };
 
             for (int i = 0; i < headers.Length; i++)
@@ -110,10 +119,17 @@ namespace HWSETA_Impact_Hub.Controllers
             ws.Cell(2, 1).Value = "PROV-0001";
             ws.Cell(2, 2).Value = "Example Training Provider";
             ws.Cell(2, 3).Value = "ACC-12345";
-            ws.Cell(2, 4).Value = "Gauteng";
-            ws.Cell(2, 5).Value = "John Doe";
-            ws.Cell(2, 6).Value = "john.doe@example.com";
-            ws.Cell(2, 7).Value = "010 000 0000";
+            ws.Cell(2, 4).Value = "2024-12-01";
+            ws.Cell(2, 5).Value = "2027-12-31";
+            ws.Cell(2, 6).Value = "John Doe";
+            ws.Cell(2, 7).Value = "john.doe@example.com";
+            ws.Cell(2, 8).Value = "010 000 0000";
+            ws.Cell(2, 9).Value = "123 Main Street";
+            ws.Cell(2, 10).Value = "Sandton";
+            ws.Cell(2, 11).Value = "Johannesburg";
+            ws.Cell(2, 12).Value = "2000";
+            ws.Cell(2, 13).Value = "Gauteng";
+            ws.Cell(2, 14).Value = true;
 
             ws.Columns().AdjustToContents();
 

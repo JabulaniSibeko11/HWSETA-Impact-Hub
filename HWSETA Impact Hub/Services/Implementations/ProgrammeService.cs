@@ -124,9 +124,16 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             int Col(string name) => headers.TryGetValue(name, out var i) ? i : -1;
 
+            //Define columns
             var cCode = Col("ProgrammeCode");
             var cName = Col("ProgrammeName");
             var cQual = Col("QualificationType");
+            var cNqf = Col("NqfLevel");
+            var cSAQA = Col("SAQAId");
+            var cOfo = Col("OFOCode");
+            var cCredits = Col("Credits");
+            var cDuration = Col("DurationMonths");
+            var cProvince = Col("Province");
             var cAct = Col("IsActive");
 
             if (cName < 0)
@@ -141,16 +148,16 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 return result;
             }
 
-            // Lookups: QualificationTypes (Name -> Id)
-            var qualTypes = await _db.QualificationTypes
-                .Where(x => x.IsActive)
-                .Select(x => new { x.Id, x.Name })
-                .ToListAsync(ct);
+            // Lookup QualificationTypes
+            var qualByName = await _db.QualificationTypes
+               .Where(x => x.IsActive)
+               .ToDictionaryAsync(x => x.Name.Trim(), x => x.Id,
+                   StringComparer.OrdinalIgnoreCase, ct);
 
-            var qualByName = qualTypes
-                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
-                .GroupBy(x => x.Name!.Trim(), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+            // Lookup Provinces
+            var provinceLookup = await _db.Provinces
+                .ToDictionaryAsync(x => x.Name.Trim(), x => x.Name,
+                    StringComparer.OrdinalIgnoreCase, ct);
 
             // Upsert by ProgrammeCode if present
             var existingByCode = await _db.Programmes
@@ -185,12 +192,6 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 var name = row.Cell(cName).GetString()?.Trim() ?? "";
                 var code = cCode > 0 ? row.Cell(cCode).GetString()?.Trim() : null;
 
-                if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(code))
-                {
-                    result.Skipped++;
-                    continue;
-                }
-
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     result.Errors.Add($"Row {r}: ProgrammeName is required.");
@@ -200,7 +201,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
                 // QualificationType REQUIRED per row
                 var qualName = row.Cell(cQual).GetString()?.Trim();
-                if (string.IsNullOrWhiteSpace(qualName))
+                if (string.IsNullOrWhiteSpace(qualName) )
                 {
                     result.Errors.Add($"Row {r}: QualificationType is required.");
                     result.Skipped++;
@@ -214,6 +215,34 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                     continue;
                 }
 
+                // Optional Columns
+                var nqf = cNqf > 0 ? row.Cell(cNqf).GetString()?.Trim() : null;
+                var saqa = cSAQA > 0 ? row.Cell(cSAQA).GetString()?.Trim() : null;
+                var ofo = cOfo > 0 ? row.Cell(cOfo).GetString()?.Trim() : null;
+
+                int? credits = null;
+                if (cCredits > 0 && int.TryParse(row.Cell(cCredits).GetString(), out var cVal))
+                    credits = cVal;
+
+                int? duration = null;
+                if (cDuration > 0 && int.TryParse(row.Cell(cDuration).GetString(), out var dVal))
+                    duration = dVal;
+
+                string? province = null;
+                if (cProvince > 0)
+                {
+                    var provName = row.Cell(cProvince).GetString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(provName))
+                    {
+                        if (!provinceLookup.TryGetValue(provName, out province))
+                        {
+                            result.Errors.Add($"Row {r}: Unknown Province '{provName}'.");
+                            result.Skipped++;
+                            continue;
+                        }
+                    }
+                }
+
                 bool isActive = true;
                 if (cAct > 0)
                 {
@@ -222,27 +251,41 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                         isActive = b;
                 }
 
-                if (!string.IsNullOrWhiteSpace(code) && existingByCode.TryGetValue(code, out var found))
+
+                if (!string.IsNullOrWhiteSpace(code) && existingByCode.TryGetValue(code, out var existing))
                 {
-                    // update
-                    found.ProgrammeName = name;
-                    found.QualificationTypeId = qualId;   // Guid (required)
-                    found.IsActive = isActive;
-                    found.UpdatedOnUtc = DateTime.UtcNow;
-                    found.UpdatedByUserId = _user.UserId;
+                    // UPDATE
+                    existing.ProgrammeName = name;
+                    existing.QualificationTypeId = qualId;
+                    existing.NqfLevel = nqf;
+                    existing.SAQAId = saqa;
+                    existing.OFOCode = ofo;
+                    existing.Credits = credits;
+                    existing.DurationMonths = duration;
+                    existing.Province = province;
+                    existing.IsActive = isActive;
+                    existing.UpdatedOnUtc = DateTime.UtcNow;
+                    existing.UpdatedByUserId = _user.UserId;
 
                     result.Updated++;
                 }
                 else
                 {
+                    // INSERT
                     var entity = new Programme
                     {
-                        ProgrammeCode = string.IsNullOrWhiteSpace(code) ? null : code,
+                        ProgrammeCode = code,
                         ProgrammeName = name,
-                        QualificationTypeId = qualId,      // Guid (required)
+                        QualificationTypeId = qualId,
+                        NqfLevel = nqf ?? "",
+                        SAQAId = saqa,
+                        OFOCode = ofo,
+                        Credits = credits,
+                        DurationMonths = duration,
+                        Province = province ?? "",
                         IsActive = isActive,
                         CreatedOnUtc = DateTime.UtcNow,
-                        //CreatedByUserId = _user.UserId
+                        CreatedByUserId = _user.UserId
                     };
 
                     _db.Programmes.Add(entity);
@@ -261,5 +304,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             return result;
         }
+   
+    
     }
 }

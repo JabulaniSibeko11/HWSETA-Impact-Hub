@@ -93,15 +93,24 @@ namespace HWSETA_Impact_Hub.Controllers
 
             // Headers (Row 1) - must match your importer header names
             var headers = new[]
-            {
-        "EmployerCode",
-        "EmployerName",
-        "Sector",
-        "Province",
-        "ContactName",
-        "ContactEmail",
-        "Phone"
-    };
+              {
+                    "EmployerCode",
+                    "EmployerName",
+                    "TradingName",
+                    "RegistrationType",
+                    "RegistrationNumber",
+                    "SetaLevyNumber",
+                    "Sector",
+                    "Province",
+                    "ContactName",
+                    "ContactEmail",
+                    "ContactPhone",
+                    "AddressLine1",
+                    "Suburb",
+                    "City",
+                    "PostalCode",
+                    "IsActive"
+                };
 
             for (int i = 0; i < headers.Length; i++)
                 ws.Cell(1, i + 1).Value = headers[i];
@@ -113,11 +122,22 @@ namespace HWSETA_Impact_Hub.Controllers
             // Add example row (optional but VERY helpful)
             ws.Cell(2, 1).Value = "EMP-0001";
             ws.Cell(2, 2).Value = "Example Employer Pty Ltd";
-            ws.Cell(2, 3).Value = "Health & Welfare";
-            ws.Cell(2, 4).Value = "Gauteng";
-            ws.Cell(2, 5).Value = "Jane Doe";
-            ws.Cell(2, 6).Value = "jane.doe@example.com";
-            ws.Cell(2, 7).Value = "010 123 4567";
+            ws.Cell(2, 3).Value = "Example Trading Name";
+            ws.Cell(2, 4).Value = "Private Company";
+            ws.Cell(2, 5).Value = "2026/0000/01";
+            ws.Cell(2, 6).Value = "L123456789";
+            ws.Cell(2, 7).Value = "Health & Welfare";
+            ws.Cell(2, 8).Value = "Gauteng";
+            ws.Cell(2, 9).Value = "Jane Doe";
+            ws.Cell(2, 10).Value = "jane.doe@example.com";
+            ws.Cell(2, 11).Value = "0101234567";
+            ws.Cell(2, 12).Value = "2 HWSETA Road";
+            ws.Cell(2, 13).Value = "Soshanguve";
+            ws.Cell(2, 14).Value = "Pretoria";
+            ws.Cell(2, 15).Value = "0001";
+            ws.Cell(2, 16).Value = true;
+
+
 
             // Make columns readable
             ws.Columns().AdjustToContents();

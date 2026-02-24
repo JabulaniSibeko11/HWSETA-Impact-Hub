@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Bulk Upload Providers";
+    ViewData["Title"] = "Bulk Upload Programmes";
 }
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,11 +12,11 @@
 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
     <div>
         <div class="hw-page-eyebrow">
-            <i class="bi bi-journal-bookmark-fill me-1"></i>Providers Management
+            <i class="bi bi-journal-bookmark-fill me-1"></i>Programme Management
         </div>
         <h1 class="hw-page-title">Bulk <span>Upload</span></h1>
         <p class="hw-page-desc">
-            Import multiple providers at once using an Excel spreadsheet.
+            Import multiple programmes at once using an Excel spreadsheet.
         </p>
     </div>
 
@@ -130,115 +130,57 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><span class="hw-col-name">ProviderCode</span></td>
+                            <td><span class="hw-col-name">ProgrammeCode</span></td>
                             <td><span class="hw-col-req no">Optional</span></td>
-                            <td>PRV-0001 (Must be unique if provided)</td>
+                            <td>PRG-0001 (Must be unique if provided)</td>
                         </tr>
-
                         <tr>
-                            <td><span class="hw-col-name">ProviderName</span></td>
+                            <td><span class="hw-col-name">ProgrammeName</span></td>
                             <td>
                                 <span class="hw-col-req yes">
                                     <i class="bi bi-check"></i>Required
                                 </span>
                             </td>
-                            <td>Example: Health Training Institute (Pty) Ltd</td>
+                            <td>Name of the programme</td>
                         </tr>
-
                         <tr>
-                            <td><span class="hw-col-name">AccreditationNo</span></td>
+                            <td><span class="hw-col-name">QualificationType</span></td>
                             <td>
                                 <span class="hw-col-req yes">
                                     <i class="bi bi-check"></i>Required
                                 </span>
                             </td>
-                            <td>HWSETA-ACC-2024-001 (Must be unique)</td>
+                            <td>e.g. Learnership, Skills Programme</td>
                         </tr>
-
                         <tr>
-                            <td><span class="hw-col-name">AccreditationStartDate</span></td>
+                            <td><span class="hw-col-name">NqfLevel</span></td>
+                            <td>
+                                <span class="hw-col-req yes">
+                                    <i class="bi bi-check"></i>Required
+                                </span>
+                            </td>
+                            <td>Example: NQF 4</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">SAQAId</span></td>
                             <td><span class="hw-col-req no">Optional</span></td>
-                            <td>2024-01-01 (Date format: YYYY-MM-DD)</td>
+                            <td>SAQA Qualification ID</td>
                         </tr>
-
                         <tr>
-                            <td><span class="hw-col-name">AccreditationEndDate</span></td>
+                            <td><span class="hw-col-name">OFOCode</span></td>
                             <td><span class="hw-col-req no">Optional</span></td>
-                            <td>2027-12-31 (Date format: YYYY-MM-DD)</td>
+                            <td>OFO occupation code</td>
                         </tr>
-
                         <tr>
-                            <td><span class="hw-col-name">ContactName</span></td>
-                            <td>
-                                <span class="hw-col-req yes">
-                                    <i class="bi bi-check"></i>Required
-                                </span>
-                            </td>
-                            <td>Example: Jane Doe</td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="hw-col-name">ContactEmail</span></td>
-                            <td>
-                                <span class="hw-col-req yes">
-                                    <i class="bi bi-check"></i>Required
-                                </span>
-                            </td>
-                            <td>jane.doe@provider.co.za</td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="hw-col-name">ContactPhone</span></td>
-                            <td>
-                                <span class="hw-col-req yes">
-                                    <i class="bi bi-check"></i>Required
-                                </span>
-                            </td>
-                            <td>0812345678</td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="hw-col-name">Phone</span></td>
+                            <td><span class="hw-col-name">Credits</span></td>
                             <td><span class="hw-col-req no">Optional</span></td>
-                            <td>0115551234 (Alternative number)</td>
+                            <td>Numeric value (e.g. 360)</td>
                         </tr>
-
                         <tr>
-                            <td><span class="hw-col-name">AddressLine1</span></td>
-                            <td>
-                                <span class="hw-col-req yes">
-                                    <i class="bi bi-check"></i>Required
-                                </span>
-                            </td>
-                            <td>123 Main Road</td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="hw-col-name">Suburb</span></td>
+                            <td><span class="hw-col-name">DurationMonths</span></td>
                             <td><span class="hw-col-req no">Optional</span></td>
-                            <td>Rosebank</td>
+                            <td>Numeric value (e.g. 12)</td>
                         </tr>
-
-                        <tr>
-                            <td><span class="hw-col-name">City</span></td>
-                            <td>
-                                <span class="hw-col-req yes">
-                                    <i class="bi bi-check"></i>Required
-                                </span>
-                            </td>
-                            <td>Johannesburg</td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="hw-col-name">PostalCode</span></td>
-                            <td>
-                                <span class="hw-col-req yes">
-                                    <i class="bi bi-check"></i>Required
-                                </span>
-                            </td>
-                            <td>2196</td>
-                        </tr>
-
                         <tr>
                             <td><span class="hw-col-name">Province</span></td>
                             <td>
@@ -246,9 +188,8 @@
                                     <i class="bi bi-check"></i>Required
                                 </span>
                             </td>
-                            <td>Example: Gauteng (Must match system province name)</td>
+                            <td>Province name (e.g. Gauteng)</td>
                         </tr>
-
                         <tr>
                             <td><span class="hw-col-name">IsActive</span></td>
                             <td>
@@ -307,12 +248,12 @@
                         Fill in the template. The first row must remain the header row — do not delete or rename columns.
                     </li>
                     <li class="hw-tip-item">
-                        <i class="bi bi-3-circle-fill"></i>
-                        <strong>IdentifierType</strong> must be exactly <code>SaId</code> — case-sensitive.
+                        <i class="bi bi-4-circle-fill"></i>
+                        Dates must be formatted as <code>yyyy-MM-dd</code> (e.g. <code>1990-01-15</code>).
                     </li>
                     <li class="hw-tip-item">
                         <i class="bi bi-5-circle-fill"></i>
-                        Remove test or sample rows before uploading. Each <code>Programme Code</code> must be unique.
+                        Remove test or sample rows before uploading. Each <code>Accreditation No</code> must be unique.
                     </li>
                     <li class="hw-tip-item">
                         <i class="bi bi-check-circle-fill"></i>

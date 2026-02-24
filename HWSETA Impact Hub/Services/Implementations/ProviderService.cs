@@ -1,10 +1,12 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Bibliography;
 using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Domain.Entities;
 using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Models.ViewModels.Provider;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System;
 
 namespace HWSETA_Impact_Hub.Services.Implementations
@@ -113,19 +115,34 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             int Col(string name) => headers.TryGetValue(name, out var i) ? i : -1;
 
+            //Define Columns
             var cCode = Col("ProviderCode");
             var cName = Col("ProviderName");
             var cAcc = Col("AccreditationNo");
-            var cProv = Col("Province");
-            var cCName = Col("ContactName");
-            var cCEmail = Col("ContactEmail");
+            var cStart = Col("AccreditationStartDate");
+            var cEnd = Col("AccreditationEndDate");
+            var cContactName = Col("ContactName");
+            var cContactEmail = Col("ContactEmail");
+            var cContactPhone = Col("ContactPhone");
             var cPhone = Col("Phone");
 
-            if (cName < 0 || cAcc < 0 || cProv < 0)
+            var cAddr1 = Col("AddressLine1");
+            var cSuburb = Col("Suburb");
+            var cCity = Col("City");
+            var cPostal = Col("PostalCode");
+            var cProvince = Col("Province");
+            var cIsActive = Col("IsActive");
+
+            if (cName < 0 || cAcc < 0 || cProvince < 0 || cAddr1 < 0 || cCity < 0)
             {
-                result.Errors.Add("Missing required headers. Required: ProviderName, AccreditationNo, Province. Optional: ProviderCode, ContactName, ContactEmail, Phone.");
+                result.Errors.Add("Missing required headers.");
                 return result;
             }
+
+            //Lookup provinces
+            var provinces = await _db.Provinces
+              .ToDictionaryAsync(x => x.Name, x => x, StringComparer.OrdinalIgnoreCase, ct);
+
 
             // Upsert key: AccreditationNo (most reliable)
             var existingByAcc = await _db.Providers
@@ -138,37 +155,128 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             {
                 var row = ws.Row(r);
 
-                var name = row.Cell(cName).GetString()?.Trim() ?? "";
-                var acc = row.Cell(cAcc).GetString()?.Trim() ?? "";
-                var prov = row.Cell(cProv).GetString()?.Trim() ?? "";
-                var code = cCode > 0 ? row.Cell(cCode).GetString()?.Trim() : null;
-
-                if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(acc))
+                //Required Columns
+                var name = row.Cell(cName).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(name))
                 {
+                    result.Errors.Add($"Row {r}: Provider Name is required.");
                     result.Skipped++;
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(acc) || string.IsNullOrWhiteSpace(prov))
+                var code = row.Cell(cCode).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(code))
                 {
-                    result.Errors.Add($"Row {r}: ProviderName, AccreditationNo, Province are required.");
+                    result.Errors.Add($"Row {r}:  Provider Code is required.");
                     result.Skipped++;
                     continue;
                 }
 
-                var contactName = cCName > 0 ? row.Cell(cCName).GetString()?.Trim() : null;
-                var contactEmail = cCEmail > 0 ? row.Cell(cCEmail).GetString()?.Trim() : null;
-                var phone = cPhone > 0 ? row.Cell(cPhone).GetString()?.Trim() : null;
+                var accreditationNo = row.Cell(cAcc).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(accreditationNo))
+                {
+                    result.Errors.Add($"Row {r}:  Provider Code is required.");
+                    result.Skipped++;
+                    continue;
+                }
 
-                if (existingByAcc.TryGetValue(acc, out var existing))
+                //Employer Contacts
+                var contactName = row.Cell(cContactName).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(contactName))
+                {
+                    result.Errors.Add($"Row {r}:  Provider Contact Name is required.");
+                    result.Skipped++;
+                    continue;
+                }
+
+                var contactPhone = row.Cell(cContactPhone).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(contactPhone))
+                {
+                    result.Errors.Add($"Row {r}:  Provider Contact Phone is required.");
+                    result.Skipped++;
+                    continue;
+                }
+
+                var contactEmail = row.Cell(cContactEmail).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(contactEmail))
+                {
+                    result.Errors.Add($"Row {r}:  Provider Contact Email is required.");
+                    result.Skipped++;
+                    continue;
+                }
+
+                var provinceName = row.Cell(cProvince).GetString().Trim();
+                var province = await _db.Provinces.FirstOrDefaultAsync(x => x.Name == provinceName, ct);
+
+                if (province == null)
+                {
+                    result.Errors.Add($"Row {r}: Invalid Province.");
+                    result.Skipped++;
+                    continue;
+                }
+
+                bool isActive = true;
+                if (cIsActive > 0)
+                {
+                    var actStr = row.Cell(cIsActive).GetString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(actStr) && TryParseBoolLoose(actStr, out var b))
+                        isActive = b;
+                }
+
+
+                //Optional Columns
+                DateTime? startDate = cStart > 0 ? GetNullableDate(row.Cell(cStart)) : null;
+                DateTime? endDate = cEnd > 0 ? GetNullableDate(row.Cell(cEnd)) : null;
+                var suburb = cSuburb > 0 ? row.Cell(cSuburb).GetString().Trim() : null;
+
+
+                //Verify Address Columns
+                var addr1 = row.Cell(cAddr1).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(addr1))
+                {
+                    result.Errors.Add($"Row {r}: Provider Street Address is required.");
+                    result.Skipped++;
+                    continue;
+                }
+
+                var city = row.Cell(cCity).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(city))
+                {
+                    result.Errors.Add($"Row {r}: Provider City is required.");
+                    result.Skipped++;
+                    continue;
+                }
+
+                var postalCode = row.Cell(cPostal).GetString().Trim();
+                if (string.IsNullOrWhiteSpace(postalCode))
+                {
+                    result.Errors.Add($"Row {r}: Provider Postal Code is required.");
+                    result.Skipped++;
+                    continue;
+                }
+
+
+                if (existingByAcc.TryGetValue(accreditationNo, out var existing))
                 {
                     // update
                     existing.ProviderName = name;
-                    existing.ProviderCode = string.IsNullOrWhiteSpace(code) ? existing.ProviderCode : code;
-                    existing.Province = prov;
+                    existing.ProviderCode = code;
+                    existing.AccreditationStartDate = startDate;
+                    existing.AccreditationEndDate = endDate;
+                    existing.Province = province.Name;
+
                     existing.ContactName = contactName;
                     existing.ContactEmail = contactEmail;
-                    existing.Phone = phone;
+                    existing.ContactPhone = contactPhone;
+                    existing.Phone = contactPhone;
+                    existing.IsActive = isActive;
+
+                    // Update Address
+                    existing.Address.AddressLine1 = addr1;
+                    existing.Address.City = city;
+                    existing.Address.Suburb = suburb;
+                    existing.Address.PostalCode = postalCode;
+                    existing.Address.ProvinceId = province.Id;
 
                     existing.UpdatedOnUtc = DateTime.UtcNow;
                     existing.UpdatedByUserId = _user.UserId;
@@ -178,21 +286,44 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 else
                 {
                     // insert
-                    var p = new Provider
+
+                    var address = new Address
                     {
-                        ProviderName = name,
-                        ProviderCode = string.IsNullOrWhiteSpace(code) ? null : code,
-                        AccreditationNo = acc,
-                        Province = prov,
-                        ContactName = contactName,
-                        ContactEmail = contactEmail,
-                        Phone = phone,
+                        AddressLine1 = addr1,
+                        Suburb = suburb,
+                        City = city,
+                        PostalCode = postalCode,
+                        ProvinceId = province.Id,
                         CreatedOnUtc = DateTime.UtcNow,
                         CreatedByUserId = _user.UserId
                     };
 
-                    _db.Providers.Add(p);
-                    existingByAcc[acc] = p;
+
+                    _db.Addresses.Add(address);
+
+                    var provider = new Provider
+                    {
+                        ProviderName = name,
+                        ProviderCode = code,
+                        AccreditationNo = accreditationNo,
+                        AccreditationStartDate = startDate,
+                        AccreditationEndDate = endDate,
+                        Province = province.Name,
+                        Address = address,
+
+                        ContactName = contactName,
+                        ContactEmail = contactEmail,
+                        ContactPhone = contactPhone,
+                        Phone = contactPhone,
+                        IsActive = isActive,
+
+                        CreatedOnUtc = DateTime.UtcNow,
+                        CreatedByUserId = _user.UserId
+                    };
+
+
+                    _db.Providers.Add(provider);
+                    existingByAcc[accreditationNo] = provider;
 
                     result.Inserted++;
                 }
@@ -204,6 +335,38 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             await tx.CommitAsync(ct);
 
             return result;
+        }
+
+        static bool TryParseBoolLoose(string? s, out bool value)
+        {
+            value = false;
+            if (string.IsNullOrWhiteSpace(s)) return false;
+
+            s = s.Trim();
+            if (bool.TryParse(s, out value)) return true;
+
+            if (s.Equals("1") || s.Equals("yes", StringComparison.OrdinalIgnoreCase) || s.Equals("y", StringComparison.OrdinalIgnoreCase))
+            { value = true; return true; }
+
+            if (s.Equals("0") || s.Equals("no", StringComparison.OrdinalIgnoreCase) || s.Equals("n", StringComparison.OrdinalIgnoreCase))
+            { value = false; return true; }
+
+            return false;
+        }
+
+        DateTime? GetNullableDate(IXLCell cell)
+        {
+            if (cell == null || cell.IsEmpty())
+                return null;
+
+            if (cell.TryGetValue<DateTime>(out var dt))
+                return dt;
+
+            // In case it's stored as text
+            if (DateTime.TryParse(cell.GetString(), out dt))
+                return dt;
+
+            return null;
         }
     }
 }

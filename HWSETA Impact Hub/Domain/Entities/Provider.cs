@@ -7,10 +7,6 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public string? ProviderCode { get; set; }         // optional unique
         public string ProviderName { get; set; } = "";
 
-        // FK to the shared Lookups table (TPH root = LookupBase)
-        //public Guid ProviderTypeId { get; set; }
-        //public LookupBase ProviderType { get; set; } = null!;
-
         public string AccreditationNo { get; set; } = "";   // unique
         public DateTime? AccreditationStartDate { get; set; }
         public DateTime? AccreditationEndDate { get; set; }

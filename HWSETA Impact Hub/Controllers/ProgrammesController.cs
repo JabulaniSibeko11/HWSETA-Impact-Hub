@@ -96,9 +96,13 @@ namespace HWSETA_Impact_Hub.Controllers
             {
                 "ProgrammeCode",
                 "ProgrammeName",
-                "NqfLevel",
                 "QualificationType",
+                "NqfLevel",
+                "SAQAId",
+                "OFOCode",
+                "Credits",
                 "DurationMonths",
+                "Province",
                 "IsActive"
             };
 
@@ -110,10 +114,14 @@ namespace HWSETA_Impact_Hub.Controllers
 
             ws.Cell(2, 1).Value = "PRG-0001";
             ws.Cell(2, 2).Value = "Example Learnership Programme";
-            ws.Cell(2, 3).Value = "NQF 4";
-            ws.Cell(2, 4).Value = "Learnership";
-            ws.Cell(2, 5).Value = 12;
-            ws.Cell(2, 6).Value = true;
+            ws.Cell(2, 3).Value = "Learnership";
+            ws.Cell(2, 4).Value = "NQF 4";
+            ws.Cell(2, 5).Value = "12345678";
+            ws.Cell(2, 6).Value = "9876";
+            ws.Cell(2, 7).Value = 360;
+            ws.Cell(2, 8).Value = 12;
+            ws.Cell(2, 9).Value = "Gauteng";
+            ws.Cell(2, 10).Value = true;
 
             ws.Columns().AdjustToContents();
 

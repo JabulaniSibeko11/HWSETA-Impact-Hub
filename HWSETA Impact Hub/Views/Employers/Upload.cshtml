@@ -65,13 +65,81 @@
                 <table class="hw-col-table">
                     <thead><tr><th>Column</th><th>Required?</th><th>Example</th></tr></thead>
                     <tbody>
-                        <tr><td><span class="hw-col-name">EmployerCode</span></td><td><span class="hw-badge-req">Required</span></td><td style="font-size:11.5px;color:var(--hw-muted);">EMP-001</td></tr>
-                        <tr><td><span class="hw-col-name">EmployerName</span></td><td><span class="hw-badge-req">Required</span></td><td style="font-size:11.5px;color:var(--hw-muted);">Acme Ltd</td></tr>
-                        <tr><td><span class="hw-col-name">Sector</span></td><td><span class="hw-badge-req">Required</span></td><td style="font-size:11.5px;color:var(--hw-muted);">Healthcare</td></tr>
-                        <tr><td><span class="hw-col-name">Province</span></td><td><span class="hw-badge-req">Required</span></td><td style="font-size:11.5px;color:var(--hw-muted);">Gauteng</td></tr>
-                        <tr><td><span class="hw-col-name">ContactName</span></td><td><span class="hw-badge-opt">Optional</span></td><td style="font-size:11.5px;color:var(--hw-muted);">Jane Doe</td></tr>
-                        <tr><td><span class="hw-col-name">ContactEmail</span></td><td><span class="hw-badge-opt">Optional</span></td><td style="font-size:11.5px;color:var(--hw-muted);">jane@co.za</td></tr>
-                        <tr><td><span class="hw-col-name">Phone</span></td><td><span class="hw-badge-opt">Optional</span></td><td style="font-size:11.5px;color:var(--hw-muted);">011 000 0000</td></tr>
+                        <tr>
+                            <td><span class="hw-col-name">EmployerCode</span></td>
+                            <td><span class="hw-badge-req">Required (Upsert Key)</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">EMP-001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">EmployerName</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">Acme Ltd</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">TradingName</span></td>
+                            <td><span class="hw-badge-opt">Optional</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">Acme Trading</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">RegistrationType</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">Private Company</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">RegistrationNumber</span></td>
+                            <td><span class="hw-badge-req">Required (CIPC)</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">2026/000001/07</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">SetaLevyNumber</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">L123456789</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">Sector</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">Health & Welfare</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">Province</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">Gauteng</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">AddressLine1</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">2 HWSETA Road</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">City</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">Pretoria</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">PostalCode</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">0001</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">ContactName</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">Jane Doe</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">ContactEmail</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">jane@acme.co.za</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">ContactPhone</span></td>
+                            <td><span class="hw-badge-req">Required</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">0101234567</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hw-col-name">Phone</span></td>
+                            <td><span class="hw-badge-opt">Optional</span></td>
+                            <td style="font-size:11.5px;color:var(--hw-muted);">0110000000</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -81,7 +149,11 @@
         <div style="padding:14px 16px;background:var(--hw-gold-light);border:1.5px solid #f0d060;border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
             <i class="bi bi-lightbulb-fill" style="color:var(--hw-gold-dark);font-size:15px;flex-shrink:0;margin-top:2px;"></i>
             <div style="font-size:12px;color:var(--hw-dark);line-height:1.65;">
-                <strong>Import behaviour:</strong> existing employers matched by <strong>EmployerCode</strong> will be <em>updated</em>. New codes will be <em>inserted</em>. Rows with missing required fields are <em>skipped</em> and listed in the result.
+                <strong>Import behaviour:</strong>
+                Records are matched using <strong>EmployerCode</strong>.
+                If the code already exists, the employer and address details will be <em>updated</em>.
+                If the code does not exist, a new employer record will be <em>inserted</em>.
+                Rows missing required fields will be <em>skipped</em> and reported after upload.
             </div>
         </div>
     </div>
