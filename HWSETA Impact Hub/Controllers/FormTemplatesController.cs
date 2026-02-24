@@ -205,18 +205,31 @@ namespace HWSETA_Impact_Hub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Publish(FormPublishVm vm, CancellationToken ct)
         {
-            if (!ModelState.IsValid) return View(vm);
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
-            var (ok, error) = await _svc.PublishAsync(vm, ct);
+            // Always re-hydrate VM so the page is correct even after errors
+            var fresh = await _svc.GetPublishVmAsync(vm.TemplateId, baseUrl, ct);
+            if (fresh == null) return NotFound();
+
+            // Copy user inputs onto fresh VM (so they don't lose entries)
+            fresh.OpenFromUtc = vm.OpenFromUtc;
+            fresh.CloseAtUtc = vm.CloseAtUtc;
+            fresh.MaxSubmissions = vm.MaxSubmissions;
+            fresh.AllowMultipleSubmissions = vm.AllowMultipleSubmissions;
+            fresh.IsOpen = vm.IsOpen;
+
+            if (!ModelState.IsValid)
+                return View(fresh);
+
+            var (ok, error) = await _svc.PublishAsync(fresh, ct);
             if (!ok)
             {
                 ModelState.AddModelError("", error ?? "Unable to publish.");
-                return View(vm);
+                return View(fresh);
             }
 
             TempData["Success"] = "Form published.";
-            // ✅ Go straight to Send Centre
-            return RedirectToAction(nameof(SendCenter), new { templateId = vm.TemplateId });
+            return RedirectToAction(nameof(SendCenter), new { templateId = fresh.TemplateId });
         }
 
         [HttpPost]
@@ -224,9 +237,13 @@ namespace HWSETA_Impact_Hub.Controllers
         public async Task<IActionResult> Unpublish(Guid templateId, CancellationToken ct)
         {
             var (ok, error) = await _svc.UnpublishAsync(templateId, ct);
-            if (!ok) TempData["Error"] = error ?? "Unable to unpublish.";
-            else TempData["Success"] = "Form unpublished.";
+            if (!ok)
+            {
+                TempData["Error"] = error ?? "Unable to unpublish.";
+                return RedirectToAction(nameof(Publish), new { id = templateId });
+            }
 
+            TempData["Success"] = "Form unpublished.";
             return RedirectToAction(nameof(Publish), new { id = templateId });
         }
 

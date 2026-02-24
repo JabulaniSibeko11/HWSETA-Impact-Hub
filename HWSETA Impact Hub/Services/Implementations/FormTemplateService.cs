@@ -508,23 +508,22 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             if (t == null) return null;
 
-            // IMPORTANT: we need a FormPublish row to exist
+            // Upsert publish record so the page always has a token + safe schedule defaults
             var p = await _db.FormPublishes
                 .FirstOrDefaultAsync(x => x.FormTemplateId == templateId, ct);
 
             if (p == null)
             {
-                // Create a draft publish row so GET Publish never breaks
                 p = new FormPublish
                 {
                     FormTemplateId = templateId,
+                    PublicToken = NewPublicToken(),
                     IsPublished = false,
 
-                    // keep token stable forever
-                    PublicToken = NewPublicToken(),
-
-                    // sensible defaults
+                    // safe defaults
                     IsOpen = true,
+                    OpenFromUtc = DateTime.UtcNow,
+                    CloseAtUtc = DateTime.MaxValue,
                     AllowMultipleSubmissions = true,
 
                     CreatedOnUtc = DateTime.UtcNow
@@ -533,29 +532,51 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 _db.FormPublishes.Add(p);
                 await _db.SaveChangesAsync(ct);
             }
+            else
+            {
+                // fix legacy bad close date in db (0001-01-01)
+                if (p.CloseAtUtc == default)
+                {
+                    p.CloseAtUtc = DateTime.MaxValue;
+                    await _db.SaveChangesAsync(ct);
+                }
 
-            var token = p.PublicToken;
-            var url = string.IsNullOrWhiteSpace(token)
-                ? null
-                : $"{baseUrl.TrimEnd('/')}/f/{token}";
+                // keep token stable (never change)
+                if (string.IsNullOrWhiteSpace(p.PublicToken))
+                {
+                    p.PublicToken = NewPublicToken();
+                    await _db.SaveChangesAsync(ct);
+                }
+            }
+
+            // Build public url from publish token (public link should come from FormPublish)
+            var url = $"{baseUrl}/public/forms/{p.PublicToken}";
+
+            // If you still store token on template, keep aligned (optional)
+            if (!string.IsNullOrWhiteSpace(t.PublicToken) && t.PublicToken != p.PublicToken)
+            {
+                // DO NOT auto-overwrite here because t was loaded AsNoTracking.
+                // If you want alignment, do it inside PublishAsync only.
+            }
 
             return new FormPublishVm
             {
                 TemplateId = t.Id,
                 Title = t.Title,
+                Purpose = t.Purpose,
+                Status = t.Status,
 
                 IsPublished = p.IsPublished,
-                Token = token,
+                IsOpen = p.IsOpen,
+                Token = p.PublicToken,
                 PublicUrl = url,
 
-                // null-safe (these may be null by design)
                 OpenFromUtc = p.OpenFromUtc,
-                CloseAtUtc = p.CloseAtUtc,
+                CloseAtUtc = (p.CloseAtUtc == DateTime.MaxValue ? null : p.CloseAtUtc),
                 MaxSubmissions = p.MaxSubmissions,
                 AllowMultipleSubmissions = p.AllowMultipleSubmissions
             };
         }
-
         private static string NewPublicToken()
         {
             var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(18);
@@ -566,40 +587,101 @@ namespace HWSETA_Impact_Hub.Services.Implementations
         }
         public async Task<(bool ok, string? error)> PublishAsync(FormPublishVm vm, CancellationToken ct)
         {
-            var t = await _db.FormTemplates.FirstOrDefaultAsync(x => x.Id == vm.TemplateId, ct);
+            var t = await _db.FormTemplates
+                .FirstOrDefaultAsync(x => x.Id == vm.TemplateId, ct);
+
             if (t == null) return (false, "Template not found.");
 
             // Enforce: only one Registration template in the whole system
             if (t.Purpose == FormPurpose.Registration)
             {
                 var otherRegistrationExists = await _db.FormTemplates
-                    .AnyAsync(x => x.Id != t.Id && x.Purpose == FormPurpose.Registration && x.IsActive, ct);
+                    .AnyAsync(x => x.Id != t.Id
+                                && x.Purpose == FormPurpose.Registration
+                                && x.IsActive, ct);
 
                 if (otherRegistrationExists)
                     return (false, "Only one Registration FormTemplate is allowed. Edit the existing Registration template instead of creating another.");
             }
 
-            // publish
+            // Minimum publish validation: must have at least 1 active field
+            var hasAnyFields = await _db.FormFields
+                .AnyAsync(f => f.FormSectionId == t.Id && f.IsActive, ct);
+
+            if (!hasAnyFields)
+                return (false, "You cannot publish an empty form. Add at least one question.");
+
+            // Upsert FormPublish (THIS is what public form uses)
+            var p = await _db.FormPublishes
+                .FirstOrDefaultAsync(x => x.FormTemplateId == t.Id, ct);
+
+            if (p == null)
+            {
+                p = new FormPublish
+                {
+                    FormTemplateId = t.Id,
+                    PublicToken = NewPublicToken(),
+                    CreatedOnUtc = DateTime.UtcNow,
+
+                    // defaults
+                    IsOpen = true,
+                    OpenFromUtc = DateTime.UtcNow,
+                    CloseAtUtc = DateTime.MaxValue,
+                    AllowMultipleSubmissions = true
+                };
+                _db.FormPublishes.Add(p);
+            }
+
+            // Normalise dates
+            var now = DateTime.UtcNow;
+            var openFrom = vm.OpenFromUtc ?? now;
+            var closeAt = vm.CloseAtUtc ?? DateTime.MaxValue;
+
+            // If CloseAt is provided and invalid
+            if (closeAt != DateTime.MaxValue && closeAt <= openFrom)
+                return (false, "Close At must be after Open From.");
+
+            // Apply publish settings (from VM)
+            p.IsPublished = true;
+            p.IsOpen = vm.IsOpen; // ✅ NEW in VM
+            p.OpenFromUtc = openFrom;
+            p.CloseAtUtc = closeAt;
+            p.MaxSubmissions = vm.MaxSubmissions;
+            p.AllowMultipleSubmissions = vm.AllowMultipleSubmissions;
+
+            // Keep token stable forever
+            if (string.IsNullOrWhiteSpace(p.PublicToken))
+                p.PublicToken = NewPublicToken();
+
+            // Template state for admin lists
             t.Status = FormStatus.Published;
             t.IsActive = true;
-            t.UpdatedAt = DateTime.UtcNow;
-            t.PublishedAt = DateTime.UtcNow;
+            t.UpdatedAt = now;
+            t.PublishedAt = now;
             t.UnpublishedAt = null;
 
+            // Optional: keep template token too (if you still show it anywhere)
             if (string.IsNullOrWhiteSpace(t.PublicToken))
-                t.PublicToken = NewPublicToken(); // keep forever so link never changes
+                t.PublicToken = p.PublicToken;
 
             await _db.SaveChangesAsync(ct);
             return (true, null);
         }
-      
-        
         public async Task<(bool ok, string? error)> UnpublishAsync(Guid templateId, CancellationToken ct)
         {
             var t = await _db.FormTemplates.FirstOrDefaultAsync(x => x.Id == templateId, ct);
             if (t == null) return (false, "Template not found.");
 
-            // You may choose to disallow unpublishing Registration if you want it always available
+            var p = await _db.FormPublishes.FirstOrDefaultAsync(x => x.FormTemplateId == templateId, ct);
+
+            // Unpublish should stop public access
+            if (p != null)
+            {
+                p.IsPublished = false;
+                p.IsOpen = false;
+                // Keep token/history, do not delete
+            }
+
             t.Status = FormStatus.Draft;
             t.UpdatedAt = DateTime.UtcNow;
             t.UnpublishedAt = DateTime.UtcNow;
@@ -607,12 +689,16 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             await _db.SaveChangesAsync(ct);
             return (true, null);
         }
-
-        public async Task<PublicFormVm?> GetPublicFormAsync(string token, string? prefillEmail, string? prefillPhone, CancellationToken ct)
+        public async Task<PublicFormVm?> GetPublicFormAsync(
+       string token,
+       string? prefillEmail,
+       string? prefillPhone,
+       CancellationToken ct)
         {
             token = (token ?? "").Trim();
             if (string.IsNullOrWhiteSpace(token)) return null;
 
+            // Only serve if actually published
             var pub = await _db.FormPublishes.AsNoTracking()
                 .Include(x => x.FormTemplate)
                 .FirstOrDefaultAsync(x => x.PublicToken == token && x.IsPublished, ct);
@@ -620,6 +706,9 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (pub == null) return null;
 
             var now = DateTime.UtcNow;
+
+            // Normalise bad data: if CloseAtUtc is default, treat as "no close"
+            var closeAt = (pub.CloseAtUtc == default) ? DateTime.MaxValue : pub.CloseAtUtc;
 
             // check open flag first
             if (!pub.IsOpen)
@@ -635,7 +724,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 };
             }
 
-            // time window check (nullable-safe)
+            // time window check
             if (now < pub.OpenFromUtc)
             {
                 return new PublicFormVm
@@ -649,7 +738,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 };
             }
 
-            if ( now > pub.CloseAtUtc)
+            if (now > closeAt)
             {
                 return new PublicFormVm
                 {
@@ -662,9 +751,13 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 };
             }
 
+            // Max submissions
             if (pub.MaxSubmissions.HasValue)
             {
-                var count = await _db.FormSubmissions.CountAsync(s => s.FormPublishId == pub.Id, ct);
+                var count = await _db.FormSubmissions
+                    .AsNoTracking()
+                    .CountAsync(s => s.FormPublishId == pub.Id, ct);
+
                 if (count >= pub.MaxSubmissions.Value)
                 {
                     return new PublicFormVm
@@ -682,26 +775,29 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             // -------------------------
             // ✅ Prefill Beneficiary (by email/phone)
             // -------------------------
-            Beneficiary? ben = null;
+            BeneficiaryPrefillVm? prefill = null;
+
             var email = (prefillEmail ?? "").Trim();
             var phone = (prefillPhone ?? "").Trim();
+
+            Beneficiary? ben = null;
 
             if (!string.IsNullOrWhiteSpace(email))
             {
                 ben = await _db.Beneficiaries.AsNoTracking()
-                    .Include(b => b.Gender)
-                    .Include(b => b.Race)
-                    .Include(b => b.CitizenshipStatus)
-                    .Include(b => b.DisabilityStatus)
-                    .Include(b => b.DisabilityType)
-                    .Include(b => b.EducationLevel)
-                    .Include(b => b.EmploymentStatus)
                     .FirstOrDefaultAsync(b => b.Email == email, ct);
             }
 
             if (ben == null && !string.IsNullOrWhiteSpace(phone))
             {
                 ben = await _db.Beneficiaries.AsNoTracking()
+                    .FirstOrDefaultAsync(b => b.MobileNumber == phone, ct);
+            }
+
+            if (ben != null)
+            {
+                // Load lookups only if we found a beneficiary
+                var benFull = await _db.Beneficiaries.AsNoTracking()
                     .Include(b => b.Gender)
                     .Include(b => b.Race)
                     .Include(b => b.CitizenshipStatus)
@@ -709,38 +805,37 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                     .Include(b => b.DisabilityType)
                     .Include(b => b.EducationLevel)
                     .Include(b => b.EmploymentStatus)
-                    .FirstOrDefaultAsync(b => b.MobileNumber == phone, ct);
-            }
+                    .FirstOrDefaultAsync(b => b.Id == ben.Id, ct);
 
-            BeneficiaryPrefillVm? prefill = null;
-            if (ben != null)
-            {
-                prefill = new BeneficiaryPrefillVm
+                if (benFull != null)
                 {
-                    BeneficiaryId = ben.Id,
-                    IdentifierType = ben.IdentifierType.ToString(),
-                    IdentifierValue = ben.IdentifierValue,
-                    FirstName = ben.FirstName,
-                    MiddleName = ben.MiddleName,
-                    LastName = ben.LastName,
-                    DateOfBirth = ben.DateOfBirth,
+                    prefill = new BeneficiaryPrefillVm
+                    {
+                        BeneficiaryId = benFull.Id,
+                        IdentifierType = benFull.IdentifierType.ToString(),
+                        IdentifierValue = benFull.IdentifierValue,
+                        FirstName = benFull.FirstName,
+                        MiddleName = benFull.MiddleName,
+                        LastName = benFull.LastName,
+                        DateOfBirth = benFull.DateOfBirth,
 
-                    Email = ben.Email,
-                    MobileNumber = ben.MobileNumber,
+                        Email = benFull.Email,
+                        MobileNumber = benFull.MobileNumber,
 
-                    Province = ben.Province,
-                    City = ben.City,
-                    AddressLine1 = ben.AddressLine1,
-                    PostalCode = ben.PostalCode,
+                        Province = benFull.Province,
+                        City = benFull.City,
+                        AddressLine1 = benFull.AddressLine1,
+                        PostalCode = benFull.PostalCode,
 
-                    Gender = ben.Gender?.Name ?? "",
-                    Race = ben.Race?.Name ?? "",
-                    CitizenshipStatus = ben.CitizenshipStatus?.Name ?? "",
-                    DisabilityStatus = ben.DisabilityStatus?.Name ?? "",
-                    DisabilityType = ben.DisabilityType?.Name,
-                    EducationLevel = ben.EducationLevel?.Name ?? "",
-                    EmploymentStatus = ben.EmploymentStatus?.Name ?? ""
-                };
+                        Gender = benFull.Gender?.Name ?? "",
+                        Race = benFull.Race?.Name ?? "",
+                        CitizenshipStatus = benFull.CitizenshipStatus?.Name ?? "",
+                        DisabilityStatus = benFull.DisabilityStatus?.Name ?? "",
+                        DisabilityType = benFull.DisabilityType?.Name,
+                        EducationLevel = benFull.EducationLevel?.Name ?? "",
+                        EmploymentStatus = benFull.EmploymentStatus?.Name ?? ""
+                    };
+                }
             }
 
             // -------------------------
@@ -760,7 +855,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             var sectionIds = sections.Select(s => s.Id).ToList();
 
-            // Fields (✅ include FieldCode if you added it)
+            // Fields
             var fields = await _db.FormFields.AsNoTracking()
                 .Where(f => sectionIds.Contains(f.FormSectionId) && f.IsActive)
                 .OrderBy(f => f.SortOrder)
@@ -796,7 +891,6 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 .ToDictionary(g => g.Key,
                     g => g.Select(x => new PublicOptionVm { Value = x.Value, Text = x.Text }).ToList());
 
-            // Helper: decide which fields should be readonly + prefilled
             bool IsBeneficiaryReadOnlyCode(string? code)
                 => code is "IdentifierType" or "IdentifierValue" or "FirstName" or "LastName" or "DateOfBirth"
                     or "Gender" or "Race" or "CitizenshipStatus" or "DisabilityStatus" or "DisabilityType"
@@ -819,7 +913,6 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                     "EducationLevel" => p.EducationLevel,
                     "EmploymentStatus" => p.EmploymentStatus,
 
-                    // Editable contact/address fields can also be prefilled (not readonly)
                     "Email" => p.Email,
                     "MobileNumber" => p.MobileNumber,
                     "Province" => p.Province,
@@ -852,16 +945,12 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                             MaxDecimal = f.MaxDecimal,
                             RegexPattern = f.RegexPattern,
                             Options = optByField.TryGetValue(f.Id, out var list) ? list : new List<PublicOptionVm>(),
-
                             FieldCode = f.FieldCode
                         };
 
-                        // Prefill logic (only if beneficiary found)
                         if (prefill != null && !string.IsNullOrWhiteSpace(f.FieldCode))
                         {
                             q.PrefillValue = GetPrefillValue(f.FieldCode, prefill);
-
-                            // Read-only beneficiary identity/demographics (not contact/address)
                             q.IsReadOnly = IsBeneficiaryReadOnlyCode(f.FieldCode);
                         }
 

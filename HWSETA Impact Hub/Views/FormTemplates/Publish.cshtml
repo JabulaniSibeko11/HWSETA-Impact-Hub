@@ -1,14 +1,29 @@
 ﻿@model HWSETA_Impact_Hub.Models.ViewModels.Forms.FormPublishVm
 @{
     ViewData["Title"] = "Publish Form";
+    var pubBadge = Model.IsPublished ? "success" : "secondary";
+    var openBadge = Model.IsOpen ? "primary" : "warning";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h1 class="mb-0">Publish Form</h1>
         <div class="text-muted">@Model.Title</div>
+
+        <div class="mt-2 d-flex gap-2 flex-wrap">
+            <span class="badge bg-@pubBadge">
+                @(Model.IsPublished ? "Published" : "Not Published")
+            </span>
+
+            <span class="badge bg-@openBadge">
+                @(Model.IsOpen ? "Open" : "Closed")
+            </span>
+        </div>
     </div>
-    <a class="btn btn-outline-secondary" asp-action="Builder" asp-route-id="@Model.TemplateId">Back to Builder</a>
+
+    <a class="btn btn-outline-secondary" asp-action="Builder" asp-route-id="@Model.TemplateId">
+        Back to Builder
+    </a>
 </div>
 
 @if (TempData["Success"] != null)
@@ -22,11 +37,6 @@
 
 <div class="card mb-3">
     <div class="card-body">
-        <div class="mb-2">
-            <span class="badge bg-@(Model.IsPublished ? "success" : "secondary")">
-                @(Model.IsPublished ? "Published" : "Not Published")
-            </span>
-        </div>
 
         @if (!string.IsNullOrWhiteSpace(Model.PublicUrl))
         {
@@ -35,29 +45,41 @@
                 <div class="input-group">
                     <input class="form-control" value="@Model.PublicUrl" readonly />
                     <a class="btn btn-outline-primary" href="@Model.PublicUrl" target="_blank">Open</a>
+                    <button type="button" class="btn btn-outline-secondary"
+                            onclick="navigator.clipboard.writeText('@Model.PublicUrl')">
+                        Copy
+                    </button>
+                </div>
+                <div class="form-text">
+                    This link becomes active only when the form is <strong>Published</strong> and <strong>Open</strong>, and within the Open/Close window.
                 </div>
             </div>
+        }
+        else
+        {
+            <div class="text-muted mb-3">Not published yet.</div>
         }
 
         <form method="post" asp-action="Publish">
             @Html.AntiForgeryToken()
+
             <input type="hidden" asp-for="TemplateId" />
-            <input type="hidden" asp-for="Title" />
             <input type="hidden" asp-for="Token" />
-            <input type="hidden" asp-for="IsPublished" />
-            <input type="hidden" asp-for="PublicUrl" />
 
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="row g-3">
+
                 <div class="col-md-4">
                     <label class="form-label">Open From (UTC)</label>
                     <input asp-for="OpenFromUtc" class="form-control" />
+                    <div class="form-text">If empty, it will open immediately.</div>
                 </div>
 
                 <div class="col-md-4">
                     <label class="form-label">Close At (UTC)</label>
                     <input asp-for="CloseAtUtc" class="form-control" />
+                    <div class="form-text">Leave empty for no closing date.</div>
                 </div>
 
                 <div class="col-md-4">
@@ -67,14 +89,40 @@
 
                 <div class="col-md-6">
                     <div class="form-check mt-4">
-                        <input asp-for="AllowMultipleSubmissions" class="form-check-input" />
-                        <label asp-for="AllowMultipleSubmissions" class="form-check-label">Allow multiple submissions</label>
+                        <input asp-for="IsOpen" class="form-check-input" />
+                        <label asp-for="IsOpen" class="form-check-label">Open for submissions</label>
+                    </div>
+                    <div class="form-text">
+                        You can publish but keep it closed (for testing or scheduling).
                     </div>
                 </div>
+
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input asp-for="AllowMultipleSubmissions" class="form-check-input" />
+                        <label asp-for="AllowMultipleSubmissions" class="form-check-label">
+                            Allow multiple submissions
+                        </label>
+                    </div>
+                </div>
+
             </div>
 
             <div class="mt-3 d-flex gap-2">
                 <button class="btn btn-primary" type="submit">Publish / Update</button>
+                <a class="btn btn-outline-primary"
+                   asp-action="PreviewDraft"
+                   asp-route-templateId="@Model.TemplateId"
+                   target="_blank">
+                    Preview Draft
+                </a>
+
+                @if (!string.IsNullOrWhiteSpace(Model.PublicUrl))
+                {
+                    <a class="btn btn-outline-secondary" href="@Model.PublicUrl" target="_blank">
+                        Preview Published
+                    </a>
+                }
             </div>
         </form>
 
@@ -82,7 +130,7 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="templateId" value="@Model.TemplateId" />
             <button class="btn btn-outline-danger" type="submit"
-                    onclick="return confirm('Unpublish this form?');">
+                    onclick="return confirm('Unpublish this form? The public link will stop accepting submissions.');">
                 Unpublish
             </button>
         </form>

@@ -3,35 +3,44 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
 {
-    public sealed class FormPublishVm
-    {
-        [Required]
-        public Guid TemplateId { get; set; }
+   
+        public sealed class FormPublishVm
+        {
+            [Required]
+            public Guid TemplateId { get; set; }
 
-        public string Title { get; set; } = "";
+            public string Title { get; set; } = "";
 
-        public bool IsPublished { get; set; }
-        public string? Token { get; set; }
+            public bool IsPublished { get; set; }
 
-        [DataType(DataType.DateTime)]
-        public DateTime OpenFromUtc { get; set; }
+            // stable public token (from FormPublish.PublicToken)
+            public string? Token { get; set; }
 
-        [DataType(DataType.DateTime)]
-        public DateTime CloseAtUtc { get; set; }
+            // NEW: control open/close separate from publish
+            public bool IsOpen { get; set; } = true;
 
-        public int? MaxSubmissions { get; set; }
-        public bool AllowMultipleSubmissions { get; set; } = true;
+            [DataType(DataType.DateTime)]
+            public DateTime? OpenFromUtc { get; set; } = DateTime.UtcNow;
 
-        // convenience
-        public string? PublicUrl { get; set; }
+            // Optional close date; null means "no close" (we store MaxValue)
+            [DataType(DataType.DateTime)]
+            public DateTime? CloseAtUtc { get; set; }
 
-        public FormPurpose Purpose { get; set; }
-        public FormStatus Status { get; set; }
-        public FormSendBulkVm Bulk { get; set; } = new();
-    }
+            public int? MaxSubmissions { get; set; }
 
-    // -------- Public render --------
-    public sealed class PublicFormVm
+            public bool AllowMultipleSubmissions { get; set; } = true;
+
+            // convenience
+            public string? PublicUrl { get; set; }
+
+            // keep these if you still use them in SendCenter / filtering
+            public FormPurpose Purpose { get; set; }
+            public FormStatus Status { get; set; }
+
+            public FormSendBulkVm Bulk { get; set; } = new();
+        }
+        // -------- Public render --------
+        public sealed class PublicFormVm
     {
         public string Token { get; set; } = "";
         public Guid TemplateId { get; set; }
