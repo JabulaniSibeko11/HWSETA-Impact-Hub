@@ -2,83 +2,233 @@
 @{
     ViewData["Title"] = "Add Programme";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/programmecreatecss.css" rel="stylesheet" />
 
-<h1 class="mb-3">Add Programme</h1>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-mortarboard me-1"></i>Academic Management</div>
+        <h1 class="hw-page-title">Add <span>Programme</span></h1>
+    </div>
+    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;"><i class="bi bi-arrow-left"></i> All Programmes</a>
+</div>
+<link href="~/css/programmedetailscss.css" rel="stylesheet" />
+<div class="hw-layout">
 
-<form method="post">
-    @Html.AntiForgeryToken()
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @* ── Form card ── *@
+    <div class="hw-card">
+        <div class="hw-card-head">
+            <div class="hw-card-icon green"><i class="bi bi-mortarboard"></i></div>
+            <div>
+                <div class="hw-card-title">Programme Details</div>
+                <div class="hw-card-sub">Fields marked <span style="color:var(--hw-red);">*</span> are required</div>
+            </div>
+        </div>
+        <div class="hw-card-body">
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.TryGetValue(string.Empty, out var re) && re.Errors.Count > 0)
+            {
+                <div class="hw-val-summary" role="alert">
+                    <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;font-size:16px;margin-top:1px;"></i>
+                    <div><strong>Please fix:</strong><ul>@foreach(var e in re.Errors){
+                    <li>@e.ErrorMessage</li>
+                }
+</ul></div>
+            </div>
+                        }
+            <form method="post" id="hw-prog-form">
+                @Html.AntiForgeryToken()
 
-    <div class="row g-3">
-        <div class="col-md-4">
-            <label asp-for="ProgrammeCode" class="form-label">Programme Code (optional)</label>
-            <input asp-for="ProgrammeCode" class="form-control" />
-            <span asp-validation-for="ProgrammeCode" class="text-danger"></span>
+                @* Identity *@
+                <div class="hw-g2" style="margin-bottom:16px;">
+                    <div class="hw-field">
+                        <label asp-for="ProgrammeCode" class="hw-field-label">Programme Code <span class="hw-opt">(optional)</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-hash hw-field-ico"></i>
+                            <input asp-for="ProgrammeCode" class="hw-input" placeholder="e.g. PRG-001" oninput="hwPreview()" />
+                        </div>
+                        <span asp-validation-for="ProgrammeCode" class="hw-field-error"></span>
+                    </div>
+                    <div class="hw-field">
+                        <label asp-for="ProgrammeName" class="hw-field-label">Programme Name <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-mortarboard hw-field-ico"></i>
+                            <input asp-for="ProgrammeName" class="hw-input" placeholder="e.g. National Certificate: IT" oninput="hwPreview()" />
+                        </div>
+                        <span asp-validation-for="ProgrammeName" class="hw-field-error"></span>
+                    </div>
+                </div>
+
+                @* Qualification *@
+                <div class="hw-divider">
+                    <div class="hw-divider-line"></div>
+                    <span class="hw-divider-label"><i class="bi bi-award"></i> Qualification</span>
+                    <div class="hw-divider-line"></div>
+                </div>
+                <div class="hw-g3" style="margin-bottom:16px;">
+                    <div class="hw-field" style="grid-column:span 3;">
+                        <label asp-for="QualificationTypeId" class="hw-field-label">Qualification Type <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-award hw-field-ico"></i>
+                            <select asp-for="QualificationTypeId" asp-items="Model.QualificationTypes" class="hw-select" oninput="hwPreview()">
+                                <option value="">— Select qualification type —</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="QualificationTypeId" class="hw-field-error"></span>
+                    </div>
+                </div>
+                <div class="hw-g3" style="margin-bottom:16px;">
+                    <div class="hw-field">
+                        <label asp-for="NqfLevel" class="hw-field-label">NQF Level</label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-bar-chart-steps hw-field-ico"></i>
+                            <input asp-for="NqfLevel" class="hw-input" placeholder="e.g. 5" oninput="hwPreview()" />
+                        </div>
+                        <span asp-validation-for="NqfLevel" class="hw-field-error"></span>
+                    </div>
+                    <div class="hw-field">
+                        <label asp-for="Credits" class="hw-field-label">Credits</label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-star hw-field-ico"></i>
+                            <input asp-for="Credits" type="number" class="hw-input" placeholder="e.g. 120" oninput="hwPreview()" />
+                        </div>
+                    </div>
+                    <div class="hw-field">
+                        <label asp-for="DurationMonths" class="hw-field-label">Duration (Months)</label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-clock hw-field-ico"></i>
+                            <input asp-for="DurationMonths" type="number" class="hw-input" placeholder="e.g. 12" oninput="hwPreview()" />
+                        </div>
+                    </div>
+                </div>
+
+                @* Accreditation *@
+                <div class="hw-divider">
+                    <div class="hw-divider-line"></div>
+                    <span class="hw-divider-label"><i class="bi bi-patch-check"></i> Accreditation</span>
+                    <div class="hw-divider-line"></div>
+                </div>
+                <div class="hw-g2" style="margin-bottom:16px;">
+                    <div class="hw-field">
+                        <label asp-for="SAQAId" class="hw-field-label">SAQA ID</label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-fingerprint hw-field-ico"></i>
+                            <input asp-for="SAQAId" class="hw-input" placeholder="e.g. 23456" />
+                        </div>
+                    </div>
+                    <div class="hw-field">
+                        <label asp-for="OFOCode" class="hw-field-label">OFO Code</label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-code-square hw-field-ico"></i>
+                            <input asp-for="OFOCode" class="hw-input" placeholder="e.g. 1234-01" />
+                        </div>
+                    </div>
+                </div>
+
+                @* Delivery *@
+                <div class="hw-divider">
+                    <div class="hw-divider-line"></div>
+                    <span class="hw-divider-label"><i class="bi bi-geo-alt"></i> Delivery &amp; Status</span>
+                    <div class="hw-divider-line"></div>
+                </div>
+                <div class="hw-g2">
+                    <div class="hw-field">
+                        <label asp-for="ProvinceId" class="hw-field-label">Province <span class="hw-req">*</span></label>
+                        <div class="hw-field-wrap">
+                            <i class="bi bi-geo-alt hw-field-ico"></i>
+                            <select asp-for="ProvinceId" asp-items="Model.Provinces" class="hw-select">
+                                <option value="">— Select province —</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="ProvinceId" class="hw-field-error"></span>
+                    </div>
+                    <div class="hw-field">
+                        <label class="hw-field-label">Active Status</label>
+                        <div class="hw-toggle-row">
+                            <div>
+                                <div class="hw-toggle-label"><i class="bi bi-broadcast me-2" style="color:var(--hw-green);"></i>Active</div>
+                                <div class="hw-toggle-desc">Inactive programmes won't appear in cohort setup.</div>
+                            </div>
+                            <label class="hw-switch">
+                                <input asp-for="IsActive" type="checkbox" checked />
+                                <span class="hw-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="hw-card-foot">
+            <button type="submit" form="hw-prog-form" class="hw-btn-primary">
+                <i class="bi bi-check-lg"></i> Save Programme
+            </button>
+            <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-x"></i> Cancel</a>
+        </div>
+    </div>
+
+    @* ── Sidebar ── *@
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        @* Live preview *@
+        <div class="hw-preview-card">
+            <div class="hw-preview-label">Live Preview</div>
+            <div class="hw-preview-name" id="hw-prev-name">Programme name will appear here</div>
+            <div class="hw-preview-badges" id="hw-prev-badges">
+                <span class="hw-preview-badge"><i class="bi bi-mortarboard"></i> <span id="hw-prev-code">No code</span></span>
+                <span class="hw-preview-badge" id="hw-prev-nqf-wrap" style="display:none;"><i class="bi bi-bar-chart-steps"></i> NQF <span id="hw-prev-nqf"></span></span>
+                <span class="hw-preview-badge" id="hw-prev-credits-wrap" style="display:none;"><i class="bi bi-star"></i> <span id="hw-prev-credits"></span> credits</span>
+                <span class="hw-preview-badge" id="hw-prev-dur-wrap" style="display:none;"><i class="bi bi-clock"></i> <span id="hw-prev-dur"></span> months</span>
+            </div>
         </div>
 
-        <div class="col-md-8">
-            <label asp-for="ProgrammeName" class="form-label">Programme Name</label>
-            <input asp-for="ProgrammeName" class="form-control" />
-            <span asp-validation-for="ProgrammeName" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="QualificationTypeId" class="form-label">Qualification Type</label>
-            <select asp-for="QualificationTypeId" asp-items="Model.QualificationTypes" class="form-select">
-                <option value="">-- Select qualification type --</option>
-            </select>
-            <span asp-validation-for="QualificationTypeId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-3">
-            <label asp-for="NqfLevel" class="form-label">NQF Level</label>
-            <input asp-for="NqfLevel" class="form-control" />
-            <span asp-validation-for="NqfLevel" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-3">
-            <label asp-for="Credits" class="form-label">Credits</label>
-            <input asp-for="Credits" type="number" class="form-control" />
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="DurationMonths" class="form-label">Duration (Months)</label>
-            <input asp-for="DurationMonths" type="number" class="form-control" />
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="SAQAId" class="form-label">SAQA ID</label>
-            <input asp-for="SAQAId" class="form-control" />
-        </div>
-
-        <div class="col-md-4">
-            <label asp-for="OFOCode" class="form-label">OFO Code</label>
-            <input asp-for="OFOCode" class="form-control" />
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="ProvinceId" class="form-label">Province</label>
-            <select asp-for="ProvinceId" asp-items="Model.Provinces" class="form-select">
-                <option value="">-- Select Province --</option>
-            </select>
-            <span asp-validation-for="ProvinceId" class="text-danger"></span>
-        </div>
-
-
-        <div class="col-md-6">
-            <div class="form-check mt-4">
-                <input asp-for="IsActive" class="form-check-input" />
-                <label asp-for="IsActive" class="form-check-label">Active</label>
+        @* Tips *@
+        <div style="background:var(--hw-white);border:1.5px solid var(--hw-border);border-radius:var(--hw-radius-lg);overflow:hidden;">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--hw-border);background:var(--hw-offwhite);display:flex;align-items:center;gap:10px;">
+                <div style="width:34px;height:34px;border-radius:9px;background:var(--hw-gold-light);color:var(--hw-gold-dark);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;"><i class="bi bi-lightbulb"></i></div>
+                <div style="font-size:13px;font-weight:700;color:var(--hw-dark);">Setup Guide</div>
+            </div>
+            <div style="padding:16px 18px;">
+                <ul class="hw-tip-list">
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>Use a consistent <strong>Programme Code</strong> format for easy filtering in reports (e.g. <code style="font-size:10px;background:#f1f2f5;padding:1px 5px;border-radius:4px;">NC-ICT-L5</code>).</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>The <strong>Qualification Type</strong> determines how this programme is categorised in the Cohort Delivery Report.</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i><strong>NQF Level</strong> and <strong>Credits</strong> are shown in beneficiary completion certificates and reports.</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>The <strong>SAQA ID</strong> links this programme to the South African Qualifications Authority register.</li>
+                    <li class="hw-tip-item"><i class="bi bi-check-circle-fill"></i>Inactive programmes are hidden when creating new cohorts — they remain visible in historical records.</li>
+                </ul>
             </div>
         </div>
     </div>
-
-    <div class="mt-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function hwPreview() {
+            var name    = document.querySelector('[name="ProgrammeName"]').value.trim();
+            var code    = document.querySelector('[name="ProgrammeCode"]').value.trim();
+            var nqf     = document.querySelector('[name="NqfLevel"]').value.trim();
+            var credits = document.querySelector('[name="Credits"]').value.trim();
+            var dur     = document.querySelector('[name="DurationMonths"]').value.trim();
+
+            document.getElementById('hw-prev-name').textContent = name || 'Programme name will appear here';
+            document.getElementById('hw-prev-code').textContent = code || 'No code';
+
+            var nqfWrap     = document.getElementById('hw-prev-nqf-wrap');
+            var credWrap    = document.getElementById('hw-prev-credits-wrap');
+            var durWrap     = document.getElementById('hw-prev-dur-wrap');
+
+            if (nqf)     { document.getElementById('hw-prev-nqf').textContent = nqf;         nqfWrap.style.display = 'inline-flex'; } else { nqfWrap.style.display = 'none'; }
+            if (credits) { document.getElementById('hw-prev-credits').textContent = credits;  credWrap.style.display = 'inline-flex'; } else { credWrap.style.display = 'none'; }
+            if (dur)     { document.getElementById('hw-prev-dur').textContent = dur;          durWrap.style.display = 'inline-flex'; } else { durWrap.style.display = 'none'; }
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('span[data-valmsg-for]').forEach(function(span) {
+                if (span.textContent.trim()) {
+                    var inp = document.querySelector('[name="' + span.getAttribute('data-valmsg-for') + '"]');
+                    if (inp) inp.classList.add('input-error');
+                }
+            });
+        });
+    </script>
 }

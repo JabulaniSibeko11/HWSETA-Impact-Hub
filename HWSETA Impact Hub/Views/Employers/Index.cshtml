@@ -2,41 +2,582 @@
 @{
     ViewData["Title"] = "Employers";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css" />
+<style>
+    #hw-body, #hw-body * {
+        font-family: 'Montserrat','Segoe UI',sans-serif !important
+    }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">Employers</h1>
-    <div>
-        <a class="btn btn-outline-secondary" asp-action="DownloadTemplate">Download Excel Template</a>
-        <a class="btn btn-outline-secondary" asp-action="Upload">Bulk Upload</a>
-        <a class="btn btn-primary" asp-action="Create">Add Employer</a>
-    </div>
-</div>
+    .hw-page-eyebrow {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--hw-gold-dark);
+        margin-bottom: 4px
+    }
+
+    .hw-page-title {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -.02em;
+        color: var(--hw-dark);
+        margin: 0
+    }
+
+        .hw-page-title span {
+            color: var(--hw-green)
+        }
+
+    .hw-page-desc {
+        font-size: 13px;
+        color: var(--hw-muted);
+        margin-top: 5px
+    }
+
+    .hw-stat-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit,minmax(140px,1fr));
+        gap: 14px;
+        margin-bottom: 24px
+    }
+
+    .hw-strip-card {
+        background: var(--hw-white);
+        border: 1.5px solid var(--hw-border);
+        border-radius: var(--hw-radius-lg);
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        transition: box-shadow .2s,border-color .2s
+    }
+
+        .hw-strip-card:hover {
+            box-shadow: var(--hw-shadow-sm);
+            border-color: var(--hw-green)
+        }
+
+    .hw-strip-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px
+    }
+
+        .hw-strip-icon.green {
+            background: var(--hw-green-light);
+            color: var(--hw-green)
+        }
+
+        .hw-strip-icon.gold {
+            background: var(--hw-gold-light);
+            color: var(--hw-gold-dark)
+        }
+
+        .hw-strip-icon.red {
+            background: var(--hw-red-light);
+            color: var(--hw-red)
+        }
+
+        .hw-strip-icon.dark {
+            background: #f1f2f5;
+            color: var(--hw-dark)
+        }
+
+        .hw-strip-icon.blue {
+            background: #e0f2fe;
+            color: #0369a1
+        }
+
+    .hw-strip-val {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--hw-dark);
+        letter-spacing: -.03em;
+        line-height: 1
+    }
+
+    .hw-strip-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--hw-muted);
+        margin-top: 3px
+    }
+
+    .hw-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        background: var(--hw-green);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 700;
+        font-family: 'Montserrat',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .2s,box-shadow .2s,transform .15s
+    }
+
+        .hw-btn-primary:hover {
+            background: var(--hw-green-dark);
+            box-shadow: 0 4px 14px rgba(26,122,60,.3);
+            transform: translateY(-1px);
+            color: #fff
+        }
+
+    .hw-btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 15px;
+        background: transparent;
+        color: var(--hw-muted);
+        border: 1.5px solid var(--hw-border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'Montserrat',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: border-color .2s,color .2s
+    }
+
+        .hw-btn-outline:hover {
+            border-color: var(--hw-green);
+            color: var(--hw-green)
+        }
+
+    .hw-table-card {
+        background: var(--hw-white);
+        border: 1.5px solid var(--hw-border);
+        border-radius: var(--hw-radius-lg);
+        overflow: hidden
+    }
+
+    .hw-table-card-head {
+        padding: 14px 22px;
+        border-bottom: 1px solid var(--hw-border);
+        background: var(--hw-offwhite);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap
+    }
+
+    .hw-table-card-title {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--hw-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px
+    }
+
+        .hw-table-card-title i {
+            color: var(--hw-green)
+        }
+
+    .dataTables_wrapper {
+        padding: 0
+    }
+
+    .hw-dt-toolbar {
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        border-bottom: 1px solid var(--hw-border)
+    }
+
+    .hw-dt-foot {
+        padding: 12px 20px;
+        border-top: 1px solid var(--hw-border);
+        background: var(--hw-offwhite);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px
+    }
+
+    .dataTables_wrapper .dataTables_filter label, .dataTables_wrapper .dataTables_length label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--hw-muted);
+        font-family: 'Montserrat',sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1.5px solid var(--hw-border);
+        border-radius: 8px;
+        padding: 7px 12px;
+        font-size: 12px;
+        font-family: 'Montserrat',sans-serif;
+        color: var(--hw-dark);
+        outline: none;
+        width: 200px;
+        transition: border-color .2s,box-shadow .2s,width .3s
+    }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--hw-green);
+            box-shadow: 0 0 0 3px rgba(26,122,60,.1);
+            width: 250px
+        }
+
+    .dataTables_wrapper .dataTables_length select {
+        border: 1.5px solid var(--hw-border);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-family: 'Montserrat',sans-serif;
+        outline: none
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--hw-muted)
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 7px !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        font-family: 'Montserrat',sans-serif !important;
+        color: var(--hw-muted) !important;
+        border: 1.5px solid transparent !important;
+        padding: 5px 10px !important;
+        margin: 0 2px !important;
+        transition: all .18s !important
+    }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: var(--hw-green-light) !important;
+            border-color: var(--hw-green) !important;
+            color: var(--hw-green) !important
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: var(--hw-green) !important;
+            border-color: var(--hw-green) !important;
+            color: #fff !important;
+            box-shadow: 0 2px 8px rgba(26,122,60,.3) !important
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled, .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+            color: var(--hw-border) !important;
+            background: transparent !important
+        }
+
+    .hw-dt {
+        width: 100% !important;
+        border-collapse: collapse
+    }
+
+        .hw-dt thead th {
+            padding: 11px 16px;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--hw-muted);
+            border-bottom: 2px solid var(--hw-border);
+            background: var(--hw-offwhite);
+            text-align: left;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: color .18s
+        }
+
+            .hw-dt thead th:hover, .hw-dt thead th.sorting_asc, .hw-dt thead th.sorting_desc {
+                color: var(--hw-green)
+            }
+
+        .hw-dt tbody tr {
+            border-bottom: 1px solid var(--hw-border);
+            transition: background .14s
+        }
+
+            .hw-dt tbody tr:last-child {
+                border-bottom: none
+            }
+
+            .hw-dt tbody tr:hover {
+                background: #f7fdf9
+            }
+
+        .hw-dt td {
+            padding: 13px 16px;
+            font-size: 12.5px;
+            color: var(--hw-dark);
+            vertical-align: middle
+        }
+
+    .hw-emp-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px
+    }
+
+    .hw-emp-av {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        flex-shrink: 0;
+        background: linear-gradient(135deg,var(--hw-green),var(--hw-green-dark));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 800;
+        color: #fff
+    }
+
+    .hw-emp-name {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--hw-dark)
+    }
+
+    .hw-code-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: #f1f2f5;
+        color: var(--hw-muted);
+        border: 1px solid var(--hw-border);
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        font-family: monospace !important;
+        white-space: nowrap
+    }
+
+    .hw-sector-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 99px;
+        background: var(--hw-gold-light);
+        color: var(--hw-gold-dark);
+        font-size: 10.5px;
+        font-weight: 700;
+        white-space: nowrap
+    }
+
+    .hw-province-cell {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        color: var(--hw-muted);
+        font-weight: 600
+    }
+
+    .hw-contact-name {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--hw-dark)
+    }
+
+    .hw-contact-email {
+        font-size: 11px;
+        color: var(--hw-muted);
+        margin-top: 1px;
+        display: flex;
+        align-items: center;
+        gap: 3px
+    }
+
+    .hw-status-active {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 9px;
+        border-radius: 99px;
+        background: var(--hw-green-light);
+        color: var(--hw-green);
+        font-size: 10.5px;
+        font-weight: 700
+    }
+
+        .hw-status-active::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--hw-green)
+        }
+
+    .hw-status-inactive {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 9px;
+        border-radius: 99px;
+        background: #f1f2f5;
+        color: var(--hw-muted);
+        font-size: 10.5px;
+        font-weight: 700;
+        border: 1px solid var(--hw-border)
+    }
+
+        .hw-status-inactive::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--hw-border)
+        }
+</style>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <script>window.addEventListener('load',function(){if(typeof hwToast==='function')hwToast('success','Done','@Html.Raw(TempData["Success"])')});</script>
 }
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Sector</th>
-            <th>Province</th>
-            <th>Contact</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var e in Model)
-        {
-            <tr>
-                <td>@e.EmployerCode</td>
-                <td>@e.EmployerName</td>
-                <td>@e.Sector</td>
-                <td>@e.Province</td>
-                <td>@(e.ContactName ?? "") @(string.IsNullOrWhiteSpace(e.ContactEmail) ? "" : $"({e.ContactEmail})")</td>
-            </tr>
-        }
-    </tbody>
-</table>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-briefcase me-1"></i>Stakeholder Management</div>
+        <h1 class="hw-page-title">Employer <span>Register</span></h1>
+        <p class="hw-page-desc">Manage workplace partners, levy payers and employer contact information.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+        <a asp-action="DownloadTemplate" class="hw-btn-outline"><i class="bi bi-file-earmark-excel"></i> Template</a>
+        <a asp-action="Upload" class="hw-btn-outline"><i class="bi bi-upload"></i> Bulk Upload</a>
+        <a asp-action="Create" class="hw-btn-primary"><i class="bi bi-plus-lg"></i> Add Employer</a>
+    </div>
+</div>
+
+<div class="hw-stat-strip">
+    <div class="hw-strip-card"><div class="hw-strip-icon dark"><i class="bi bi-briefcase"></i></div><div><div class="hw-strip-val">@Model.Count</div><div class="hw-strip-label">Total Employers</div></div></div>
+    <div class="hw-strip-card"><div class="hw-strip-icon green"><i class="bi bi-check-circle"></i></div><div><div class="hw-strip-val">@Model.Count(e => e.IsActive)</div><div class="hw-strip-label">Active</div></div></div>
+    <div class="hw-strip-card"><div class="hw-strip-icon red"><i class="bi bi-dash-circle"></i></div><div><div class="hw-strip-val">@Model.Count(e => !e.IsActive)</div><div class="hw-strip-label">Inactive</div></div></div>
+    <div class="hw-strip-card"><div class="hw-strip-icon gold"><i class="bi bi-diagram-3"></i></div><div><div class="hw-strip-val">@Model.Select(e => e.Sector).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().Count()</div><div class="hw-strip-label">Sectors</div></div></div>
+    <div class="hw-strip-card"><div class="hw-strip-icon blue"><i class="bi bi-geo-alt"></i></div><div><div class="hw-strip-val">@Model.Select(e => e.Province).Where(p => p != null).Distinct().Count()</div><div class="hw-strip-label">Provinces</div></div></div>
+</div>
+
+<div class="hw-table-card">
+    <div class="hw-table-card-head">
+        <span class="hw-table-card-title"><i class="bi bi-table"></i> All Employers</span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table id="employersTable" class="hw-dt">
+            <thead>
+                <tr>
+                    <th>Employer</th>
+                    <th>Code</th>
+                    <th>Sector</th>
+                    <th>Province</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var e in Model)
+                {
+                    var initials = string.Concat((e.EmployerName ?? "E").Split(' ').Take(2).Select(w => w.Length > 0 ? w[0].ToString().ToUpper() : ""));
+                    if (initials.Length == 0) initials = "E";
+                    <tr>
+                        <td>
+                            <div class="hw-emp-cell">
+                                <div class="hw-emp-av">@initials</div>
+                                <div class="hw-emp-name">@e.EmployerName</div>
+                            </div>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(e.EmployerCode))
+                            {
+                                <span class="hw-code-chip">@e.EmployerCode</span>
+                            }
+                            else
+                            {
+
+                                <span style="color:var(--hw-border);">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(e.Sector))
+                            {
+                                <span class="hw-sector-pill"><i class="bi bi-diagram-3" style="font-size:9px;"></i> @e.Sector</span>
+                            }
+                        </td>
+                        <td>
+                            @if (e.Province != null)
+                            {
+                                <span class="hw-province-cell"><i class="bi bi-geo-alt" style="color:var(--hw-green);font-size:12px;"></i>@e.Province</span>
+                            }
+                            else
+                            {
+
+                                <span style="color:var(--hw-border);">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(e.ContactName) || !string.IsNullOrWhiteSpace(e.ContactEmail))
+                            {
+                                <div class="hw-contact-name">@e.ContactName</div>
+                                @if (!string.IsNullOrWhiteSpace(e.ContactEmail))
+                                {
+                                    <div class="hw-contact-email"><i class="bi bi-envelope"></i>@e.ContactEmail</div>
+                                }
+                            }
+                            else
+                            {
+                                <span style="color:var(--hw-border);">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (e.IsActive)
+                            {
+                                <span class="hw-status-active">Active</span>
+                            }
+                            else
+                            {
+
+                                <span class="hw-status-inactive">Inactive</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('#employersTable').DataTable({
+                pageLength:10,lengthMenu:[[10,25,50,100,-1],[10,25,50,100,'All']],
+                order:[[0,'asc']],
+                columnDefs:[{targets:[5],orderable:false}],
+                dom:'<"hw-dt-toolbar"lf>t<"hw-dt-foot"ip>',
+                language:{search:'',searchPlaceholder:'Search employers…',lengthMenu:'Show _MENU_ per page',info:'Showing _START_–_END_ of _TOTAL_ employers',infoEmpty:'No employers found',zeroRecords:'No matching employers',paginate:{previous:'‹',next:'›'}}
+            });
+        });
+    </script>
+}

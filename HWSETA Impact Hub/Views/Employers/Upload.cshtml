@@ -1,23 +1,126 @@
 ﻿@{
     ViewData["Title"] = "Bulk Upload Employers";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/employeruploadcss.css" rel="stylesheet" />
 
-<h1>Bulk Upload Employers</h1>
-
-<div class="alert alert-info">
-    Upload an Excel file (.xlsx) with headers:
-    <strong>EmployerCode</strong>, <strong>EmployerName</strong>, <strong>Sector</strong>, <strong>Province</strong>,
-    ContactName, ContactEmail, Phone
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-upload me-1"></i>Stakeholder Management</div>
+        <h1 class="hw-page-title">Bulk Upload <span>Employers</span></h1>
+    </div>
+    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;"><i class="bi bi-arrow-left"></i> Back to Employers</a>
 </div>
 
-<form method="post" enctype="multipart/form-data">
-    @Html.AntiForgeryToken()
-    <div class="mb-3">
-        <input type="file" name="file" class="form-control" accept=".xlsx" />
+<div class="hw-layout">
+    @* Main upload card *@
+    <div class="hw-card">
+        <div class="hw-card-head">
+            <div class="hw-card-icon green"><i class="bi bi-cloud-upload"></i></div>
+            <div>
+                <div class="hw-card-title">Upload Excel File</div>
+                <div class="hw-card-sub">Only <strong>.xlsx</strong> files are accepted · Max 20 MB</div>
+            </div>
+        </div>
+        <div class="hw-card-body">
+            <form method="post" enctype="multipart/form-data" id="hw-upload-form">
+                @Html.AntiForgeryToken()
+                <div class="hw-drop-zone" id="hw-drop-zone">
+                    <input type="file" name="file" id="hw-file-input" accept=".xlsx" onchange="hwFileChosen(this)" />
+                    <div id="hw-drop-placeholder">
+                        <div class="hw-drop-icon"><i class="bi bi-file-earmark-excel"></i></div>
+                        <div class="hw-drop-title">Drop your Excel file here or click to browse</div>
+                        <div class="hw-drop-sub">Must match the column structure shown in the sidebar</div>
+                        <span class="hw-drop-badge"><i class="bi bi-shield-check" style="font-size:10px;"></i> .xlsx only · Max 20 MB</span>
+                    </div>
+                </div>
+                <div class="hw-file-preview" id="hw-file-preview">
+                    <div class="hw-preview-icon"><i class="bi bi-file-earmark-excel"></i></div>
+                    <div>
+                        <div class="hw-preview-name" id="hw-preview-name">file.xlsx</div>
+                        <div class="hw-preview-size" id="hw-preview-size">0 KB</div>
+                    </div>
+                    <button type="button" class="hw-preview-remove" onclick="hwClearFile()"><i class="bi bi-x"></i></button>
+                </div>
+            </form>
+        </div>
+        <div class="hw-card-foot">
+            <button type="submit" form="hw-upload-form" class="hw-btn-primary"><i class="bi bi-upload"></i> Upload Employers</button>
+            <a asp-action="DownloadTemplate" class="hw-btn-gold"><i class="bi bi-file-earmark-arrow-down"></i> Download Template</a>
+            <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-x"></i> Cancel</a>
+        </div>
     </div>
-    <button class="btn btn-primary" type="submit">Upload</button>
-    <a class="btn btn-outline-secondary mb-3" asp-action="DownloadTemplate">
-        Download Excel Template
-    </a>
-    <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
-</form>
+
+    @* Sidebar *@
+    <div style="display:flex;flex-direction:column;gap:16px;">
+        @* Column reference *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon dark"><i class="bi bi-table"></i></div>
+                <div><div class="hw-card-title">Required Columns</div><div class="hw-card-sub">Excel header names (row 1)</div></div>
+            </div>
+            <div class="hw-card-body" style="padding:0;">
+                <table class="hw-col-table">
+                    <thead><tr><th>Column</th><th>Required?</th><th>Example</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="hw-col-name">EmployerCode</span></td><td><span class="hw-badge-req">Required</span></td><td style="font-size:11.5px;color:var(--hw-muted);">EMP-001</td></tr>
+                        <tr><td><span class="hw-col-name">EmployerName</span></td><td><span class="hw-badge-req">Required</span></td><td style="font-size:11.5px;color:var(--hw-muted);">Acme Ltd</td></tr>
+                        <tr><td><span class="hw-col-name">Sector</span></td><td><span class="hw-badge-req">Required</span></td><td style="font-size:11.5px;color:var(--hw-muted);">Healthcare</td></tr>
+                        <tr><td><span class="hw-col-name">Province</span></td><td><span class="hw-badge-req">Required</span></td><td style="font-size:11.5px;color:var(--hw-muted);">Gauteng</td></tr>
+                        <tr><td><span class="hw-col-name">ContactName</span></td><td><span class="hw-badge-opt">Optional</span></td><td style="font-size:11.5px;color:var(--hw-muted);">Jane Doe</td></tr>
+                        <tr><td><span class="hw-col-name">ContactEmail</span></td><td><span class="hw-badge-opt">Optional</span></td><td style="font-size:11.5px;color:var(--hw-muted);">jane@co.za</td></tr>
+                        <tr><td><span class="hw-col-name">Phone</span></td><td><span class="hw-badge-opt">Optional</span></td><td style="font-size:11.5px;color:var(--hw-muted);">011 000 0000</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @* Notes *@
+        <div style="padding:14px 16px;background:var(--hw-gold-light);border:1.5px solid #f0d060;border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <i class="bi bi-lightbulb-fill" style="color:var(--hw-gold-dark);font-size:15px;flex-shrink:0;margin-top:2px;"></i>
+            <div style="font-size:12px;color:var(--hw-dark);line-height:1.65;">
+                <strong>Import behaviour:</strong> existing employers matched by <strong>EmployerCode</strong> will be <em>updated</em>. New codes will be <em>inserted</em>. Rows with missing required fields are <em>skipped</em> and listed in the result.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const zone = document.getElementById('hw-drop-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+        e.preventDefault(); zone.classList.remove('drag-over');
+        const inp = document.getElementById('hw-file-input');
+        inp.files = e.dataTransfer.files;
+        hwFileChosen(inp);
+    });
+    function hwFileChosen(inp) {
+        if (!inp.files || !inp.files[0]) return;
+        const file = inp.files[0];
+        if (!file.name.toLowerCase().endsWith('.xlsx')) {
+            alert('Please select an .xlsx file.'); hwClearFile(); return;
+        }
+        if (file.size > 20 * 1024 * 1024) {
+            alert('File exceeds 20 MB limit.'); hwClearFile(); return;
+        }
+        document.getElementById('hw-preview-name').textContent = file.name;
+        document.getElementById('hw-preview-size').textContent = hwFmt(file.size);
+        document.getElementById('hw-file-preview').classList.add('show');
+        document.getElementById('hw-drop-placeholder').style.display = 'none';
+        zone.classList.add('has-file');
+    }
+    function hwClearFile() {
+        document.getElementById('hw-file-input').value = '';
+        document.getElementById('hw-file-preview').classList.remove('show');
+        document.getElementById('hw-drop-placeholder').style.display = '';
+        zone.classList.remove('has-file');
+    }
+    function hwFmt(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+        return (b/1048576).toFixed(1) + ' MB';
+    }
+</script>

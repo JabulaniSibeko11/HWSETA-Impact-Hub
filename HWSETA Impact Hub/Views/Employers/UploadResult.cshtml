@@ -1,32 +1,139 @@
 ﻿@model HWSETA_Impact_Hub.Models.ViewModels.Employers.EmployerImportResultVm
 @{
     ViewData["Title"] = "Upload Result";
+    var hasErrors = Model.Errors.Any();
+    var successRate = Model.TotalRows > 0 ? (int)(((Model.Inserted + Model.Updated) / (double)Model.TotalRows) * 100) : 0;
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/employeruploadresultcss.css" rel="stylesheet" />
 
-<h1>Upload Result</h1>
-
-<div class="row g-3">
-    <div class="col-md-3"><div class="card"><div class="card-body"><b>Total Rows</b><div>@Model.TotalRows</div></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><b>Inserted</b><div>@Model.Inserted</div></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><b>Updated</b><div>@Model.Updated</div></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><b>Skipped</b><div>@Model.Skipped</div></div></div></div>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-upload me-1"></i>Stakeholder Management</div>
+        <h1 class="hw-page-title">Upload <span>Result</span></h1>
+    </div>
 </div>
 
-@if (Model.Errors.Any())
-{
-    <div class="alert alert-warning mt-3">
-        <b>Errors (@Model.Errors.Count)</b>
-        <ul class="mb-0">
-            @foreach (var e in Model.Errors.Take(50))
-            {
-                <li>@e</li>
-            }
-        </ul>
-        @if (Model.Errors.Count > 50)
+@* ── Result Banner ── *@
+<div class="hw-result-banner @(hasErrors ? "partial" : "success")">
+    <div class="hw-banner-icon">
+        @if (!hasErrors)
         {
-            <div class="mt-2">Showing first 50 errors.</div>
+            <i class="bi bi-check-circle-fill"></i>
         }
+        else
+        {
+
+            <i class="bi bi-exclamation-triangle-fill"></i>
+        }
+    </div>
+    <div>
+        <div class="hw-banner-title">
+            @if (!hasErrors)
+            {
+                <text>Import completed successfully!</text>
+            }
+            else
+            {
+
+                <text>Import completed with @Model.Errors.Count error@(Model.Errors.Count == 1 ? "" : "s")</text>
+            }
+        </div>
+        <div class="hw-banner-sub">
+            @Model.Inserted inserted · @Model.Updated updated · @Model.Skipped skipped of @Model.TotalRows total rows
+        </div>
+    </div>
+</div>
+
+@* ── KPI Cards ── *@
+<div class="hw-kpi-grid">
+    <div class="hw-kpi">
+        <div class="hw-kpi-accent dark"></div>
+        <div class="hw-kpi-icon dark"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+        <div class="hw-kpi-val">@Model.TotalRows</div>
+        <div class="hw-kpi-label">Total Rows</div>
+    </div>
+    <div class="hw-kpi">
+        <div class="hw-kpi-accent green"></div>
+        <div class="hw-kpi-icon green"><i class="bi bi-plus-circle"></i></div>
+        <div class="hw-kpi-val" style="color:var(--hw-green);">@Model.Inserted</div>
+        <div class="hw-kpi-label">Inserted</div>
+        <div class="hw-prog-wrap">
+            <div class="hw-prog-label"><span>New records</span><span>@(Model.TotalRows > 0 ? (int)((Model.Inserted / (double)Model.TotalRows) * 100) : 0)%</span></div>
+            <div class="hw-prog-bar"><div class="hw-prog-fill green" style="width:@(Model.TotalRows > 0 ? (int)((Model.Inserted / (double)Model.TotalRows) * 100) : 0)%;"></div></div>
+        </div>
+    </div>
+    <div class="hw-kpi">
+        <div class="hw-kpi-accent blue"></div>
+        <div class="hw-kpi-icon blue"><i class="bi bi-arrow-repeat"></i></div>
+        <div class="hw-kpi-val" style="color:#0369a1;">@Model.Updated</div>
+        <div class="hw-kpi-label">Updated</div>
+        <div class="hw-prog-wrap">
+            <div class="hw-prog-label"><span>Overwritten</span><span>@(Model.TotalRows > 0 ? (int)((Model.Updated / (double)Model.TotalRows) * 100) : 0)%</span></div>
+            <div class="hw-prog-bar"><div class="hw-prog-fill" style="width:@(Model.TotalRows > 0 ? (int)((Model.Updated / (double)Model.TotalRows) * 100) : 0)%;background:linear-gradient(90deg,#0369a1,#0ea5e9);"></div></div>
+        </div>
+    </div>
+    <div class="hw-kpi">
+        <div class="hw-kpi-accent @(Model.Skipped > 0 ? "red" : "dark")"></div>
+        <div class="hw-kpi-icon @(Model.Skipped > 0 ? "red" : "dark")"><i class="bi bi-skip-forward"></i></div>
+        <div class="hw-kpi-val" style="color:@(Model.Skipped > 0 ? "var(--hw-red)" : "var(--hw-muted)");">@Model.Skipped</div>
+        <div class="hw-kpi-label">Skipped</div>
+        <div class="hw-prog-wrap">
+            <div class="hw-prog-label"><span>Not imported</span><span>@(Model.TotalRows > 0 ? (int)((Model.Skipped / (double)Model.TotalRows) * 100) : 0)%</span></div>
+            <div class="hw-prog-bar"><div class="hw-prog-fill" style="width:@(Model.TotalRows > 0 ? (int)((Model.Skipped / (double)Model.TotalRows) * 100) : 0)%;background:@(Model.Skipped > 0 ? "linear-gradient(90deg,var(--hw-red),#f87171)" : "var(--hw-border)");"></div></div>
+        </div>
+    </div>
+</div>
+
+@* ── Errors ── *@
+@if (hasErrors)
+{
+    <div class="hw-card">
+        <div class="hw-card-head">
+            <div class="hw-card-head-left">
+                <div class="hw-card-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+                <div>
+                    <div class="hw-card-title">Import Errors</div>
+                    <div class="hw-card-sub">Rows that could not be imported due to validation issues</div>
+                </div>
+            </div>
+            <span class="hw-err-count"><i class="bi bi-x-circle" style="font-size:10px;"></i> @Model.Errors.Count error@(Model.Errors.Count == 1 ? "" : "s")</span>
+        </div>
+        <div class="hw-card-body">
+            <ul class="hw-err-list">
+                @foreach (var e in Model.Errors.Take(50))
+                {
+                    <li class="hw-err-item">
+                        <i class="bi bi-x-circle-fill"></i>
+                        <span>@e</span>
+                    </li>
+                }
+            </ul>
+            @if (Model.Errors.Count > 50)
+            {
+                <div class="hw-err-more">
+                    <i class="bi bi-three-dots me-1"></i>
+                    Showing first 50 of @Model.Errors.Count errors. Fix these and re-upload the file.
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div style="padding:20px 22px;background:var(--hw-green-light);border:1.5px solid var(--hw-green);border-radius:12px;display:flex;gap:12px;align-items:flex-start;margin-bottom:18px;">
+        <i class="bi bi-check-circle-fill" style="color:var(--hw-green);font-size:20px;flex-shrink:0;margin-top:1px;"></i>
+        <div>
+            <div style="font-size:13.5px;font-weight:800;color:var(--hw-dark);margin-bottom:3px;">No errors — clean import!</div>
+            <div style="font-size:12.5px;color:var(--hw-muted);">All rows were processed successfully. The employer register has been updated.</div>
+        </div>
     </div>
 }
 
-<a class="btn btn-primary" asp-action="Index">Back to Employers</a>
+@* ── Actions ── *@
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+    <a asp-action="Index" class="hw-btn-primary"><i class="bi bi-arrow-left"></i> Back to Employers</a>
+    <a asp-action="Upload" class="hw-btn-outline"><i class="bi bi-upload"></i> Upload Another File</a>
+</div>

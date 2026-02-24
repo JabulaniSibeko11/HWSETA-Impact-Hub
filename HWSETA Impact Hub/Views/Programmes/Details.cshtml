@@ -2,50 +2,249 @@
 @{
     ViewData["Title"] = "Programme Details";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-<h1 class="mb-3">Programme Details</h1>
 
-<div class="card">
-    <div class="card-body">
-        <dl class="row mb-0">
-
-            <dt class="col-sm-3">Programme Code</dt>
-            <dd class="col-sm-9">
-                @(string.IsNullOrWhiteSpace(Model.ProgrammeCode) ? "-" : Model.ProgrammeCode)
-            </dd>
-
-            <dt class="col-sm-3">Programme Name</dt>
-            <dd class="col-sm-9">@Model.ProgrammeName</dd>
-
-            <dt class="col-sm-3">Qualification Type</dt>
-            <dd class="col-sm-9">@Model.QualificationType?.Name</dd>
-
-            <dt class="col-sm-3">Status</dt>
-            <dd class="col-sm-9">
-                @if (Model.IsActive)
-                {
-                    <span class="badge bg-success">Active</span>
-                }
-                else
-                {
-                    <span class="badge bg-secondary">Inactive</span>
-                }
-            </dd>
-
-            <dt class="col-sm-3">Created On</dt>
-            <dd class="col-sm-9">@Model.CreatedOnUtc.ToString("yyyy-MM-dd HH:mm")</dd>
-
-            @if (Model.UpdatedOnUtc.HasValue)
-            {
-                <dt class="col-sm-3">Last Updated</dt>
-                <dd class="col-sm-9">@Model.UpdatedOnUtc.Value.ToString("yyyy-MM-dd HH:mm")</dd>
-            }
-
-        </dl>
+@* Header *@
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-mortarboard me-1"></i>Academic Management</div>
+        <h1 class="hw-page-title">Programme <span>Details</span></h1>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+        <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-arrow-left"></i> All Programmes</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="hw-btn-primary"><i class="bi bi-pencil"></i> Edit</a>
     </div>
 </div>
 
-<div class="mt-3">
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
-    <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+@* Hero *@
+<div class="hw-hero">
+    <div class="hw-hero-label">Programme</div>
+    <div class="hw-hero-name">@Model.ProgrammeName</div>
+    <div class="hw-hero-pills">
+        @if (!string.IsNullOrWhiteSpace(Model.ProgrammeCode))
+        {
+            <span class="hw-hero-pill"><i class="bi bi-hash"></i> @Model.ProgrammeCode</span>
+        }
+        @if (Model.QualificationType != null)
+        {
+            <span class="hw-hero-pill purple"><i class="bi bi-award"></i> @Model.QualificationType.Name</span>
+        }
+     @*    @if (Model.NqfLevel.HasValue)
+        {
+            <span class="hw-hero-pill"><i class="bi bi-bar-chart-steps"></i> NQF @Model.NqfLevel</span>
+        } *@
+        @if (Model.IsActive)
+        {
+            <span class="hw-hero-pill gold"><i class="bi bi-broadcast"></i> Active</span>
+        }
+        else
+        {
+            <span class="hw-hero-pill"><i class="bi bi-dash-circle"></i> Inactive</span>
+        }
+    </div>
+</div>
+
+<div class="hw-layout">
+
+    @* ── Main column ── *@
+    <div>
+        @* Identity *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon green"><i class="bi bi-mortarboard"></i></div>
+                <div><div class="hw-card-title">Programme Identity</div><div class="hw-card-sub">Core classification details</div></div>
+            </div>
+            <div class="hw-card-body">
+                <div class="hw-dl">
+                    <div class="hw-dl-row">
+                        <div class="hw-dl-icon green"><i class="bi bi-hash"></i></div>
+                        <div>
+                            <div class="hw-dl-key">Programme Code</div>
+                            <div class="hw-dl-val">
+                                @if (!string.IsNullOrWhiteSpace(Model.ProgrammeCode))
+                                {
+                                    <span class="hw-dl-val mono">@Model.ProgrammeCode</span>
+                                }
+                                else
+                                {
+
+                                    <span style="color:var(--hw-border);">—</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hw-dl-row">
+                        <div class="hw-dl-icon green"><i class="bi bi-mortarboard"></i></div>
+                        <div>
+                            <div class="hw-dl-key">Programme Name</div>
+                            <div class="hw-dl-val" style="font-size:14px;font-weight:700;">@Model.ProgrammeName</div>
+                        </div>
+                    </div>
+                    <div class="hw-dl-row">
+                        <div class="hw-dl-icon purple"><i class="bi bi-award"></i></div>
+                        <div>
+                            <div class="hw-dl-key">Qualification Type</div>
+                            <div class="hw-dl-val">
+                                @if (Model.QualificationType != null)
+                                {
+                                    <span style="background:#ede9fe;color:#6d28d9;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;">@Model.QualificationType.Name</span>
+                                }
+                                else
+                                {
+
+                                    <span style="color:var(--hw-border);">—</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hw-dl-row">
+                        <div class="hw-dl-icon @(Model.IsActive ? "green" : "dark")"><i class="bi bi-broadcast"></i></div>
+                        <div>
+                            <div class="hw-dl-key">Status</div>
+                            <div class="hw-dl-val">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="hw-status-active">Active</span>
+                                }
+                                else
+                                {
+
+                                    <span class="hw-status-inactive">Inactive</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Accreditation *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon gold"><i class="bi bi-patch-check"></i></div>
+                <div><div class="hw-card-title">Accreditation Details</div><div class="hw-card-sub">SAQA and OFO reference information</div></div>
+            </div>
+            <div class="hw-card-body">
+                <div class="hw-dl">
+                    <div class="hw-dl-row">
+                        <div class="hw-dl-icon gold"><i class="bi bi-fingerprint"></i></div>
+                        <div>
+                            <div class="hw-dl-key">SAQA ID</div>
+                            <div class="hw-dl-val">
+                                @if (!string.IsNullOrWhiteSpace(Model.SAQAId))
+                                {
+                                    <span class="hw-dl-val mono">@Model.SAQAId</span>
+                                }
+                                else
+                                {
+
+                                    <span style="color:var(--hw-border);">—</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hw-dl-row">
+                        <div class="hw-dl-icon gold"><i class="bi bi-code-square"></i></div>
+                        <div>
+                            <div class="hw-dl-key">OFO Code</div>
+                            <div class="hw-dl-val">
+                                @if (!string.IsNullOrWhiteSpace(Model.OFOCode))
+                                {
+                                    <span class="hw-dl-val mono">@Model.OFOCode</span>
+                                }
+                                else
+                                {
+
+                                    <span style="color:var(--hw-border);">—</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Audit *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon dark"><i class="bi bi-clock-history"></i></div>
+                <div><div class="hw-card-title">Audit Trail</div></div>
+            </div>
+            <div class="hw-card-body">
+                <div class="hw-dl">
+                    <div class="hw-dl-row">
+                        <div class="hw-dl-icon dark"><i class="bi bi-calendar-plus"></i></div>
+                        <div>
+                            <div class="hw-dl-key">Created On</div>
+                            <div class="hw-dl-val">@Model.CreatedOnUtc.ToString("dd MMMM yyyy") <span style="color:var(--hw-muted);font-size:11px;margin-left:4px;">@Model.CreatedOnUtc.ToString("HH:mm") UTC</span></div>
+                        </div>
+                    </div>
+                    @if (Model.UpdatedOnUtc.HasValue)
+                    {
+                        <div class="hw-dl-row">
+                            <div class="hw-dl-icon dark"><i class="bi bi-pencil-square"></i></div>
+                            <div>
+                                <div class="hw-dl-key">Last Updated</div>
+                                <div class="hw-dl-val">@Model.UpdatedOnUtc.Value.ToString("dd MMMM yyyy") <span style="color:var(--hw-muted);font-size:11px;margin-left:4px;">@Model.UpdatedOnUtc.Value.ToString("HH:mm") UTC</span></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Sidebar ── *@
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        @* Metrics *@
+        <div class="hw-card">
+            <div class="hw-card-head">
+                <div class="hw-card-icon blue" style="background:#e0f2fe;color:#0369a1;"><i class="bi bi-bar-chart"></i></div>
+                <div><div class="hw-card-title">Programme Metrics</div></div>
+            </div>
+            <div class="hw-card-body">
+                <div class="hw-metric-grid">
+                    <div class="hw-metric">
+                        <div class="hw-metric-val" style="color:var(--hw-green);">@( Model.NqfLevel.ToString())</div>
+                        <div class="hw-metric-label">NQF Level</div>
+                    </div>
+                    <div class="hw-metric">
+                        <div class="hw-metric-val" style="color:#6d28d9;">@(Model.Credits.HasValue? Model.Credits.ToString() : "—")</div>
+                        <div class="hw-metric-label">Credits</div>
+                    </div>
+                    <div class="hw-metric" style="grid-column:span 2;">
+                        <div class="hw-metric-val" style="color:#0369a1;">@(Model.DurationMonths.HasValue? Model.DurationMonths.ToString() : "—")</div>
+                        <div class="hw-metric-label">Duration (months)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Quick actions *@
+        <div style="background:var(--hw-white);border:1.5px solid var(--hw-border);border-radius:var(--hw-radius-lg);padding:18px 20px;display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:11.5px;font-weight:700;color:var(--hw-dark);margin-bottom:2px;">Quick Actions</div>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="hw-btn-primary" style="width:100%;justify-content:center;">
+                <i class="bi bi-pencil"></i> Edit Programme
+            </a>
+            <a asp-action="Index" class="hw-btn-outline" style="width:100%;justify-content:center;">
+                <i class="bi bi-arrow-left"></i> Back to Programmes
+            </a>
+        </div>
+
+        @* Province *@
+        @if (Model.Province != null)
+        {
+            <div style="background:var(--hw-green-light);border:1.5px solid var(--hw-green);border-radius:12px;padding:14px 16px;display:flex;gap:10px;align-items:center;">
+                <i class="bi bi-geo-alt-fill" style="color:var(--hw-green);font-size:18px;flex-shrink:0;"></i>
+                <div>
+                    <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--hw-green);margin-bottom:2px;">Province</div>
+                    <div style="font-size:13px;font-weight:700;color:var(--hw-dark);">@Model.Province</div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
