@@ -52,8 +52,8 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries
         [Required, MaxLength(12)] public string PostalCode { get; set; } = "";
 
         // POPIA
-        [Required] public bool ConsentGiven { get; set; }
-        [Required, DataType(DataType.Date)] public DateTime ConsentDate { get; set; } = DateTime.Today;
+        //[Required] public bool ConsentGiven { get; set; }
+        //[Required, DataType(DataType.Date)] public DateTime ConsentDate { get; set; } = DateTime.Today;
 
         public bool IsActive { get; set; } = true;
 

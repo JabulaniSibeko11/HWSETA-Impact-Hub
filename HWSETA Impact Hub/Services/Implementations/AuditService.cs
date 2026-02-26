@@ -3,7 +3,6 @@ using HWSETA_Impact_Hub.Domain.Entities;
 using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Infrastructure.RequestContext;
 using HWSETA_Impact_Hub.Services.Interface;
-using System;
 
 namespace HWSETA_Impact_Hub.Services.Implementations
 {
@@ -20,7 +19,26 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             _req = req;
         }
 
-        public async Task LogViewAsync(string entityName, string entityId, string? note = null, CancellationToken ct = default)
+        public Task LogViewAsync(string entityName, string entityId, string? note = null, CancellationToken ct = default)
+            => LogAsync(
+                actionType: "View",
+                entityName: entityName,
+                entityId: entityId,
+                succeeded: true,
+                note: note,
+                beforeJson: null,
+                afterJson: null,
+                ct: ct);
+
+        public async Task LogAsync(
+            string actionType,
+            string entityName,
+            string? entityId = null,
+            bool succeeded = true,
+            string? note = null,
+            string? beforeJson = null,
+            string? afterJson = null,
+            CancellationToken ct = default)
         {
             var utcNow = DateTime.UtcNow;
 
@@ -34,9 +52,9 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 UserEmail = _user.Email,
                 UserRole = _user.Role,
 
-                ActionType = "View",
-                EntityName = entityName,
-                EntityId = entityId,
+                ActionType = string.IsNullOrWhiteSpace(actionType) ? "Unknown" : actionType.Trim(),
+                EntityName = string.IsNullOrWhiteSpace(entityName) ? "Unknown" : entityName.Trim(),
+                EntityId = string.IsNullOrWhiteSpace(entityId) ? null : entityId.Trim(),
 
                 IpAddress = _req.IpAddress,
                 UserAgent = _req.UserAgent,
@@ -44,12 +62,39 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 RequestPath = _req.Path,
                 HttpMethod = _req.Method,
 
-                Succeeded = true,
+                BeforeJson = beforeJson,
+                AfterJson = afterJson,
+
+                Succeeded = succeeded,
                 ErrorMessage = note
             });
 
             await _db.SaveChangesAsync(ct);
         }
+
+        public Task LogErrorAsync(
+            string actionType,
+            string entityName,
+            string? entityId,
+            string errorMessage,
+            string? note = null,
+            string? beforeJson = null,
+            string? afterJson = null,
+            CancellationToken ct = default)
+        {
+            var msg = string.IsNullOrWhiteSpace(note)
+                ? errorMessage
+                : $"{note} | {errorMessage}";
+
+            return LogAsync(
+                actionType: actionType,
+                entityName: entityName,
+                entityId: entityId,
+                succeeded: false,
+                note: msg,
+                beforeJson: beforeJson,
+                afterJson: afterJson,
+                ct: ct);
+        }
     }
 }
-

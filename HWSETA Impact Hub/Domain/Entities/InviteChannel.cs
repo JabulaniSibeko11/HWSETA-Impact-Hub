@@ -38,5 +38,9 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         // Convenience: keep who created/sent
         public string? CreatedBy { get; set; }
         public string? SentBy { get; set; }
+
+        public string? InviteToken { get; set; }
+
+        public bool IsActive { get; set; }=true;
     }
 }

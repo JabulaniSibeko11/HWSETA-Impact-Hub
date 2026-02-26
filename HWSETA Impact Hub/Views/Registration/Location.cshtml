@@ -2,41 +2,132 @@
 @{
     ViewData["Title"] = "Location Permission";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<h2>Location Access Required</h2>
-<p>We need your location to continue with registration.</p>
 
-<form id="locForm" asp-action="SaveLocation" asp-controller="Registration" method="post">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Token" />
-    <input type="hidden" asp-for="Latitude" />
-    <input type="hidden" asp-for="Longitude" />
+<link href="~/css/locationcss.css" rel="stylesheet" />
+<div class="hw-overlay">
+    <div class="hw-modal">
+        <div class="hw-modal-hero">
+            <div class="hw-pulse-wrap">
+                <div class="hw-pulse"></div>
+                <div class="hw-pulse"></div>
+                <div class="hw-pulse"></div>
+                <div class="hw-loc-icon"><i class="bi bi-geo-alt-fill" style="font-family:unset !important;"></i></div>
+            </div>
+            <div class="hw-modal-hero-title">Location Access Required</div>
+            <div class="hw-modal-hero-sub">We need to capture your location as part of the HWSETA registration process.</div>
+            <div class="hw-steps">
+                <div class="hw-step done">
+                    <div class="hw-step-dot"><i class="bi bi-check" style="font-size:11px;font-family:unset !important;"></i></div>
+                    <span class="hw-step-label">Details</span>
+                    <div class="hw-step-line"></div>
+                </div>
+                <div class="hw-step active">
+                    <div class="hw-step-dot"><i class="bi bi-geo" style="font-size:10px;font-family:unset !important;"></i></div>
+                    <span class="hw-step-label">Location</span>
+                    <div class="hw-step-line"></div>
+                </div>
+                <div class="hw-step">
+                    <div class="hw-step-dot">3</div>
+                    <span class="hw-step-label">Done</span>
+                </div>
+            </div>
+        </div>
+        <div class="hw-modal-body">
+            <div class="hw-why-card">
+                <i class="bi bi-info-circle-fill" style="font-family:unset !important;"></i>
+                <div class="hw-why-text">HWSETA uses your location to verify programme delivery geography and meet DHET reporting requirements for funded training.</div>
+            </div>
+            <div class="hw-privacy">
+                <i class="bi bi-shield-lock-fill" style="font-family:unset !important;"></i>
+                <div class="hw-privacy-text">Your location is recorded once and used only for this registration. It is not tracked or stored beyond this submission.</div>
+            </div>
 
-    <button type="button" class="btn btn-primary" onclick="getLocation()">Allow Location</button>
-</form>
+            @* State messages *@
+            <div class="hw-loc-state requesting" id="hw-state-requesting" style="display:none;">
+                <div class="hw-spin"></div>
+                <div class="hw-loc-state-text">Requesting your location…<br><span style="font-weight:400;font-size:11.5px;">Please tap <strong>Allow</strong> on your device prompt.</span></div>
+            </div>
+            <div class="hw-loc-state success" id="hw-state-success" style="display:none;">
+                <i class="bi bi-check-circle-fill" style="font-size:18px;color:var(--green);flex-shrink:0;font-family:unset !important;"></i>
+                <div>
+                    <div class="hw-loc-state-text">Location captured — submitting…</div>
+                    <div class="hw-coords" id="hw-coords-display"></div>
+                </div>
+            </div>
+            <div class="hw-loc-state error" id="hw-state-error" style="display:none;">
+                <i class="bi bi-exclamation-circle-fill" style="font-size:18px;color:var(--red);flex-shrink:0;font-family:unset !important;"></i>
+                <div class="hw-loc-state-text" id="hw-err-msg">Location permission was denied. Please allow access in your browser settings and try again.</div>
+            </div>
 
-<div id="msg" class="mt-3 text-muted"></div>
+            <form id="locForm" asp-action="SaveLocation" asp-controller="Registration" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Token" />
+                <input type="hidden" asp-for="Latitude" id="hw-lat" />
+                <input type="hidden" asp-for="Longitude" id="hw-lng" />
+                <button type="button" class="hw-btn-allow" id="hw-allow-btn" onclick="hwGetLocation()">
+                    <i class="bi bi-geo-alt-fill" style="font-family:unset !important;"></i> Allow Location Access
+                </button>
+            </form>
+            <a href="javascript:void(0)" class="hw-btn-skip" id="hw-skip-btn" onclick="hwSkip()">
+                <i class="bi bi-arrow-right" style="font-family:unset !important;"></i> Skip — I'll do this later
+            </a>
+        </div>
+    </div>
+</div>
 
 <script>
-    function getLocation() {
-        const msg = document.getElementById("msg");
-        msg.innerText = "Requesting location...";
+    function show(id){ document.getElementById(id).style.display='flex'; }
+    function hide(id){ document.getElementById(id).style.display='none'; }
 
-        if (!navigator.geolocation) {
-            msg.innerText = "Geolocation is not supported by this device/browser.";
+    function hwGetLocation(){
+        var btn = document.getElementById('hw-allow-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;"></div> Requesting…';
+
+        hide('hw-state-error'); hide('hw-state-success');
+        show('hw-state-requesting');
+
+        if(!navigator.geolocation){
+            hide('hw-state-requesting');
+            show('hw-state-error');
+            document.getElementById('hw-err-msg').textContent = 'Geolocation is not supported on this device.';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-geo-alt-fill" style="font-family:unset !important;"></i> Try Again';
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                document.querySelector("input[name='Latitude']").value = pos.coords.latitude;
-                document.querySelector("input[name='Longitude']").value = pos.coords.longitude;
-                document.getElementById("locForm").submit();
+            function(pos){
+                document.getElementById('hw-lat').value = pos.coords.latitude;
+                document.getElementById('hw-lng').value = pos.coords.longitude;
+                hide('hw-state-requesting');
+                show('hw-state-success');
+                document.getElementById('hw-coords-display').textContent =
+                    'Lat: ' + pos.coords.latitude.toFixed(5) + ' · Lng: ' + pos.coords.longitude.toFixed(5);
+                setTimeout(function(){ document.getElementById('locForm').submit(); }, 800);
             },
-            (err) => {
-                msg.innerText = "Location permission is required to continue. Please allow location.";
+            function(err){
+                hide('hw-state-requesting');
+                show('hw-state-error');
+                var msg = 'Location permission was denied. Please allow access in your browser/device settings.';
+                if(err.code === 3) msg = 'Location request timed out. Please try again.';
+                if(err.code === 2) msg = 'Location unavailable. Please check your device settings.';
+                document.getElementById('hw-err-msg').textContent = msg;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-geo-alt-fill" style="font-family:unset !important;"></i> Try Again';
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 12000 }
         );
+    }
+
+    function hwSkip(){
+        document.getElementById('hw-allow-btn').style.display='none';
+        document.getElementById('hw-skip-btn').style.display='none';
+        document.getElementById('locForm').submit();
     }
 </script>

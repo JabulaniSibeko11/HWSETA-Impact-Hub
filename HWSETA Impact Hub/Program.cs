@@ -144,7 +144,10 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();   // ensure schema
 
     await LookupSeeder.SeedAsync(db);   // add missing rows
-    await db.SaveChangesAsync();        // ✅ CRITICAL
+    
+    await db.SaveChangesAsync();
+
+    await FormTemplateSeeder.SeedAsync(db);// ✅ CRITICAL
 }
 app.UseHttpsRedirection();
 

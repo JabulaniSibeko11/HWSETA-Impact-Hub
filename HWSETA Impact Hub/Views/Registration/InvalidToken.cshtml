@@ -2,6 +2,35 @@
 @{
     ViewData["Title"] = "Invalid Link";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<h2>Invalid Link</h2>
-<p>@Model</p>
+<link href="~/css/invalidlinkcss.css" rel="stylesheet" />
+<div class="hw-overlay">
+    <div class="hw-modal">
+        <div class="hw-modal-hero">
+            <div class="hw-err-ring"><i class="bi bi-link-45deg" style="font-family:unset !important;"></i></div>
+            <div class="hw-modal-hero-title">Invalid Registration Link</div>
+            <div class="hw-modal-hero-sub">This link could not be verified by HWSETA.</div>
+        </div>
+        <div class="hw-modal-body">
+            @if (!string.IsNullOrWhiteSpace(Model))
+            {
+                <div class="hw-msg-box">
+                    <i class="bi bi-exclamation-circle-fill" style="font-family:unset !important;"></i>
+                    <div class="hw-msg-text">@Model</div>
+                </div>
+            }
+            <ul class="hw-reason-list">
+                <li class="hw-reason-item"><i class="bi bi-x-circle" style="font-family:unset !important;"></i>The link may have already been used to complete a registration.</li>
+                <li class="hw-reason-item"><i class="bi bi-x-circle" style="font-family:unset !important;"></i>The link may have expired — registration links are time-limited.</li>
+                <li class="hw-reason-item"><i class="bi bi-x-circle" style="font-family:unset !important;"></i>The link may be incomplete or have been modified.</li>
+            </ul>
+            <a href="mailto:research@hwseta.org.za" class="hw-btn-primary"><i class="bi bi-envelope" style="font-family:unset !important;"></i> Contact HWSETA for a New Link</a>
+            <a href="/" class="hw-btn-outline"><i class="bi bi-house" style="font-family:unset !important;"></i> Return to Home</a>
+            <div class="hw-footer-note">If you believe this is an error, please email <strong>research@hwseta.org.za</strong> quoting your name and programme.</div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,436 @@
+﻿
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0
+}
+
+body, html {
+    min-height: 100vh;
+    font-family: 'Montserrat','Segoe UI',sans-serif
+}
+
+:root {
+    --green: #1a7a3c;
+    --green-dark: #135e2e;
+    --green-light: #e8f5ee;
+    --green-border: rgba(26,122,60,.2);
+    --gold: #e6b000;
+    --gold-dark: #b38600;
+    --gold-light: #fef9e7;
+    --red: #c0392b;
+    --red-light: #fdf2f0;
+    --blue: #0369a1;
+    --blue-light: #e0f2fe;
+    --dark: #1a1d23;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --white: #fff;
+}
+
+.hw-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(160deg,#0a1a10 0%,#0d2518 50%,#0a1a10 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 9999
+}
+
+    .hw-overlay::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 40% 40%, rgba(26,122,60,.25) 0%, transparent 55%), radial-gradient(ellipse at 65% 70%, rgba(3,105,161,.12) 0%, transparent 50%);
+        pointer-events: none
+    }
+/* Pulsing location rings */
+.hw-pulse-wrap {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center
+}
+
+.hw-pulse {
+    position: absolute;
+    border-radius: 50%;
+    animation: hwPulse 2s ease-out infinite
+}
+
+    .hw-pulse:nth-child(1) {
+        width: 90px;
+        height: 90px;
+        background: rgba(255,255,255,.08);
+        animation-delay: 0s
+    }
+
+    .hw-pulse:nth-child(2) {
+        width: 68px;
+        height: 68px;
+        background: rgba(255,255,255,.1);
+        animation-delay: .4s
+    }
+
+    .hw-pulse:nth-child(3) {
+        width: 50px;
+        height: 50px;
+        background: rgba(255,255,255,.13);
+        animation-delay: .8s
+    }
+
+@keyframes hwPulse {
+    0% {
+        transform: scale(1);
+        opacity: 1
+    }
+
+    100% {
+        transform: scale(1.4);
+        opacity: 0
+    }
+}
+
+.hw-loc-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    border: 2px solid rgba(255,255,255,.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1
+}
+
+    .hw-loc-icon i {
+        font-size: 22px;
+        color: #fff
+    }
+/* Modal */
+.hw-modal {
+    background: var(--white);
+    border-radius: 24px;
+    max-width: 400px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,.4);
+    animation: hwPop .5s cubic-bezier(.34,1.56,.64,1)
+}
+
+@keyframes hwPop {
+    from {
+        opacity: 0;
+        transform: scale(.8) translateY(20px)
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0)
+    }
+}
+
+.hw-modal-hero {
+    background: linear-gradient(135deg,var(--green-dark),var(--green),#2d9e56);
+    padding: 36px 28px 28px;
+    text-align: center;
+    position: relative;
+    overflow: hidden
+}
+
+    .hw-modal-hero::before {
+        content: '';
+        position: absolute;
+        right: -40px;
+        top: -40px;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: rgba(230,176,0,.1)
+    }
+
+    .hw-modal-hero::after {
+        content: '';
+        position: absolute;
+        left: -20px;
+        bottom: -30px;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.06)
+    }
+
+.hw-modal-hero-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 6px
+}
+
+.hw-modal-hero-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,.7);
+    position: relative;
+    z-index: 1;
+    line-height: 1.55
+}
+/* Body */
+.hw-modal-body {
+    padding: 22px 24px
+}
+/* Why needed */
+.hw-why-card {
+    background: var(--blue-light);
+    border: 1.5px solid #bae6fd;
+    border-radius: 10px;
+    padding: 13px 15px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 16px
+}
+
+    .hw-why-card i {
+        color: var(--blue);
+        font-size: 16px;
+        flex-shrink: 0;
+        margin-top: 1px
+    }
+
+.hw-why-text {
+    font-size: 12.5px;
+    color: #0c4a6e;
+    line-height: 1.6;
+    font-weight: 500
+}
+/* Privacy note */
+.hw-privacy {
+    background: var(--green-light);
+    border: 1.5px solid var(--green-border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 18px
+}
+
+    .hw-privacy i {
+        color: var(--green);
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-top: 1px
+    }
+
+.hw-privacy-text {
+    font-size: 11.5px;
+    color: var(--dark);
+    line-height: 1.55;
+    font-weight: 600
+}
+/* Location state display */
+.hw-loc-state {
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    transition: all .3s;
+    display: none
+}
+
+    .hw-loc-state.requesting {
+        display: flex;
+        background: #eff6ff;
+        border: 1.5px solid #bfdbfe
+    }
+
+    .hw-loc-state.success {
+        display: flex;
+        background: var(--green-light);
+        border: 1.5px solid var(--green-border)
+    }
+
+    .hw-loc-state.error {
+        display: flex;
+        background: var(--red-light);
+        border: 1.5px solid rgba(192,57,43,.2)
+    }
+
+.hw-loc-state-text {
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.4
+}
+
+.hw-loc-state.requesting .hw-loc-state-text {
+    color: #1d4ed8
+}
+
+.hw-loc-state.success .hw-loc-state-text {
+    color: var(--green)
+}
+
+.hw-loc-state.error .hw-loc-state-text {
+    color: var(--red)
+}
+/* Spinner */
+.hw-spin {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(29,78,216,.2);
+    border-top-color: #1d4ed8;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+/* Coords */
+.hw-coords {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-top: 3px
+}
+/* Buttons */
+.hw-btn-allow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    padding: 15px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Montserrat',sans-serif;
+    cursor: pointer;
+    transition: background .2s,box-shadow .2s,transform .15s;
+    min-height: 52px;
+    margin-bottom: 10px
+}
+
+    .hw-btn-allow:hover {
+        background: var(--green-dark);
+        box-shadow: 0 4px 16px rgba(26,122,60,.35);
+        transform: translateY(-1px)
+    }
+
+    .hw-btn-allow:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none
+    }
+
+.hw-btn-skip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Montserrat',sans-serif;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color .2s,color .2s;
+    min-height: 46px
+}
+
+    .hw-btn-skip:hover {
+        border-color: var(--dark);
+        color: var(--dark)
+    }
+/* Progress steps in hero */
+.hw-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-top: 18px;
+    position: relative;
+    z-index: 1
+}
+
+.hw-step {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1
+}
+
+.hw-step-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.3);
+    background: rgba(255,255,255,.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 800;
+    color: rgba(255,255,255,.5);
+    flex-shrink: 0
+}
+
+.hw-step.done .hw-step-dot {
+    background: rgba(255,255,255,.2);
+    border-color: rgba(255,255,255,.5);
+    color: #fff
+}
+
+.hw-step.active .hw-step-dot {
+    background: rgba(255,255,255,.95);
+    border-color: #fff;
+    color: var(--green)
+}
+
+.hw-step-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: rgba(255,255,255,.4);
+    text-transform: uppercase;
+    letter-spacing: .04em
+}
+
+.hw-step.done .hw-step-label, .hw-step.active .hw-step-label {
+    color: rgba(255,255,255,.8)
+}
+
+.hw-step-line {
+    flex: 1;
+    height: 1.5px;
+    background: rgba(255,255,255,.2);
+    margin: 0 4px
+}
+
+.hw-step.done .hw-step-line {
+    background: rgba(255,255,255,.4)
+}
+
+

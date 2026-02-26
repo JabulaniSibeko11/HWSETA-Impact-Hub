@@ -19,26 +19,15 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             _user = user;
         }
 
-        public Task<List<FormTemplateListRowVm>> ListAsync1(CancellationToken ct) =>
-            _db.FormTemplates.AsNoTracking()
-                .OrderByDescending(x => x.CreatedOnUtc)
-                .Select(x => new FormTemplateListRowVm
-                {
-                    Id = x.Id,
-                    Title = x.Title,
-                    Status = x.Status,
-                    Version = x.Version,
-                    IsActive = x.IsActive,
-                    CreatedOnUtc = x.CreatedOnUtc
-                })
-                .ToListAsync(ct);
-
+       
 
         public async Task<List<FormTemplateListRowVm>> ListAsync(CancellationToken ct)
         {
             var templates = await _db.FormTemplates.AsNoTracking()
-                .Where(x => x.IsActive)
-                .Select(x => new
+     .Where(x => x.IsActive)
+     .OrderByDescending(x => x.Purpose == FormPurpose.Registration)
+     .ThenByDescending(x => x.UpdatedAt ?? x.CreatedAt)
+                 .Select(x => new
                 {
                     x.Id,
                     x.Title,
@@ -592,7 +581,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             if (t == null) return (false, "Template not found.");
 
-            // Enforce: only one Registration template in the whole system
+            // Enforce: only one Registration template
             if (t.Purpose == FormPurpose.Registration)
             {
                 var otherRegistrationExists = await _db.FormTemplates
@@ -603,15 +592,17 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 if (otherRegistrationExists)
                     return (false, "Only one Registration FormTemplate is allowed. Edit the existing Registration template instead of creating another.");
             }
+            else
+            {
+                // ✅ Only validate fields for NON-registration forms (dynamic forms)
+                var hasAnyFields = await _db.FormFields
+                    .AnyAsync(f => f.IsActive && f.FormSection.FormTemplateId == t.Id, ct);
 
-            // Minimum publish validation: must have at least 1 active field
-            var hasAnyFields = await _db.FormFields
-                .AnyAsync(f => f.FormSectionId == t.Id && f.IsActive, ct);
+                if (!hasAnyFields)
+                    return (false, "You cannot publish an empty form. Add at least one question.");
+            }
 
-            if (!hasAnyFields)
-                return (false, "You cannot publish an empty form. Add at least one question.");
-
-            // Upsert FormPublish (THIS is what public form uses)
+            // Upsert FormPublish (kept for dynamic/public forms; harmless for Registration)
             var p = await _db.FormPublishes
                 .FirstOrDefaultAsync(x => x.FormTemplateId == t.Id, ct);
 
@@ -623,7 +614,6 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                     PublicToken = NewPublicToken(),
                     CreatedOnUtc = DateTime.UtcNow,
 
-                    // defaults
                     IsOpen = true,
                     OpenFromUtc = DateTime.UtcNow,
                     CloseAtUtc = DateTime.MaxValue,
@@ -632,35 +622,30 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 _db.FormPublishes.Add(p);
             }
 
-            // Normalise dates
             var now = DateTime.UtcNow;
             var openFrom = vm.OpenFromUtc ?? now;
             var closeAt = vm.CloseAtUtc ?? DateTime.MaxValue;
 
-            // If CloseAt is provided and invalid
             if (closeAt != DateTime.MaxValue && closeAt <= openFrom)
                 return (false, "Close At must be after Open From.");
 
-            // Apply publish settings (from VM)
             p.IsPublished = true;
-            p.IsOpen = vm.IsOpen; // ✅ NEW in VM
+            p.IsOpen = vm.IsOpen;
             p.OpenFromUtc = openFrom;
             p.CloseAtUtc = closeAt;
             p.MaxSubmissions = vm.MaxSubmissions;
             p.AllowMultipleSubmissions = vm.AllowMultipleSubmissions;
 
-            // Keep token stable forever
             if (string.IsNullOrWhiteSpace(p.PublicToken))
                 p.PublicToken = NewPublicToken();
 
-            // Template state for admin lists
+            // Template admin state
             t.Status = FormStatus.Published;
             t.IsActive = true;
             t.UpdatedAt = now;
             t.PublishedAt = now;
             t.UnpublishedAt = null;
 
-            // Optional: keep template token too (if you still show it anywhere)
             if (string.IsNullOrWhiteSpace(t.PublicToken))
                 t.PublicToken = p.PublicToken;
 
@@ -1224,5 +1209,67 @@ namespace HWSETA_Impact_Hub.Services.Implementations
         }
 
 
+
+        public async Task<(bool ok, string? error)> DeleteAsync(Guid templateId, CancellationToken ct)
+        {
+            var t = await _db.FormTemplates.FirstOrDefaultAsync(x => x.Id == templateId, ct);
+            if (t == null) return (false, "Template not found.");
+
+            // 🔒 Protect system Registration form
+            if (t.Purpose == FormPurpose.Registration)
+                return (false, "This is the system Beneficiary Registration form and cannot be deleted.");
+
+            // If already inactive
+            if (!t.IsActive)
+                return (false, "Template is already deleted/inactive.");
+
+            // Block delete if it has submissions (recommended)
+            var hasSubmissions = await _db.FormSubmissions
+                .AsNoTracking()
+                .AnyAsync(s => s.FormPublish.FormTemplateId == templateId, ct);
+
+            if (hasSubmissions)
+                return (false, "This template already has submissions and cannot be deleted. Archive it instead.");
+
+            // Also block delete if it is published (force unpublish first)
+            var isPublished = await _db.FormPublishes
+                .AsNoTracking()
+                .AnyAsync(p => p.FormTemplateId == templateId && p.IsPublished, ct);
+
+            if (isPublished)
+                return (false, "Unpublish this form first before deleting it.");
+
+            // Optional: hard delete child schema if you want (sections/fields/options)
+            // We'll do safe soft-delete for the template + hard delete schema (no submissions)
+            var sections = await _db.FormSections
+                .Where(s => s.FormTemplateId == templateId)
+                .ToListAsync(ct);
+
+            var sectionIds = sections.Select(s => s.Id).ToList();
+
+            var fields = await _db.FormFields
+                .Where(f => sectionIds.Contains(f.FormSectionId))
+                .ToListAsync(ct);
+
+            var fieldIds = fields.Select(f => f.Id).ToList();
+
+            var options = await _db.FormFieldOptions
+                .Where(o => fieldIds.Contains(o.FormFieldId))
+                .ToListAsync(ct);
+
+            _db.FormFieldOptions.RemoveRange(options);
+            _db.FormFields.RemoveRange(fields);
+            _db.FormSections.RemoveRange(sections);
+
+            // soft delete template
+            t.IsActive = false;
+            t.Status = FormStatus.Archived;
+            t.UpdatedAt = DateTime.UtcNow;
+            t.UpdatedOnUtc = DateTime.UtcNow;
+            t.UpdatedByUserId = _user.UserId;
+
+            await _db.SaveChangesAsync(ct);
+            return (true, null);
+        }
     }
 }

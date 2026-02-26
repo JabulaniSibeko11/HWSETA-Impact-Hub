@@ -25,5 +25,8 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public Guid? CreatedByUserId { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        public Guid QualificationTypeId { get; set; }
+        public QualificationType QualificationType { get; set; } = null!;
     }
 }

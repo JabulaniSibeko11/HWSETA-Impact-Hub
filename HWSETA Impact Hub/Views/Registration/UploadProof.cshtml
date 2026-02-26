@@ -2,22 +2,141 @@
 @{
     ViewData["Title"] = "Upload Proof of Completion";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<h2>Upload Proof of Completion</h2>
+<link href="~/css/uploadcss.css" rel="stylesheet" />
+<div class="hw-overlay">
+    <div class="hw-modal">
+        <div class="hw-modal-hero">
+            <div class="hw-upload-ring"><i class="bi bi-cloud-upload-fill" style="font-family:unset !important;"></i></div>
+            <div class="hw-modal-hero-title">Upload Completion Letter</div>
+            <div class="hw-modal-hero-sub">Attach your proof of programme completion to finalise your registration.</div>
+            <div class="hw-steps">
+                <div class="hw-step done">
+                    <div class="hw-step-dot"><i class="bi bi-check" style="font-size:11px;font-family:unset !important;"></i></div>
+                    <span class="hw-step-label">Details</span>
+                    <div class="hw-step-line"></div>
+                </div>
+                <div class="hw-step done">
+                    <div class="hw-step-dot"><i class="bi bi-check" style="font-size:11px;font-family:unset !important;"></i></div>
+                    <span class="hw-step-label">Location</span>
+                    <div class="hw-step-line"></div>
+                </div>
+                <div class="hw-step active">
+                    <div class="hw-step-dot"><i class="bi bi-upload" style="font-size:10px;font-family:unset !important;"></i></div>
+                    <span class="hw-step-label">Proof</span>
+                </div>
+            </div>
+        </div>
+        <div class="hw-modal-body">
+            <div class="hw-info-banner">
+                <i class="bi bi-lightbulb-fill" style="font-family:unset !important;"></i>
+                <div class="hw-info-text">Upload a clear scan or photo of your <strong>Completion Letter</strong> or certificate. Accepted: PDF, JPG, PNG — max 20 MB.</div>
+            </div>
 
-<form asp-action="UploadProof" asp-controller="Registration" method="post" enctype="multipart/form-data">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Token" />
+            <form asp-action="UploadProof" asp-controller="Registration" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Token" />
 
-    <div class="mb-3">
-        <label class="form-label">Completion Letter (PDF/Image)</label>
-        <input asp-for="File" type="file" class="form-control" />
-        <span asp-validation-for="File" class="text-danger"></span>
+                @* Drop zone *@
+                <div class="hw-drop-zone" id="hw-drop-zone">
+                    <input asp-for="File" type="file" id="hw-file-input" accept=".pdf,.jpg,.jpeg,.png" onchange="hwFileChosen(this)" />
+                    <div id="hw-drop-placeholder">
+                        <div class="hw-drop-icon"><i class="bi bi-file-earmark-arrow-up" style="font-family:unset !important;"></i></div>
+                        <div class="hw-drop-title">Tap to select or drop your file</div>
+                        <div class="hw-drop-sub">Photo, scan or PDF of your completion letter</div>
+                        <div class="hw-drop-badges">
+                            <span class="hw-drop-badge"><i class="bi bi-filetype-pdf" style="font-family:unset !important;"></i> PDF</span>
+                            <span class="hw-drop-badge"><i class="bi bi-file-earmark-image" style="font-family:unset !important;"></i> JPG / PNG</span>
+                            <span class="hw-drop-badge red"><i class="bi bi-shield-check" style="font-family:unset !important;"></i> Max 20 MB</span>
+                        </div>
+                    </div>
+                </div>
+
+                @* File preview *@
+                <div class="hw-file-preview" id="hw-file-preview">
+                    <div class="hw-prev-icon" id="hw-prev-icon"><i class="bi bi-file-earmark-check" style="font-family:unset !important;"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="hw-prev-name" id="hw-prev-name">file.pdf</div>
+                        <div class="hw-prev-size" id="hw-prev-size">0 KB</div>
+                    </div>
+                    <button type="button" class="hw-prev-remove" onclick="hwClear()"><i class="bi bi-x" style="font-family:unset !important;"></i></button>
+                </div>
+
+                <span asp-validation-for="File" class="hw-field-error"></span>
+
+                <button type="submit" class="hw-btn-primary" id="hw-submit-btn">
+                    <i class="bi bi-cloud-upload" style="font-family:unset !important;"></i> Submit &amp; Complete Registration
+                </button>
+                <a href="/register/complete?token=@Uri.EscapeDataString(Model.Token)" class="hw-btn-skip">
+                    <i class="bi bi-arrow-right" style="font-family:unset !important;"></i> Skip — I'll upload this later
+                </a>
+            </form>
+        </div>
     </div>
-
-    <button class="btn btn-success" type="submit">Submit</button>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        var zone = document.getElementById('hw-drop-zone');
+        zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', function(){ zone.classList.remove('drag-over'); });
+        zone.addEventListener('drop', function(e){
+            e.preventDefault(); zone.classList.remove('drag-over');
+            var inp = document.getElementById('hw-file-input');
+            inp.files = e.dataTransfer.files;
+            hwFileChosen(inp);
+        });
+
+        var iconMap = { pdf:'bi-file-earmark-pdf', jpg:'bi-file-earmark-image', jpeg:'bi-file-earmark-image', png:'bi-file-earmark-image' };
+
+        function hwFileChosen(inp){
+            if(!inp.files||!inp.files[0]) return;
+            var f = inp.files[0];
+            var ext = f.name.split('.').pop().toLowerCase();
+            var allowed = ['pdf','jpg','jpeg','png'];
+            if(allowed.indexOf(ext) === -1){
+                alert('Please select a PDF, JPG or PNG file.'); hwClear(); return;
+            }
+            if(f.size > 20*1024*1024){
+                alert('File size exceeds 20 MB. Please upload a smaller file.'); hwClear(); return;
+            }
+            document.getElementById('hw-prev-name').textContent = f.name;
+            document.getElementById('hw-prev-size').textContent = hwFmt(f.size);
+            var ico = document.getElementById('hw-prev-icon').querySelector('i');
+            ico.className = 'bi ' + (iconMap[ext] || 'bi-file-earmark-check');
+            ico.style.fontFamily = 'unset';
+            document.getElementById('hw-file-preview').classList.add('show');
+            document.getElementById('hw-drop-placeholder').style.opacity = '0';
+            document.getElementById('hw-drop-placeholder').style.pointerEvents = 'none';
+            zone.classList.add('has-file');
+        }
+
+        function hwClear(){
+            document.getElementById('hw-file-input').value = '';
+            document.getElementById('hw-file-preview').classList.remove('show');
+            var ph = document.getElementById('hw-drop-placeholder');
+            ph.style.opacity='1'; ph.style.pointerEvents='auto';
+            zone.classList.remove('has-file');
+        }
+
+        function hwFmt(b){
+            if(b<1024) return b+' B';
+            if(b<1048576) return (b/1024).toFixed(1)+' KB';
+            return (b/1048576).toFixed(1)+' MB';
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            document.querySelectorAll('span[data-valmsg-for]').forEach(function(span){
+                if(span.textContent.trim()){
+                    var inp = document.querySelector('[name="'+span.getAttribute('data-valmsg-for')+'"]');
+                    if(inp) inp.classList.add('input-error');
+                }
+            });
+        });
+    </script>
 }

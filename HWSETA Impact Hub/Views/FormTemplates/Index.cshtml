@@ -558,24 +558,49 @@
                         "archived" => "bi-archive",
                         _ => "bi-pencil-square"
                     };
+
                     var initials = string.Concat((f.Title ?? "F").Split(' ').Take(2).Select(w => w.Length > 0 ? w[0].ToString().ToUpper() : ""));
                     if (initials.Length == 0) initials = "F";
+
+                    var isRegistration = f.Purpose == HWSETA_Impact_Hub.Domain.Entities.FormPurpose.Registration;
 
                     <tr>
                         <td>
                             <div class="hw-form-title-cell">
                                 <div class="hw-form-av">@initials</div>
-                                <span class="hw-form-name">@f.Title</span>
+
+                                <div>
+                                    <div class="hw-form-name">
+                                        @f.Title
+
+                                        @if (isRegistration)
+                                        {
+                                            <span class="badge bg-dark ms-2">Registration (System)</span>
+                                            <span class="badge bg-warning text-dark ms-1">Pinned</span>
+                                        }
+                                    </div>
+
+                                    @* optional small helper line *@
+                                    @if (isRegistration)
+                                    {
+                                        <div style="font-size:10.5px;color:var(--hw-muted);font-weight:600;">
+                                            Uses controller registration flow (/register/*). Not a public /f/ form.
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         </td>
+
                         <td>
                             <span class="hw-status-pill @statusCss">
                                 <i class="bi @statusIcon"></i> @f.Status
                             </span>
                         </td>
+
                         <td style="font-size:12px;font-weight:700;color:var(--hw-muted);">
                             <i class="bi bi-layers" style="color:var(--hw-gold-dark);margin-right:3px;"></i>v@f.Version
                         </td>
+
                         <td>
                             @if (f.IsActive)
                             {
@@ -586,19 +611,24 @@
                                 <span class="hw-active-no"><i class="bi bi-dash-circle"></i> Inactive</span>
                             }
                         </td>
+
                         <td style="font-size:12px;color:var(--hw-muted);font-weight:600;white-space:nowrap;">
                             @f.CreatedOnUtc.ToString("dd MMM yyyy")
                             <div style="font-size:10.5px;color:var(--hw-border);">@f.CreatedOnUtc.ToString("HH:mm")</div>
                         </td>
+
                         <td>
                             <div class="hw-actions">
                                 <a class="hw-btn-outline" asp-action="Builder" asp-route-id="@f.Id" title="Open Builder">
                                     <i class="bi bi-tools"></i> Builder
                                 </a>
+
                                 <a class="hw-btn-outline" asp-action="Edit" asp-route-id="@f.Id" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                @if (!string.IsNullOrWhiteSpace(f.PublicToken))
+
+                                @* Submissions only make sense for dynamic public forms *@
+                                @if (!isRegistration && !string.IsNullOrWhiteSpace(f.PublicToken))
                                 {
                                     <a class="hw-btn-dark"
                                        asp-controller="FormSubmissions"
@@ -608,14 +638,17 @@
                                         <i class="bi bi-inbox"></i>
                                     </a>
                                 }
-                                else
+                                else if (!isRegistration)
                                 {
                                     <span class="hw-btn-disabled" title="Publish form to enable submissions">
                                         <i class="bi bi-inbox"></i>
                                     </span>
                                 }
-                             
-                                @if (f.IsPublished && !string.IsNullOrWhiteSpace(f.PublicToken))
+
+                                @* Send rules:
+                   - Registration (System): allow Send if template is active + published (even no token)
+                   - Other forms: require published + token *@
+                                @if (f.IsPublished && (isRegistration || !string.IsNullOrWhiteSpace(f.PublicToken)))
                                 {
                                     <a class="hw-btn-gold"
                                        asp-action="SendCenter"

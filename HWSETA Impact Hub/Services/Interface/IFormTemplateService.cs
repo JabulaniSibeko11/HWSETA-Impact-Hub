@@ -38,7 +38,8 @@ namespace HWSETA_Impact_Hub.Services.Interface
         
         Task<(bool ok, string? error, Guid? submissionId, string? nextUrl)> SubmitPublicAsync(PublicFormSubmitVm vm, string? ip, string? userAgent, CancellationToken ct);
 
+        Task<(bool ok, string? error)> DeleteAsync(Guid templateId, CancellationToken ct);
 
-     
+
     }
 }

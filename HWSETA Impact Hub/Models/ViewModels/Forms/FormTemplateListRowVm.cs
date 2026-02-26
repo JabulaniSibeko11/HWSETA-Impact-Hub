@@ -15,6 +15,8 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
         public bool IsPublished { get; set; } = false;
 
         public string PublicToken { get; set; }
+
+        public FormPurpose Purpose { get; set; }
     }
 
     public sealed class FormTemplateCreateVm

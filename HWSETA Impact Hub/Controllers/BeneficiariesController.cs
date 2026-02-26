@@ -46,9 +46,12 @@ namespace HWSETA_Impact_Hub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BeneficiaryCreateVm vm, CancellationToken ct)
         {
-            if (!ModelState.IsValid) return View(vm);
             await LoadDropdowns(vm, ct);
-            var (ok, error) = await _svc.CreateAsync(vm, ct);
+
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            var (ok, error, beneficiaryId) = await _svc.CreateAsync(vm, ct);
 
             await _audit.LogViewAsync(
                 "Beneficiary",
@@ -62,10 +65,26 @@ namespace HWSETA_Impact_Hub.Controllers
                 return View(vm);
             }
 
-            TempData["Success"] = "Beneficiary added successfully.";
+            // Auto-send invite on create (email only)
+            if (beneficiaryId.HasValue)
+            {
+                var (invOk, invErr) = await _invites.SendInviteAsync(
+                    beneficiaryId.Value,
+                    sendEmail: true,
+                    sendSms: false,
+                    ct);
+
+                if (!invOk)
+                {
+                    // beneficiary created, but invite failed
+                    TempData["Error"] = "Beneficiary added, but invite email failed: " + (invErr ?? "Unknown error.");
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            TempData["Success"] = "Beneficiary added successfully and invite email sent.";
             return RedirectToAction(nameof(Index));
         }
-
         [HttpGet]
         public IActionResult Upload() => View();
 

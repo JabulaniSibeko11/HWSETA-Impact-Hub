@@ -27,7 +27,7 @@
                     .OrderBy(x => x.LastName).ThenBy(x => x.FirstName)
                     .ToListAsync(ct);
 
-            public async Task<(bool ok, string? error)> CreateAsync(BeneficiaryCreateVm vm, CancellationToken ct)
+            public async Task<(bool ok, string? error, Guid? beneficiaryId)> CreateAsync(BeneficiaryCreateVm vm, CancellationToken ct)
             {
                 var idVal = vm.IdentifierValue.Trim();
 
@@ -35,7 +35,8 @@
                     x.IdentifierType == vm.IdentifierType &&
                     x.IdentifierValue == idVal, ct);
 
-                if (exists) return (false, "Beneficiary already exists (same ID/Passport).");
+                if (exists)
+                    return (false, "Beneficiary already exists (same ID/Passport).", null);
 
                 // Create Address first (required)
                 var addr = new Address
@@ -69,8 +70,10 @@
                     MobileNumber = vm.MobileNumber.Trim(),
                     AltNumber = string.IsNullOrWhiteSpace(vm.AltNumber) ? null : vm.AltNumber.Trim(),
 
-                    ConsentGiven = vm.ConsentGiven,
-                    ConsentDate = vm.ConsentDate,
+                    // Consent moved to beneficiary registration:
+                    ConsentGiven = false,
+                    ConsentDate = DateTime.MinValue,
+                    RegistrationStatus = BeneficiaryRegistrationStatus.AddedByAdmin,
 
                     IsActive = vm.IsActive,
                     Address = addr,
@@ -82,9 +85,8 @@
                 _db.Beneficiaries.Add(b);
                 await _db.SaveChangesAsync(ct);
 
-                return (true, null);
+                return (true, null, b.Id);
             }
-
             public async Task<BeneficiaryImportResultVm> ImportFromExcelAsync(IFormFile file, CancellationToken ct)
             {
                 var result = new BeneficiaryImportResultVm();

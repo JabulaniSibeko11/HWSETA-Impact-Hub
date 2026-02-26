@@ -273,6 +273,10 @@ namespace HWSETA_Impact_Hub.Data
                  .HasForeignKey(x => x.EmployerId)
                  .OnDelete(DeleteBehavior.NoAction);
                 e.Property(x => x.RowVersion).IsRowVersion();
+                e.HasOne(x => x.QualificationType)
+                 .WithMany()
+                 .HasForeignKey(x => x.QualificationTypeId)
+                 .OnDelete(DeleteBehavior.Restrict);
             });
         }
 
@@ -520,6 +524,7 @@ namespace HWSETA_Impact_Hub.Data
                     .HasForeignKey(x => x.FormPublishId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+         
         }
     }
 }

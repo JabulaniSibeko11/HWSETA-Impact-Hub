@@ -18,25 +18,50 @@ namespace HWSETA_Impact_Hub.Services.Implementations
         private readonly ISmsSenderService _sms;
         private readonly IConfiguration _cfg;
         private readonly SmsOptions _smsOpt;
+        private readonly IAuditService _audit;
 
         public BeneficiaryInviteService(
             ApplicationDbContext db,
             IEmailSenderService email,
             ISmsSenderService sms,
             IConfiguration cfg,
-            IOptions<SmsOptions> smsOpt)
+            IOptions<SmsOptions> smsOpt,
+            IAuditService audit)
         {
             _db = db;
             _email = email;
             _sms = sms;
             _cfg = cfg;
             _smsOpt = smsOpt.Value;
+            _audit = audit;
         }
 
-        public async Task<(bool ok, string? error)> SendInviteAsync(Guid beneficiaryId, bool sendEmail, bool sendSms, CancellationToken ct)
+        // ------------------------------------------------------------
+        // REGISTRATION INVITE (Controller-based)
+        // Sends: /register/claim?token=...
+        // Stores: BeneficiaryInvites (TokenHash)
+        // ------------------------------------------------------------
+        public async Task<(bool ok, string? error)> SendInviteAsync(
+            Guid beneficiaryId,
+            bool sendEmail,
+            bool sendSms,
+            CancellationToken ct)
         {
             var ben = await _db.Beneficiaries.FirstOrDefaultAsync(x => x.Id == beneficiaryId, ct);
-            if (ben is null) return (false, "Beneficiary not found.");
+            if (ben is null)
+            {
+                await _audit.LogErrorAsync("RegistrationInviteSendFailed", "Beneficiary", beneficiaryId.ToString(),
+                    "Beneficiary not found.", ct: ct);
+                return (false, "Beneficiary not found.");
+            }
+
+            if (!sendEmail && !sendSms)
+                return (false, "Select at least one channel (Email/SMS).");
+
+            // Registration single submission rule
+            if (ben.RegistrationSubmittedAt != null ||
+                ben.RegistrationStatus >= BeneficiaryRegistrationStatus.RegistrationSubmitted)
+                return (false, "Beneficiary has already submitted Registration. Cannot send again.");
 
             // Create new token every time (revokes old invites)
             await RevokeOpenInvitesAsync(beneficiaryId, ct);
@@ -58,47 +83,57 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 CreatedAt = DateTime.UtcNow
             };
 
-            _db.Add(inv);
+            _db.BeneficiaryInvites.Add(inv);
 
-            var publicBaseUrl = _cfg["App:PublicBaseUrl"]?.TrimEnd('/') ?? "";
+            var publicBaseUrl = (_cfg["App:PublicBaseUrl"] ?? "").TrimEnd('/');
             if (string.IsNullOrWhiteSpace(publicBaseUrl))
-                return (false, "Missing App:PublicBaseUrl in config.");
+            {
+                inv.LastError = "Missing App:PublicBaseUrl in config.";
+                await _db.SaveChangesAsync(ct);
 
-            var link = $"{publicBaseUrl}/register/claim?token={Uri.EscapeDataString(token)}";
+                await _audit.LogErrorAsync("RegistrationInviteSendFailed", "Beneficiary", beneficiaryId.ToString(),
+                    "Missing App:PublicBaseUrl in config.", note: $"Channel={channel}", ct: ct);
+
+                return (false, "Missing App:PublicBaseUrl in config.");
+            }
+
+            var link = BuildRegistrationInviteLink(publicBaseUrl, token);
+
+            // Try both channels; do not stop early
+            var errors = new List<string>();
 
             // Email
             if (sendEmail)
             {
                 if (string.IsNullOrWhiteSpace(ben.Email))
-                    return (false, "Beneficiary email is missing.");
-
-                var subject = "HWSETA Registration Link";
-                var body = $@"
-                    <p>Hello {ben.FirstName} {ben.LastName},</p>
-                    <p>Please complete your registration using the link below:</p>
-                    <p><a href=""{link}"">{link}</a></p>
-                    <p>Thank you.</p>";
-
-                var (ok, err) = await _email.SendAsync(ben.Email!, subject, body, ct);
-                _db.OutboundMessageLogs.Add(new OutboundMessageLog
                 {
-                    Id = Guid.NewGuid(),
-                    BeneficiaryId = ben.Id,
-                    Channel = MessageChannel.Email,
-                    Status = ok ? MessageDeliveryStatus.Sent : MessageDeliveryStatus.Failed,
-                    To = ben.Email!,
-                    Subject = subject,
-                    Body = body,
-                    SentAt = ok ? DateTime.UtcNow : null,
-                    Error = err
-                });
-
-                if (!ok)
+                    errors.Add("Beneficiary email is missing.");
+                }
+                else
                 {
-                    inv.LastError = "Email: " + err;
-                    inv.Status = InviteStatus.Created;
-                    await _db.SaveChangesAsync(ct);
-                    return (false, $"Failed to send email: {err}");
+                    var subject = "HWSETA Registration Link";
+                    var body = $@"
+                        <p>Hello {WebUtility.HtmlEncode(ben.FirstName)} {WebUtility.HtmlEncode(ben.LastName)},</p>
+                        <p>Please complete your registration using the link below:</p>
+                        <p><a href=""{link}"">{link}</a></p>
+                        <p>Thank you.</p>";
+
+                    var (ok, err) = await _email.SendAsync(ben.Email!, subject, body, ct);
+
+                    _db.OutboundMessageLogs.Add(new OutboundMessageLog
+                    {
+                        Id = Guid.NewGuid(),
+                        BeneficiaryId = ben.Id,
+                        Channel = MessageChannel.Email,
+                        Status = ok ? MessageDeliveryStatus.Sent : MessageDeliveryStatus.Failed,
+                        To = ben.Email!,
+                        Subject = subject,
+                        Body = body,
+                        SentAt = ok ? DateTime.UtcNow : null,
+                        Error = err
+                    });
+
+                    if (!ok) errors.Add("Email: " + (err ?? "Unknown error"));
                 }
             }
 
@@ -107,42 +142,70 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             {
                 var mobile = ben.MobileNumber?.Trim();
                 if (string.IsNullOrWhiteSpace(mobile))
-                    return (false, "Beneficiary mobile number is missing.");
-
-                var smsText = $"HWSETA registration link: {link}";
-                var (ok, msgId, err) = await _sms.SendAsync(mobile, smsText, ct);
-
-                _db.OutboundMessageLogs.Add(new OutboundMessageLog
                 {
-                    Id = Guid.NewGuid(),
-                    BeneficiaryId = ben.Id,
-                    Channel = MessageChannel.Sms,
-                    Status = ok ? MessageDeliveryStatus.Sent : MessageDeliveryStatus.Failed,
-                    To = mobile,
-                    Subject = "SMS",
-                    Body = smsText,
-                    SentAt = ok ? DateTime.UtcNow : null,
-                    ProviderMessageId = msgId,
-                    Error = err
-                });
-
-                if (!ok)
+                    errors.Add("Beneficiary mobile number is missing.");
+                }
+                else
                 {
-                    inv.LastError = "SMS: " + err;
-                    inv.Status = InviteStatus.Created;
-                    await _db.SaveChangesAsync(ct);
-                    return (false, $"Failed to send SMS: {err}");
+                    var smsText = $"HWSETA registration link: {link}";
+                    var (ok, msgId, err) = await _sms.SendAsync(mobile, smsText, ct);
+
+                    _db.OutboundMessageLogs.Add(new OutboundMessageLog
+                    {
+                        Id = Guid.NewGuid(),
+                        BeneficiaryId = ben.Id,
+                        Channel = MessageChannel.Sms,
+                        Status = ok ? MessageDeliveryStatus.Sent : MessageDeliveryStatus.Failed,
+                        To = mobile,
+                        Subject = "SMS",
+                        Body = smsText,
+                        SentAt = ok ? DateTime.UtcNow : null,
+                        ProviderMessageId = msgId,
+                        Error = err
+                    });
+
+                    if (!ok) errors.Add("SMS: " + (err ?? "Unknown error"));
                 }
             }
 
-            inv.Status = InviteStatus.Sent;
+            // Persist invite + ben status regardless, but return failure if any channel failed
             inv.SentAt = DateTime.UtcNow;
 
-            ben.RegistrationStatus = BeneficiaryRegistrationStatus.InviteSent;
-            ben.InvitedAt = DateTime.UtcNow;
+            if (errors.Count == 0)
+            {
+                inv.Status = InviteStatus.Sent;
 
-            await _db.SaveChangesAsync(ct);
-            return (true, null);
+                ben.RegistrationStatus = BeneficiaryRegistrationStatus.InviteSent;
+                ben.InvitedAt ??= DateTime.UtcNow;
+
+                await _db.SaveChangesAsync(ct);
+
+                await _audit.LogAsync(
+                    actionType: "RegistrationInviteSent",
+                    entityName: "Beneficiary",
+                    entityId: ben.Id.ToString(),
+                    note: $"Channel={channel}; Link=/register/claim; InviteId={inv.Id}",
+                    ct: ct);
+
+                return (true, null);
+            }
+            else
+            {
+                inv.Status = InviteStatus.Created;
+                inv.LastError = string.Join(" | ", errors);
+
+                await _db.SaveChangesAsync(ct);
+
+                await _audit.LogErrorAsync(
+                    actionType: "RegistrationInviteSendFailed",
+                    entityName: "Beneficiary",
+                    entityId: ben.Id.ToString(),
+                    errorMessage: string.Join(" | ", errors),
+                    note: $"Channel={channel}; InviteId={inv.Id}",
+                    ct: ct);
+
+                return (false, string.Join(" | ", errors));
+            }
         }
 
         public async Task<(bool ok, Guid beneficiaryId, string? error)> ValidateTokenAsync(string token, CancellationToken ct)
@@ -161,8 +224,9 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (inv is null)
                 return (false, Guid.Empty, "Invalid token.");
 
-            // Not expiring, per your instruction.
-            // One-time use still applies at “registration submission”, not at link click.
+            // Optional audit (commented out to avoid noise):
+            // await _audit.LogViewAsync("BeneficiaryInvite", inv.Id.ToString(), "Registration token validated", ct);
+
             return (true, inv.BeneficiaryId, null);
         }
 
@@ -172,6 +236,9 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             ben.RegistrationStatus = BeneficiaryRegistrationStatus.PasswordSet;
             ben.PasswordSetAt = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync("RegistrationPasswordSet", "Beneficiary", beneficiaryId.ToString(),
+                note: "Password set step completed", ct: ct);
         }
 
         public async Task MarkLocationCapturedAsync(Guid beneficiaryId, decimal lat, decimal lon, CancellationToken ct)
@@ -182,12 +249,17 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             ben.LocationCapturedAt = DateTime.UtcNow;
             ben.RegistrationStatus = BeneficiaryRegistrationStatus.LocationCaptured;
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync("RegistrationLocationCaptured", "Beneficiary", beneficiaryId.ToString(),
+                note: $"Lat={lat}; Lon={lon}", ct: ct);
         }
 
         private async Task RevokeOpenInvitesAsync(Guid beneficiaryId, CancellationToken ct)
         {
             var open = await _db.BeneficiaryInvites
-                .Where(x => x.BeneficiaryId == beneficiaryId && x.Status != InviteStatus.Used && x.Status != InviteStatus.Revoked)
+                .Where(x => x.BeneficiaryId == beneficiaryId &&
+                            x.Status != InviteStatus.Used &&
+                            x.Status != InviteStatus.Revoked)
                 .ToListAsync(ct);
 
             foreach (var i in open)
@@ -195,31 +267,29 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 i.Status = InviteStatus.Revoked;
                 i.RevokedAt = DateTime.UtcNow;
             }
+
+            // No SaveChanges here by design (caller does it).
         }
 
-
+        // ------------------------------------------------------------
+        // SEND CENTER (Unified)
+        // - Registration uses SendInviteAsync (/register/claim)
+        // - Other forms use FormPublish + BeneficiaryFormInvites (/f/{publicToken}?invite=...)
+        // ------------------------------------------------------------
         public async Task<(bool ok, string? error)> SendOneAsync(
-          Guid formTemplateId,
-          Guid beneficiaryId,
-          bool sendEmail,
-          bool sendSms,
-          string baseUrl,
-          string? sentByUserId,
-          CancellationToken ct)
+            Guid formTemplateId,
+            Guid beneficiaryId,
+            bool sendEmail,
+            bool sendSms,
+            string baseUrl,
+            string? sentByUserId,
+            CancellationToken ct)
         {
-            // Validate template is published + active
             var tpl = await _db.FormTemplates.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == formTemplateId && t.IsActive && t.Status == FormStatus.Published, ct);
 
             if (tpl == null)
                 return (false, "Template not found or not published.");
-
-            // Ensure publish row exists
-            var pub = await _db.FormPublishes
-                .FirstOrDefaultAsync(p => p.FormTemplateId == formTemplateId && p.IsPublished, ct);
-
-            if (pub == null)
-                return (false, "Form is not published. Publish it first.");
 
             var ben = await _db.Beneficiaries.FirstOrDefaultAsync(b => b.Id == beneficiaryId && b.IsActive, ct);
             if (ben == null)
@@ -228,26 +298,39 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (!sendEmail && !sendSms)
                 return (false, "Select at least one channel (Email/SMS).");
 
-            // Registration rule: must have contact
             if (sendEmail && string.IsNullOrWhiteSpace(ben.Email))
                 return (false, "Beneficiary has no email address.");
 
             if (sendSms && string.IsNullOrWhiteSpace(ben.MobileNumber))
                 return (false, "Beneficiary has no mobile number.");
 
-            // Registration single submission rule: if Registration and already submitted -> block
+            // ✅ REGISTRATION: controller-based flow (SendInviteAsync already audits)
             if (tpl.Purpose == FormPurpose.Registration)
             {
-                // block if already submitted (based on your status/timestamp)
-                if (ben.RegistrationSubmittedAt != null || ben.RegistrationStatus >= BeneficiaryRegistrationStatus.RegistrationSubmitted)
-                    return (false, "Beneficiary has already submitted Registration. Cannot send again.");
+                var reg = await SendInviteAsync(beneficiaryId, sendEmail, sendSms, ct);
+                return reg.ok ? (true, null) : (false, reg.error ?? "Failed to send registration invite.");
             }
 
-            // send per channel; each channel gets its own invite record (audit)
+            // ✅ NON-REGISTRATION: dynamic public form flow
+            var pub = await _db.FormPublishes
+                .FirstOrDefaultAsync(p => p.FormTemplateId == formTemplateId && p.IsPublished, ct);
+
+            if (pub == null)
+                return (false, "Form is not published. Publish it first.");
+
+            var errors = new List<string>();
+
+            var cleanBaseUrl = (baseUrl ?? "").TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(cleanBaseUrl))
+                cleanBaseUrl = (_cfg["App:PublicBaseUrl"] ?? "").TrimEnd('/');
+
+            if (string.IsNullOrWhiteSpace(cleanBaseUrl))
+                return (false, "Missing baseUrl and App:PublicBaseUrl.");
+
             if (sendEmail)
             {
                 var r = await EnsureInviteRowAsync(pub.Id, ben.Id, InviteChannel.Email, sentByUserId, ct);
-                var link = BuildInviteLink(baseUrl, pub.PublicToken, r.InviteToken);
+                var link = BuildPublicFormInviteLink(cleanBaseUrl, pub.PublicToken, r.InviteToken);
 
                 var subject = $"{tpl.Title} - Please complete the form";
                 var bodyHtml = BuildEmailHtml(ben.FirstName, tpl.Title, link);
@@ -255,32 +338,40 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 var sendResult = await TrySendEmailAsync(ben.Email!, subject, bodyHtml, ct);
                 await UpdateInviteAfterSendAsync(r.Id, sendResult.ok, sendResult.error, ct);
 
-                if (!sendResult.ok)
-                    return (false, $"Email failed: {sendResult.error}");
+                if (!sendResult.ok) errors.Add($"Email failed: {sendResult.error}");
             }
 
             if (sendSms)
             {
                 var r = await EnsureInviteRowAsync(pub.Id, ben.Id, InviteChannel.Sms, sentByUserId, ct);
-                var link = BuildInviteLink(baseUrl, pub.PublicToken, r.InviteToken);
+                var link = BuildPublicFormInviteLink(cleanBaseUrl, pub.PublicToken, r.InviteToken);
 
                 var smsText = $"{tpl.Title}: Please complete the form: {link}";
                 var sendResult = await TrySendSmsAsync(ben.MobileNumber, smsText, ct);
                 await UpdateInviteAfterSendAsync(r.Id, sendResult.ok, sendResult.error, ct);
 
-                if (!sendResult.ok)
-                    return (false, $"SMS failed: {sendResult.error}");
+                if (!sendResult.ok) errors.Add($"SMS failed: {sendResult.error}");
             }
 
-            // Update beneficiary status for registration journey
-            if (tpl.Purpose == FormPurpose.Registration)
+            if (errors.Count > 0)
             {
-                if (ben.InvitedAt == null) ben.InvitedAt = DateTime.UtcNow;
-                if (ben.RegistrationStatus < BeneficiaryRegistrationStatus.InviteSent)
-                    ben.RegistrationStatus = BeneficiaryRegistrationStatus.InviteSent;
+                await _audit.LogErrorAsync(
+                    actionType: "FormInviteSendFailed",
+                    entityName: "FormTemplate",
+                    entityId: formTemplateId.ToString(),
+                    errorMessage: string.Join(" | ", errors),
+                    note: $"BeneficiaryId={beneficiaryId}; Channels={(sendEmail && sendSms ? "Both" : sendEmail ? "Email" : "SMS")}",
+                    ct: ct);
 
-                await _db.SaveChangesAsync(ct);
+                return (false, string.Join(" | ", errors));
             }
+
+            await _audit.LogAsync(
+                actionType: "FormInviteSent",
+                entityName: "FormTemplate",
+                entityId: formTemplateId.ToString(),
+                note: $"BeneficiaryId={beneficiaryId}; PublishId={pub.Id}; Channels={(sendEmail && sendSms ? "Both" : sendEmail ? "Email" : "SMS")}",
+                ct: ct);
 
             return (true, null);
         }
@@ -294,23 +385,25 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (vm.TemplateId == Guid.Empty)
                 return (false, "TemplateId is required.", 0, 0);
 
-            // Template must be published & active
             var tpl = await _db.FormTemplates.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == vm.TemplateId && t.IsActive && t.Status == FormStatus.Published, ct);
 
             if (tpl == null)
                 return (false, "Template not found or not published.", 0, 0);
 
-            var pub = await _db.FormPublishes.AsNoTracking()
-                .FirstOrDefaultAsync(p => p.FormTemplateId == vm.TemplateId && p.IsPublished, ct);
-
-            if (pub == null)
-                return (false, "Form is not published. Publish it first.", 0, 0);
-
             if (!vm.SendEmail && !vm.SendSms)
                 return (false, "Select at least one channel (Email/SMS).", 0, 0);
 
-            // Query beneficiaries
+            // For NON-registration forms, enforce publish once
+            if (tpl.Purpose != FormPurpose.Registration)
+            {
+                var pub = await _db.FormPublishes.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.FormTemplateId == vm.TemplateId && p.IsPublished, ct);
+
+                if (pub == null)
+                    return (false, "Form is not published. Publish it first.", 0, 0);
+            }
+
             IQueryable<Beneficiary> q = _db.Beneficiaries.Where(b => b.IsActive);
 
             if (vm.Status.HasValue)
@@ -322,6 +415,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (vm.OnlyMissingPasswordOrUser)
                 q = q.Where(b => string.IsNullOrWhiteSpace(b.UserId) || b.PasswordSetAt == null);
 
+            // Legacy string filters (keep if your Beneficiary has these fields)
             if (!string.IsNullOrWhiteSpace(vm.Programme))
                 q = q.Where(b => b.Programme == vm.Programme);
 
@@ -368,6 +462,13 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 else failed++;
             }
 
+            await _audit.LogAsync(
+                actionType: "BulkInviteCompleted",
+                entityName: "FormTemplate",
+                entityId: vm.TemplateId.ToString(),
+                note: $"Purpose={tpl.Purpose}; Channels={(vm.SendEmail && vm.SendSms ? "Both" : vm.SendEmail ? "Email" : "SMS")}; Targeted={ids.Count}; Sent={sent}; Failed={failed}",
+                ct: ct);
+
             return (true, null, sent, failed);
         }
 
@@ -384,13 +485,15 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (inv == null)
                 return (false, "Invite not found.", null);
 
+            // Optional audit:
+            // await _audit.LogViewAsync("BeneficiaryFormInvite", inv.Id.ToString(), "Invite opened", ct);
+
             return (true, null, inv);
         }
 
-        // -------------------------
-        // Internal helpers
-        // -------------------------
-
+        // ------------------------------------------------------------
+        // Internal helpers (Dynamic Forms)
+        // ------------------------------------------------------------
         private async Task<BeneficiaryFormInvite> EnsureInviteRowAsync(
             Guid formPublishId,
             Guid beneficiaryId,
@@ -398,8 +501,6 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             string? sentByUserId,
             CancellationToken ct)
         {
-            // If you want “reuse same invite forever per beneficiary+form+channel”
-            // this will return existing invite row and resend using same InviteToken.
             var existing = await _db.BeneficiaryFormInvites
                 .FirstOrDefaultAsync(x =>
                     x.FormPublishId == formPublishId &&
@@ -454,12 +555,15 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             await _db.SaveChangesAsync(ct);
         }
 
-        private static string BuildInviteLink(string baseUrl, string publicToken, string inviteToken)
+        private static string BuildPublicFormInviteLink(string baseUrl, string publicToken, string inviteToken)
             => $"{baseUrl.TrimEnd('/')}/f/{publicToken}?invite={Uri.EscapeDataString(inviteToken)}";
+
+        private static string BuildRegistrationInviteLink(string baseUrl, string inviteToken)
+            => $"{baseUrl.TrimEnd('/')}/register/claim?token={Uri.EscapeDataString(inviteToken)}";
 
         private static string NewInviteToken()
         {
-            var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(18);
+            var bytes = RandomNumberGenerator.GetBytes(18);
             return Convert.ToBase64String(bytes)
                 .Replace("+", "-")
                 .Replace("/", "_")
@@ -479,7 +583,6 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
         private async Task<(bool ok, string? error)> TrySendEmailAsync(string toEmail, string subject, string bodyHtml, CancellationToken ct)
         {
-            // delegate to your existing email service
             try
             {
                 await _email.SendAsync(toEmail, subject, bodyHtml, ct);
@@ -503,7 +606,8 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 return (false, ex.Message);
             }
         }
-            private static string GenerateToken()
+
+        private static string GenerateToken()
         {
             var bytes = RandomNumberGenerator.GetBytes(32);
             return Convert.ToBase64String(bytes)
@@ -518,6 +622,5 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(token));
             return Convert.ToHexString(bytes);
         }
-
     }
 }

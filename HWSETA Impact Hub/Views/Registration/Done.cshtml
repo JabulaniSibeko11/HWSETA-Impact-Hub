@@ -1,6 +1,66 @@
 ﻿@{
     ViewData["Title"] = "Registration Complete";
 }
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<h2>Thank you</h2>
-<p>Your registration has been submitted successfully.</p>
+<link href="~/css/registrationdonecss.css" rel="stylesheet" />
+<div class="hw-overlay" id="hw-overlay">
+    <!-- Confetti particles injected by JS -->
+    <div class="hw-modal">
+        <div class="hw-modal-hero">
+            <div class="hw-success-ring"><i class="bi bi-check-lg" style="font-family:unset !important;"></i></div>
+            <div class="hw-modal-hero-title">Registration Complete!</div>
+            <div class="hw-modal-hero-sub">Your information has been submitted successfully to HWSETA.</div>
+        </div>
+        <div class="hw-modal-body">
+            <div class="hw-ref">
+                <i class="bi bi-receipt-cutoff" style="font-family:unset !important;"></i>
+                <div>
+                    <div class="hw-ref-label">Submission Confirmed</div>
+                    <div class="hw-ref-val">Your record has been saved</div>
+                </div>
+            </div>
+            <ul class="hw-step-list">
+                <li class="hw-step-item">
+                    <div class="hw-step-num">1</div>
+                    <div class="hw-step-text">Your personal details and programme information have been captured.<br><span>A confirmation has been logged against your profile.</span></div>
+                </li>
+                <li class="hw-step-item">
+                    <div class="hw-step-num">2</div>
+                    <div class="hw-step-text">An HWSETA administrator will review your submission.<br><span>You may be contacted if additional information is required.</span></div>
+                </li>
+                <li class="hw-step-item">
+                    <div class="hw-step-num">3</div>
+                    <div class="hw-step-text">You can log in to track your enrolment status at any time.<br><span>Use the credentials you set during registration.</span></div>
+                </li>
+            </ul>
+            <a href="/" class="hw-btn-primary"><i class="bi bi-house" style="font-family:unset !important;"></i> Return to Home</a>
+            <div class="hw-footer-note">Need help? Contact HWSETA at <strong>research@hwseta.org.za</strong></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        var colours = ['#1a7a3c','#e6b000','#2d9e56','#fff','#b38600','#135e2e'];
+        var overlay = document.getElementById('hw-overlay');
+        for(var i=0;i<24;i++){
+            var p=document.createElement('div');
+            p.className='hw-particle';
+            var size=(Math.random()*8+4)+'px';
+            p.style.cssText=[
+                'width:'+size,'height:'+size,
+                'background:'+colours[Math.floor(Math.random()*colours.length)],
+                'left:'+Math.random()*100+'vw',
+                'top:-10px',
+                'animation-duration:'+(Math.random()*4+3)+'s',
+                'animation-delay:'+(Math.random()*2)+'s',
+                'opacity:'+(.4+Math.random()*.6)
+            ].join(';');
+            overlay.appendChild(p);
+        }
+    })();
+</script>
