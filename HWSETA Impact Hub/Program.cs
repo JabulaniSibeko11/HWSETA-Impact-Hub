@@ -21,6 +21,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.Configure<SecurityOptions>(builder.Configuration.GetSection("Security"));
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
 builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection("Sms"));
+builder.Services.Configure<ProofUploadsOptions>(builder.Configuration.GetSection("ProofUploads"));
 
 // MVC + Razor Pages (Identity UI)
 builder.Services.AddControllersWithViews();

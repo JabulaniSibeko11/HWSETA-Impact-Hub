@@ -7,7 +7,7 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Registrations
         [Required]
         public string Token { get; set; } = "";
 
-        [Required]
-        public IFormFile File { get; set; } = null!;
+        [Required(ErrorMessage = "Please upload the completion letter (PDF).")]
+        public IFormFile File { get; set; } = default!;
     }
 }

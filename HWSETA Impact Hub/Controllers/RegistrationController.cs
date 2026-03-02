@@ -1,11 +1,14 @@
 ﻿using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Domain.Entities;
+using HWSETA_Impact_Hub.Infrastructure.Confugations;
 using HWSETA_Impact_Hub.Models.ViewModels.Registrations;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
 
 namespace HWSETA_Impact_Hub.Controllers
 {
@@ -15,12 +18,13 @@ namespace HWSETA_Impact_Hub.Controllers
         private readonly ApplicationDbContext _db;
         private readonly IBeneficiaryInviteService _invites;
         private readonly IRegistrationService _reg;
-
-        public RegistrationController(ApplicationDbContext db, IBeneficiaryInviteService invites, IRegistrationService reg)
+        private readonly ProofUploadsOptions _proofOpts;
+        public RegistrationController(ApplicationDbContext db, IBeneficiaryInviteService invites, IRegistrationService reg, IOptions<ProofUploadsOptions> proofOpts)
         {
             _db = db;
             _invites = invites;
             _reg = reg;
+            _proofOpts = proofOpts.Value;
         }
 
         // Step 1: claim token -> show password page
@@ -54,11 +58,7 @@ namespace HWSETA_Impact_Hub.Controllers
             if (!okToken) return View("InvalidToken", errToken);
 
             var (ok, err) = await _reg.SetPasswordAsync(beneficiaryId, vm.Email, vm.Password, ct);
-            if (!ok)
-            {
-                ModelState.AddModelError("", err ?? "Failed to set password.");
-                return View("SetPassword", vm);
-            }
+           
 
             await _invites.MarkPasswordSetAsync(beneficiaryId, ct);
 
@@ -77,8 +77,7 @@ namespace HWSETA_Impact_Hub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveLocation(LocationVm vm, CancellationToken ct)
         {
-            if (!ModelState.IsValid)
-                return View("Location", vm);
+            
 
             var (okToken, beneficiaryId, errToken) = await _invites.ValidateTokenAsync(vm.Token, ct);
             if (!okToken) return View("InvalidToken", errToken);
@@ -96,7 +95,7 @@ namespace HWSETA_Impact_Hub.Controllers
             if (!okToken) return View("InvalidToken", errToken);
 
             var sys = await _db.FormTemplates.AsNoTracking()
-                .Where(x => x.IsActive && x.Purpose == FormPurpose.Registration)
+                .Where(x => x.IsActive && x.Purpose == FormPurpose.Registration && x.Status == FormStatus.Published)
                 .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
                 .FirstOrDefaultAsync(ct);
 
@@ -350,24 +349,88 @@ namespace HWSETA_Impact_Hub.Controllers
             var (okToken, beneficiaryId, errToken) = await _invites.ValidateTokenAsync(vm.Token, ct);
             if (!okToken) return View("InvalidToken", errToken);
 
-            var ben = await _db.Beneficiaries.FirstAsync(x => x.Id == beneficiaryId, ct);
+            var ben = await _db.Beneficiaries
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == beneficiaryId, ct);
 
-            var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "proof");
-            Directory.CreateDirectory(uploads);
+            if (ben is null) return View("InvalidToken", "Beneficiary not found.");
 
-            var ext = Path.GetExtension(vm.File.FileName);
-            var safeName = $"{beneficiaryId:N}_{DateTime.UtcNow:yyyyMMddHHmmss}{ext}";
-            var fullPath = Path.Combine(uploads, safeName);
+            if (ben.RegistrationStatus != BeneficiaryRegistrationStatus.Completed)
+                return RedirectToAction(nameof(RegistrationDone));
 
-            await using (var fs = System.IO.File.Create(fullPath))
+            if (vm.File == null || vm.File.Length <= 0)
+            {
+                ModelState.AddModelError(nameof(vm.File), "Please upload a file.");
+                return View("UploadProof", vm);
+            }
+
+            // Validate config
+            if (string.IsNullOrWhiteSpace(_proofOpts.CompletionLettersRootPath))
+                throw new InvalidOperationException("ProofUploads:CompletionLettersRootPath is not configured.");
+
+            // Validate size
+            if (vm.File.Length > _proofOpts.MaxFileSizeBytes)
+            {
+                ModelState.AddModelError(nameof(vm.File), $"File too large. Max allowed is {_proofOpts.MaxFileSizeBytes / (1024 * 1024)} MB.");
+                return View("UploadProof", vm);
+            }
+
+            // Validate extension (force PDF)
+            var ext = Path.GetExtension(vm.File.FileName)?.ToLowerInvariant() ?? "";
+            if (_proofOpts.AllowedExtensions == null || _proofOpts.AllowedExtensions.Length == 0)
+                _proofOpts.AllowedExtensions = new[] { ".pdf" };
+
+            if (!_proofOpts.AllowedExtensions.Contains(ext))
+            {
+                ModelState.AddModelError(nameof(vm.File), "Only PDF files are allowed for completion letters.");
+                return View("UploadProof", vm);
+            }
+
+            // Build safe filename: ID/PassportNumber.pdf
+            var idValue = (ben.IdentifierValue ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(idValue))
+            {
+                ModelState.AddModelError("", "Missing ID/Passport number for this beneficiary. Please contact support.");
+                return View("UploadProof", vm);
+            }
+
+            // Remove anything unsafe for filenames
+            var safeId = Regex.Replace(idValue, @"[^A-Za-z0-9_\-]", "");
+            if (string.IsNullOrWhiteSpace(safeId))
+            {
+                ModelState.AddModelError("", "Invalid ID/Passport number format for file naming.");
+                return View("UploadProof", vm);
+            }
+
+            var root = _proofOpts.CompletionLettersRootPath;
+            Directory.CreateDirectory(root);
+
+            // Optionally group per year/month to avoid huge single folder
+            // var sub = Path.Combine(root, DateTime.UtcNow.ToString("yyyy"), DateTime.UtcNow.ToString("MM"));
+            // Directory.CreateDirectory(sub);
+
+            var fileName = $"{safeId}.pdf";
+            var fullPath = Path.Combine(root, fileName);
+
+            // Overwrite behaviour: safest is overwrite (latest replaces old)
+            // If you want versioning, append timestamp instead.
+            await using (var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
                 await vm.File.CopyToAsync(fs, ct);
+            }
 
-            ben.ProofOfCompletionPath = "/uploads/proof/" + safeName;
-            ben.ProofUploadedAt = DateTime.UtcNow;
+            // Update DB record (store absolute path OR relative - you decide)
+            // Better: store relative + root in config. For now store full path.
+            var benToUpdate = await _db.Beneficiaries.FirstAsync(x => x.Id == beneficiaryId, ct);
+            benToUpdate.ProofOfCompletionPath = fullPath;
+            benToUpdate.ProofUploadedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
+
+            TempData["Success"] = "Completion letter uploaded successfully.";
             return RedirectToAction(nameof(RegistrationDone));
         }
+
 
         [HttpGet("/register/done")]
         public IActionResult RegistrationDone()

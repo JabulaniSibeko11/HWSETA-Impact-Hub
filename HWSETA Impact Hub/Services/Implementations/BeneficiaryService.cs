@@ -87,6 +87,9 @@
 
                 return (true, null, b.Id);
             }
+
+
+
             public async Task<BeneficiaryImportResultVm> ImportFromExcelAsync(IFormFile file, CancellationToken ct)
             {
                 var result = new BeneficiaryImportResultVm();
@@ -113,7 +116,7 @@
                     return result;
                 }
 
-                // Expected headers (new schema friendly):
+                // Expected headers (Citizenship/Disability/Education derived if not in Excel):
                 // IdentifierType | IdentifierValue | FirstName | LastName | DateOfBirth | Gender | Email | MobileNumber | Province | City | AddressLine1 | PostalCode | IsActive
                 var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
 
@@ -131,7 +134,7 @@
                 var cDob = Col("DateOfBirth");
                 var cGen = Col("Gender");
                 var cEmail = Col("Email");
-                var cMob = Col("MobileNumber");   // NEW (instead of Phone)
+                var cMob = Col("MobileNumber");
                 var cProv = Col("Province");
                 var cCity = Col("City");
                 var cAddr = Col("AddressLine1");
@@ -144,14 +147,46 @@
                     return result;
                 }
 
-                // Build lookup maps (name -> id), case-insensitive
-                // NOTE: keep these lightweight; tables should be small.
+                if (cDob < 0)
+                {
+                    result.Errors.Add("Missing required header: DateOfBirth.");
+                    return result;
+                }
+
+                if (cGen < 0)
+                {
+                    result.Errors.Add("Missing required header: Gender.");
+                    return result;
+                }
+
+                if (cProv < 0 || cCity < 0 || cAddr < 0 || cPost < 0)
+                {
+                    result.Errors.Add("Missing required address headers. Required: Province, City, AddressLine1, PostalCode.");
+                    return result;
+                }
+
+                // Lookups
                 var genders = await _db.Genders
                     .Where(x => x.IsActive)
                     .Select(x => new { x.Id, x.Name })
                     .ToListAsync(ct);
 
                 var provinces = await _db.Provinces
+                    .Where(x => x.IsActive)
+                    .Select(x => new { x.Id, x.Name })
+                    .ToListAsync(ct);
+
+                var citizenshipStatuses = await _db.CitizenshipStatuses
+                    .Where(x => x.IsActive)
+                    .Select(x => new { x.Id, x.Name })
+                    .ToListAsync(ct);
+
+                var disabilityStatuses = await _db.DisabilityStatuses
+                    .Where(x => x.IsActive)
+                    .Select(x => new { x.Id, x.Name })
+                    .ToListAsync(ct);
+
+                var educationLevels = await _db.EducationLevels
                     .Where(x => x.IsActive)
                     .Select(x => new { x.Id, x.Name })
                     .ToListAsync(ct);
@@ -164,7 +199,48 @@
                     .GroupBy(x => (x.Name ?? "").Trim(), StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
 
-                // Helper for bool parsing ("true/false", "1/0", "yes/no")
+                var citizenshipByName = citizenshipStatuses
+                    .GroupBy(x => (x.Name ?? "").Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+
+                var disabilityByName = disabilityStatuses
+                    .GroupBy(x => (x.Name ?? "").Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+
+                var educationByName = educationLevels
+                    .GroupBy(x => (x.Name ?? "").Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+
+                // ✅ EXACT names from your LookupSeeder
+                const string SA_CIT_NAME = "South African Citizen";
+                const string FOREIGN_CIT_NAME = "Foreign National";
+                const string DIS_NO_NAME = "No";
+                const string EDU_DEFAULT_NAME = "Matric";
+
+                if (!citizenshipByName.TryGetValue(SA_CIT_NAME, out var saCitizenId))
+                {
+                    result.Errors.Add($"Missing CitizenshipStatus lookup: '{SA_CIT_NAME}'. Run LookupSeeder.SeedAsync().");
+                    return result;
+                }
+
+                if (!citizenshipByName.TryGetValue(FOREIGN_CIT_NAME, out var foreignCitizenId))
+                {
+                    result.Errors.Add($"Missing CitizenshipStatus lookup: '{FOREIGN_CIT_NAME}'. Run LookupSeeder.SeedAsync().");
+                    return result;
+                }
+
+                if (!disabilityByName.TryGetValue(DIS_NO_NAME, out var disabilityNoId))
+                {
+                    result.Errors.Add($"Missing DisabilityStatus lookup: '{DIS_NO_NAME}'. Run LookupSeeder.SeedAsync().");
+                    return result;
+                }
+
+                if (!educationByName.TryGetValue(EDU_DEFAULT_NAME, out var defaultEduId))
+                {
+                    result.Errors.Add($"Missing EducationLevel lookup: '{EDU_DEFAULT_NAME}'. Run LookupSeeder.SeedAsync().");
+                    return result;
+                }
+
                 static bool TryParseBoolLoose(string? s, out bool value)
                 {
                     value = false;
@@ -182,12 +258,10 @@
                     return false;
                 }
 
-                // Helper for date parsing from Excel (supports real Excel date + string)
                 static DateTime? TryReadDate(ClosedXML.Excel.IXLCell cell)
                 {
                     if (cell == null) return null;
 
-                    // If it is a real date cell
                     if (cell.DataType == ClosedXML.Excel.XLDataType.DateTime)
                         return cell.GetDateTime().Date;
 
@@ -200,7 +274,6 @@
                     return null;
                 }
 
-                // IMPORTANT: don’t pull all beneficiaries. We'll query per-row (or batch later if you want perf).
                 using var tx = await _db.Database.BeginTransactionAsync(ct);
 
                 for (int r = 2; r <= lastRow; r++)
@@ -212,7 +285,6 @@
                     var fn = row.Cell(cFn).GetString()?.Trim() ?? "";
                     var ln = row.Cell(cLn).GetString()?.Trim() ?? "";
 
-                    // treat empty row as skip
                     if (string.IsNullOrWhiteSpace(typeStr) && string.IsNullOrWhiteSpace(idVal) &&
                         string.IsNullOrWhiteSpace(fn) && string.IsNullOrWhiteSpace(ln))
                     {
@@ -228,7 +300,6 @@
                         continue;
                     }
 
-                    // Parse IdentifierType (accept: "SaId", "Passport", "1", "2")
                     IdentifierType idType;
                     if (int.TryParse(typeStr, out var tInt) && Enum.IsDefined(typeof(IdentifierType), tInt))
                         idType = (IdentifierType)tInt;
@@ -241,41 +312,31 @@
                         continue;
                     }
 
-                    DateTime dob;
-                    if (cDob > 0)
+                    // ✅ Derived required lookups
+                    var citizenshipId = (idType == IdentifierType.SaId) ? saCitizenId : foreignCitizenId;
+                    var disabilityStatusId = disabilityNoId;
+                    var educationLevelId = defaultEduId;
+
+                    var parsedDob = TryReadDate(row.Cell(cDob));
+                    if (!parsedDob.HasValue)
                     {
-                        var parsedDob = TryReadDate(row.Cell(cDob));
-                        if (!parsedDob.HasValue)
-                        {
-                            result.Errors.Add($"Row {r}: DateOfBirth is required and must be a valid date.");
-                            result.Skipped++;
-                            continue;
-                        }
-                        dob = parsedDob.Value;
-                    }
-                    else
-                    {
-                        result.Errors.Add($"Row {r}: DateOfBirth column is missing.");
+                        result.Errors.Add($"Row {r}: DateOfBirth is required and must be a valid date.");
                         result.Skipped++;
                         continue;
                     }
-                    var genderName = (cGen > 0) ? (row.Cell(cGen).GetString()?.Trim()) : null;
-                    Guid? genderId = null;
-                    if (!string.IsNullOrWhiteSpace(genderName))
+                    var dob = parsedDob.Value;
+
+                    var genderName = row.Cell(cGen).GetString()?.Trim();
+                    if (string.IsNullOrWhiteSpace(genderName))
                     {
-                        if (genderByName.TryGetValue(genderName, out var gid))
-                            genderId = gid;
-                        else
-                        {
-                            result.Errors.Add($"Row {r}: Unknown Gender '{genderName}'.");
-                            result.Skipped++;
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        // If Gender is required in your model, enforce it:
                         result.Errors.Add($"Row {r}: Gender is required.");
+                        result.Skipped++;
+                        continue;
+                    }
+
+                    if (!genderByName.TryGetValue(genderName, out var genderId))
+                    {
+                        result.Errors.Add($"Row {r}: Unknown Gender '{genderName}'.");
                         result.Skipped++;
                         continue;
                     }
@@ -283,11 +344,10 @@
                     var email = (cEmail > 0) ? row.Cell(cEmail).GetString()?.Trim() : null;
                     var mobile = (cMob > 0) ? row.Cell(cMob).GetString()?.Trim() : null;
 
-                    // Address fields (Address is required in your schema)
-                    var provName = (cProv > 0) ? row.Cell(cProv).GetString()?.Trim() : null;
-                    var city = (cCity > 0) ? row.Cell(cCity).GetString()?.Trim() : null;
-                    var addr1 = (cAddr > 0) ? row.Cell(cAddr).GetString()?.Trim() : null;
-                    var postal = (cPost > 0) ? row.Cell(cPost).GetString()?.Trim() : null;
+                    var provName = row.Cell(cProv).GetString()?.Trim();
+                    var city = row.Cell(cCity).GetString()?.Trim();
+                    var addr1 = row.Cell(cAddr).GetString()?.Trim();
+                    var postal = row.Cell(cPost).GetString()?.Trim();
 
                     if (string.IsNullOrWhiteSpace(provName) || string.IsNullOrWhiteSpace(city) ||
                         string.IsNullOrWhiteSpace(addr1) || string.IsNullOrWhiteSpace(postal))
@@ -312,7 +372,6 @@
                             isActive = b;
                     }
 
-                    // Find existing beneficiary by (type,val)
                     var existing = await _db.Beneficiaries
                         .Include(x => x.Address)
                         .FirstOrDefaultAsync(x =>
@@ -321,12 +380,14 @@
 
                     if (existing != null)
                     {
-                        // update Beneficiary core
                         existing.FirstName = fn;
                         existing.LastName = ln;
                         existing.DateOfBirth = dob;
 
-                        existing.GenderId = genderId!.Value;
+                        existing.GenderId = genderId;
+                        existing.CitizenshipStatusId = citizenshipId;
+                        existing.DisabilityStatusId = disabilityStatusId;
+                        existing.EducationLevelId = educationLevelId; // ✅ NEW
 
                         if (!string.IsNullOrWhiteSpace(email)) existing.Email = email;
                         if (!string.IsNullOrWhiteSpace(mobile)) existing.MobileNumber = mobile;
@@ -335,7 +396,6 @@
                         existing.UpdatedOnUtc = DateTime.UtcNow;
                         existing.UpdatedByUserId = _user.UserId;
 
-                        // update/create Address
                         if (existing.Address == null)
                         {
                             existing.Address = new Address
@@ -381,13 +441,15 @@
                             LastName = ln,
                             DateOfBirth = dob,
 
-                            GenderId = genderId!.Value,
+                            GenderId = genderId,
+                            CitizenshipStatusId = citizenshipId,
+                            DisabilityStatusId = disabilityStatusId,
+                            EducationLevelId = educationLevelId, // ✅ NEW
 
                             Email = string.IsNullOrWhiteSpace(email) ? null : email,
                             MobileNumber = string.IsNullOrWhiteSpace(mobile) ? "" : mobile,
 
                             IsActive = isActive,
-
                             Address = addrEntity,
 
                             CreatedOnUtc = DateTime.UtcNow,

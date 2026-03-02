@@ -15,12 +15,15 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Forms
         public string FullName { get; set; } = "";
         public string? Email { get; set; }
         public string? Mobile { get; set; }
+
         public string? Province { get; set; }
         public string? Programme { get; set; }
         public string? TrainingProvider { get; set; }
         public string? Employer { get; set; }
-        public BeneficiaryRegistrationStatus Status { get; set; }
+
+        public BeneficiaryRegistrationStatus RegistrationStatus { get; set; }
         public DateTime? InvitedAt { get; set; }
+
     }
 
     public sealed class SendCenterVm

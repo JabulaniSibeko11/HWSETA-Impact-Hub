@@ -57,32 +57,79 @@
                         <option value="">(Any)</option>
                         @foreach (var s in Enum.GetValues(typeof(BeneficiaryRegistrationStatus)).Cast<BeneficiaryRegistrationStatus>())
                         {
-                            <option value="@((int)s)">@s</option>
+                            <option value="@((int)s)" selected="@(Model.Filters.Status.HasValue && (int)Model.Filters.Status.Value == (int)s)">
+                                @s
+                            </option>
                         }
                     </select>
                 </div>
 
                 <div class="col-md-3">
                     <label class="form-label">Province</label>
-                    <input class="form-control" name="Filters.Province" value="@Model.Filters.Province" />
+                    <select class="form-select" name="Filters.ProvinceId">
+                        <option value="">(Any)</option>
+                        @foreach (var p in Model.Filters.Provinces)
+                        {
+                            <option value="@p.Value" selected="@(p.Value == (Model.Filters.ProvinceId?.ToString() ?? ""))">
+                                @p.Text
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Qualification Type</label>
+                    <select class="form-select" name="Filters.QualificationTypeId">
+                        <option value="">(Any)</option>
+                        @foreach (var x in Model.Filters.QualificationTypes)
+                        {
+                            <option value="@x.Value" selected="@(x.Value == (Model.Filters.QualificationTypeId?.ToString() ?? ""))">
+                                @x.Text
+                            </option>
+                        }
+                    </select>
                 </div>
 
                 <div class="col-md-4">
                     <label class="form-label">Programme</label>
-                    <input class="form-control" name="Filters.Programme" value="@Model.Filters.Programme" />
+                    <select class="form-select" name="Filters.ProgrammeId">
+                        <option value="">(Any)</option>
+                        @foreach (var x in Model.Filters.Programmes)
+                        {
+                            <option value="@x.Value" selected="@(x.Value == (Model.Filters.ProgrammeId?.ToString() ?? ""))">
+                                @x.Text
+                            </option>
+                        }
+                    </select>
                 </div>
 
                 <div class="col-md-4">
                     <label class="form-label">Training Provider</label>
-                    <input class="form-control" name="Filters.Provider" value="@Model.Filters.Provider" />
+                    <select class="form-select" name="Filters.ProviderId">
+                        <option value="">(Any)</option>
+                        @foreach (var x in Model.Filters.Providers)
+                        {
+                            <option value="@x.Value" selected="@(x.Value == (Model.Filters.ProviderId?.ToString() ?? ""))">
+                                @x.Text
+                            </option>
+                        }
+                    </select>
                 </div>
 
                 <div class="col-md-4">
                     <label class="form-label">Employer</label>
-                    <input class="form-control" name="Filters.Employer" value="@Model.Filters.Employer" />
+                    <select class="form-select" name="Filters.EmployerId">
+                        <option value="">(Any)</option>
+                        @foreach (var x in Model.Filters.Employers)
+                        {
+                            <option value="@x.Value" selected="@(x.Value == (Model.Filters.EmployerId?.ToString() ?? ""))">
+                                @x.Text
+                            </option>
+                        }
+                    </select>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-8">
                     <label class="form-label">Search</label>
                     <input class="form-control" name="Filters.Search" value="@Model.Filters.Search"
                            placeholder="Name / Email / Mobile / ID" />
@@ -90,29 +137,33 @@
 
                 <div class="col-md-6 d-flex align-items-end gap-3">
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Filters.OnlyNotInvitedYet" value="true" @(Model.Filters.OnlyNotInvitedYet ? "checked" : "") />
+                        <input class="form-check-input" type="checkbox" name="Filters.OnlyNotInvitedYet" value="true"
+                               @(Model.Filters.OnlyNotInvitedYet ? "checked" : "") />
                         <label class="form-check-label">Only not invited yet</label>
                     </div>
 
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Filters.OnlyMissingPasswordOrUser" value="true" @(Model.Filters.OnlyMissingPasswordOrUser ? "checked" : "") />
+                        <input class="form-check-input" type="checkbox" name="Filters.OnlyMissingPasswordOrUser" value="true"
+                               @(Model.Filters.OnlyMissingPasswordOrUser ? "checked" : "") />
                         <label class="form-check-label">Only missing password/user</label>
                     </div>
                 </div>
 
                 <div class="col-md-6 d-flex align-items-end gap-3">
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Filters.SendEmail" value="true" @(Model.Filters.SendEmail ? "checked" : "") />
+                        <input class="form-check-input" type="checkbox" name="Filters.SendEmail" value="true"
+                               @(Model.Filters.SendEmail ? "checked" : "") />
                         <label class="form-check-label">Send Email</label>
                     </div>
 
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Filters.SendSms" value="true" @(Model.Filters.SendSms ? "checked" : "") />
+                        <input class="form-check-input" type="checkbox" name="Filters.SendSms" value="true"
+                               @(Model.Filters.SendSms ? "checked" : "") />
                         <label class="form-check-label">Send SMS</label>
                     </div>
                 </div>
 
-                <div class="col-md-6 d-flex align-items-end justify-content-end gap-2">
+                <div class="col-md-12 d-flex align-items-end justify-content-end gap-2">
                     <button type="submit" class="hw-btn-outline">
                         <i class="bi bi-search"></i> Preview
                     </button>
@@ -128,11 +179,13 @@
             <input type="hidden" name="TemplateId" value="@Model.SelectedTemplateId" />
 
             <input type="hidden" name="Status" value="@Model.Filters.Status" />
-            <input type="hidden" name="Province" value="@Model.Filters.Province" />
-            <input type="hidden" name="Programme" value="@Model.Filters.Programme" />
-            <input type="hidden" name="Provider" value="@Model.Filters.Provider" />
-            <input type="hidden" name="Employer" value="@Model.Filters.Employer" />
+            <input type="hidden" name="ProvinceId" value="@Model.Filters.ProvinceId" />
+            <input type="hidden" name="QualificationTypeId" value="@Model.Filters.QualificationTypeId" />
+            <input type="hidden" name="ProgrammeId" value="@Model.Filters.ProgrammeId" />
+            <input type="hidden" name="ProviderId" value="@Model.Filters.ProviderId" />
+            <input type="hidden" name="EmployerId" value="@Model.Filters.EmployerId" />
             <input type="hidden" name="Search" value="@Model.Filters.Search" />
+
             <input type="hidden" name="OnlyNotInvitedYet" value="@(Model.Filters.OnlyNotInvitedYet)" />
             <input type="hidden" name="OnlyMissingPasswordOrUser" value="@(Model.Filters.OnlyMissingPasswordOrUser)" />
             <input type="hidden" name="SendEmail" value="@(Model.Filters.SendEmail)" />
@@ -173,29 +226,40 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var r in Model.PreviewRows)
+                @if (Model.PreviewRows != null && Model.PreviewRows.Count > 0)
+                {
+                    foreach (var r in Model.PreviewRows)
+                    {
+                        <tr>
+                            <td>@r.FullName</td>
+                            <td>@r.Email</td>
+                            <td>@r.Mobile</td>
+                            <td>@r.Province</td>
+                            <td>@r.Programme</td>
+                            <td>@r.TrainingProvider</td>
+                            <td>@r.Employer</td>
+                            <td>@r.RegistrationStatus</td>
+                            <td>@(r.InvitedAt.HasValue? r.InvitedAt.Value.ToString("dd MMM yyyy") : "-")</td>
+                            <td>
+                                <form asp-action="SendOne" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="templateId" value="@Model.SelectedTemplateId" />
+                                    <input type="hidden" name="beneficiaryId" value="@r.BeneficiaryId" />
+                                    <input type="hidden" name="sendEmail" value="true" />
+                                    <input type="hidden" name="sendSms" value="true" />
+                                    <button class="hw-btn-outline" type="submit">
+                                        <i class="bi bi-send"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
                 {
                     <tr>
-                        <td>@r.FullName</td>
-                        <td>@r.Email</td>
-                        <td>@r.Mobile</td>
-                        <td>@r.Province</td>
-                        <td>@r.Programme</td>
-                        <td>@r.TrainingProvider</td>
-                        <td>@r.Employer</td>
-                        <td>@r.Status</td>
-                        <td>@(r.InvitedAt.HasValue? r.InvitedAt.Value.ToString("dd MMM yyyy") : "-")</td>
-                        <td>
-                            <form asp-action="SendOne" method="post" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="templateId" value="@Model.SelectedTemplateId" />
-                                <input type="hidden" name="beneficiaryId" value="@r.BeneficiaryId" />
-                                <input type="hidden" name="sendEmail" value="true" />
-                                <input type="hidden" name="sendSms" value="true" />
-                                <button class="hw-btn-outline" type="submit">
-                                    <i class="bi bi-send"></i>
-                                </button>
-                            </form>
+                        <td colspan="10" style="color:var(--hw-muted);padding:14px;">
+                            No preview results yet. Set filters and click <b>Preview</b>.
                         </td>
                     </tr>
                 }
@@ -203,3 +267,4 @@
         </table>
     </div>
 </div>
+

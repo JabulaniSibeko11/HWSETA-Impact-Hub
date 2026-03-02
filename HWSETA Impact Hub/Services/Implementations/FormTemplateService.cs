@@ -24,9 +24,10 @@ namespace HWSETA_Impact_Hub.Services.Implementations
         public async Task<List<FormTemplateListRowVm>> ListAsync(CancellationToken ct)
         {
             var templates = await _db.FormTemplates.AsNoTracking()
-     .Where(x => x.IsActive)
-     .OrderByDescending(x => x.Purpose == FormPurpose.Registration)
-     .ThenByDescending(x => x.UpdatedAt ?? x.CreatedAt)
+                     .Where(x => x.IsActive)
+                     .OrderByDescending(x => x.IsSystem)
+                .ThenByDescending(x => x.Purpose == FormPurpose.Registration)
+                .ThenByDescending(x => x.UpdatedAt ?? x.CreatedAt)
                  .Select(x => new
                 {
                     x.Id,
@@ -88,6 +89,15 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
         public async Task<(bool ok, string? error, Guid? id)> CreateAsync(FormTemplateCreateVm vm, CancellationToken ct)
         {
+            if (vm.Purpose == FormPurpose.Registration)
+            {
+                // Only allow editing the existing one, never creating a new one
+                var exists = await _db.FormTemplates.AnyAsync(x =>
+                    x.IsActive && x.Purpose == FormPurpose.Registration, ct);
+
+                if (exists)
+                    return (false, "Registration template already exists. Edit the existing Registration template instead of creating another.", null);
+            }
             if (string.IsNullOrWhiteSpace(vm.Title))
                 return (false, "Title is required.", null);
 

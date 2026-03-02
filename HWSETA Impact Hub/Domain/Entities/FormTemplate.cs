@@ -41,6 +41,11 @@ namespace HWSETA_Impact_Hub.Domain.Entities
 
         public DateTime? OpenFromUtc { get; set; }
         public DateTime? OpenToUtc { get; set; }
+
+        public bool IsSystem { get; set; }          // true for Registration template
+        public bool IsDeletable { get; set; } = true;
+
+        public bool IsEditable { get; set; } = true;
     }
 
     public sealed class FormSection : BaseEntity

@@ -4,6 +4,7 @@ using HWSETA_Impact_Hub.Models.ViewModels.Forms;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace HWSETA_Impact_Hub.Controllers
@@ -246,11 +247,9 @@ namespace HWSETA_Impact_Hub.Controllers
             TempData["Success"] = "Form unpublished.";
             return RedirectToAction(nameof(Publish), new { id = templateId });
         }
-
         [HttpGet]
         public async Task<IActionResult> SendCenter(Guid? templateId, CancellationToken ct)
         {
-            // list published templates
             var templates = await _db.FormTemplates.AsNoTracking()
                 .Where(t => t.IsActive && t.Status == FormStatus.Published)
                 .OrderByDescending(t => t.Purpose == FormPurpose.Registration)
@@ -275,8 +274,17 @@ namespace HWSETA_Impact_Hub.Controllers
             {
                 Templates = templates,
                 SelectedTemplateId = selectedId,
-                Filters = new FormSendBulkVm { TemplateId = selectedId, SendEmail = true, SendSms = true }
+                Filters = new FormSendBulkVm
+                {
+                    TemplateId = selectedId,
+                    SendEmail = true,
+                    SendSms = true
+                },
+                PreviewRows = new List<SendCenterRowVm>(),
+                PreviewTotal = 0
             };
+
+            await LoadSendCenterDropdownsAsync(vm.Filters, ct);
 
             return View(vm);
         }
@@ -298,18 +306,70 @@ namespace HWSETA_Impact_Hub.Controllers
                 })
                 .ToListAsync(ct);
 
-            // apply filters
-            var q = _db.Beneficiaries.AsNoTracking().Where(b => b.IsActive);
+            // ✅ Ensure TemplateId in Filters matches SelectedTemplateId
+            vm.Filters ??= new FormSendBulkVm();
+            vm.Filters.TemplateId = vm.SelectedTemplateId;
+
+            await LoadSendCenterDropdownsAsync(vm.Filters, ct);
 
             var f = vm.Filters;
 
-            if (f.Status.HasValue) q = q.Where(b => b.RegistrationStatus == f.Status.Value);
-            if (!string.IsNullOrWhiteSpace(f.Province)) q = q.Where(b => b.Province == f.Province);
+            // ✅ Base query (use navigation, not join)
+            var q = _db.Beneficiaries
+                .AsNoTracking()
+                .Where(b => b.IsActive)
+                .Include(b => b.Address)
+                    .ThenInclude(a => a.Province) // if Province navigation exists
+                .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(f.Programme)) q = q.Where(b => b.Programme == f.Programme);
-            if (!string.IsNullOrWhiteSpace(f.Provider)) q = q.Where(b => b.TrainingProvider == f.Provider);
-            if (!string.IsNullOrWhiteSpace(f.Employer)) q = q.Where(b => b.Employer == f.Employer);
+            // Status filter
+            if (f.Status.HasValue)
+                q = q.Where(b => b.RegistrationStatus == f.Status.Value);
 
+            if (f.OnlyNotInvitedYet)
+                q = q.Where(b => b.InvitedAt == null);
+
+            if (f.OnlyMissingPasswordOrUser)
+                q = q.Where(b => string.IsNullOrWhiteSpace(b.UserId) || b.PasswordSetAt == null);
+
+            // Province filter (Address lookup)
+            if (f.ProvinceId.HasValue && f.ProvinceId.Value != Guid.Empty)
+                q = q.Where(b => b.Address != null && b.Address.ProvinceId == f.ProvinceId.Value);
+
+            // Cohort-based filters (via Enrollment -> Cohort)
+            if (f.QualificationTypeId.HasValue && f.QualificationTypeId.Value != Guid.Empty)
+            {
+                var qid = f.QualificationTypeId.Value;
+                q = q.Where(b => _db.Enrollments.Any(e =>
+                    e.BeneficiaryId == b.Id &&
+                    _db.Cohorts.Any(c => c.Id == e.CohortId && c.QualificationTypeId == qid)));
+            }
+
+            if (f.ProgrammeId.HasValue && f.ProgrammeId.Value != Guid.Empty)
+            {
+                var pid = f.ProgrammeId.Value;
+                q = q.Where(b => _db.Enrollments.Any(e =>
+                    e.BeneficiaryId == b.Id &&
+                    _db.Cohorts.Any(c => c.Id == e.CohortId && c.ProgrammeId == pid)));
+            }
+
+            if (f.ProviderId.HasValue && f.ProviderId.Value != Guid.Empty)
+            {
+                var prid = f.ProviderId.Value;
+                q = q.Where(b => _db.Enrollments.Any(e =>
+                    e.BeneficiaryId == b.Id &&
+                    _db.Cohorts.Any(c => c.Id == e.CohortId && c.ProviderId == prid)));
+            }
+
+            if (f.EmployerId.HasValue && f.EmployerId.Value != Guid.Empty)
+            {
+                var eid = f.EmployerId.Value;
+                q = q.Where(b => _db.Enrollments.Any(e =>
+                    e.BeneficiaryId == b.Id &&
+                    _db.Cohorts.Any(c => c.Id == e.CohortId && c.EmployerId == eid)));
+            }
+
+            // Search
             if (!string.IsNullOrWhiteSpace(f.Search))
             {
                 var s = f.Search.Trim();
@@ -320,22 +380,90 @@ namespace HWSETA_Impact_Hub.Controllers
                     (b.IdentifierValue ?? "").Contains(s));
             }
 
-            if (f.SendEmail) q = q.Where(b => b.Email != null && b.Email != "");
-            if (f.SendSms) q = q.Where(b => b.MobileNumber != null && b.MobileNumber != "");
+            // If sending email/SMS require those fields
+            if (f.SendEmail)
+                q = q.Where(b => b.Email != null && b.Email != "");
 
-            // show small preview list (top 50)
+            if (f.SendSms)
+                q = q.Where(b => b.MobileNumber != null && b.MobileNumber != "");
+
             vm.PreviewTotal = await q.CountAsync(ct);
+
+            // ✅ Project preview (Top 50)
+            // Note: Programme/Provider/Employer pulled from the latest enrollment’s cohort via subquery
             vm.PreviewRows = await q.Take(50).Select(b => new SendCenterRowVm
             {
                 BeneficiaryId = b.Id,
-                FullName = b.FirstName + " " + b.LastName,
+                FullName = (b.FirstName + " " + b.LastName).Trim(),
                 Email = b.Email,
                 Mobile = b.MobileNumber,
-                Province = b.Province,
-                Status = b.RegistrationStatus
+
+                Province = b.Address != null && b.Address.Province != null ? b.Address.Province.Name : null,
+
+                Programme = _db.Enrollments
+                    .Where(e => e.BeneficiaryId == b.Id)
+                    .OrderByDescending(e => e.UpdatedOnUtc ?? e.CreatedOnUtc)
+                    .Select(e => e.Cohort.Programme.ProgrammeName)
+                    .FirstOrDefault(),
+
+                TrainingProvider = _db.Enrollments
+                    .Where(e => e.BeneficiaryId == b.Id)
+                    .OrderByDescending(e => e.UpdatedOnUtc ?? e.CreatedOnUtc)
+                    .Select(e => e.Cohort.Provider.ProviderName)
+                    .FirstOrDefault(),
+
+                Employer = _db.Enrollments
+                    .Where(e => e.BeneficiaryId == b.Id)
+                    .OrderByDescending(e => e.UpdatedOnUtc ?? e.CreatedOnUtc)
+                    .Select(e => e.Cohort.Employer.EmployerName)
+                    .FirstOrDefault(),
+
+                RegistrationStatus = b.RegistrationStatus,
+                InvitedAt = b.InvitedAt
             }).ToListAsync(ct);
 
             return View("SendCenter", vm);
+        }
+        private async Task LoadSendCenterDropdownsAsync(FormSendBulkVm f, CancellationToken ct)
+        {
+            // Provinces
+            f.Provinces = await _db.Provinces.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem { Value = x.Id.ToString(), Text = x.Name })
+                .ToListAsync(ct);
+
+            // Qualification Types
+            f.QualificationTypes = await _db.QualificationTypes.AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem { Value = x.Id.ToString(), Text = x.Name })
+                .ToListAsync(ct);
+
+            // These are cohort-derived to avoid showing items that can never match
+            f.Programmes = await _db.Cohorts.AsNoTracking()
+                .Where(c => c.IsActive)
+                .Select(c => new { c.ProgrammeId, c.Programme.ProgrammeName })
+                .Distinct()
+                .OrderBy(x => x.ProgrammeName)
+                .Select(x => new SelectListItem { Value = x.ProgrammeId.ToString(), Text = x.ProgrammeName })
+                .ToListAsync(ct);
+
+            f.Providers = await _db.Cohorts.AsNoTracking()
+                .Where(c => c.IsActive)
+                .Select(c => new { c.ProviderId, c.Provider.ProviderName })
+                .Distinct()
+                .OrderBy(x => x.ProviderName)
+                .Select(x => new SelectListItem { Value = x.ProviderId.ToString(), Text = x.ProviderName })
+                .ToListAsync(ct);
+
+            f.Employers = await _db.Cohorts.AsNoTracking()
+                .Where(c => c.IsActive)
+                .Select(c => new { c.EmployerId, c.Employer.EmployerName })
+                .Distinct()
+                .OrderBy(x => x.EmployerName)
+                .Select(x => new SelectListItem { Value = x.EmployerId.ToString(), Text = x.EmployerName })
+                .ToListAsync(ct);
         }
 
         [HttpPost]
@@ -355,59 +483,103 @@ namespace HWSETA_Impact_Hub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendBulkNow(FormSendBulkVm vm, CancellationToken ct)
         {
+            // Validate template exists (we allow bulk for any published template, but you can restrict)
+            var t = await _db.FormTemplates.AsNoTracking().FirstOrDefaultAsync(x => x.Id == vm.TemplateId, ct);
+            if (t is null)
+            {
+                TempData["Error"] = "Template not found.";
+                return RedirectToAction(nameof(SendCenter));
+            }
+
+            if (!t.IsActive || t.Status != FormStatus.Published)
+            {
+                TempData["Error"] = "Template must be ACTIVE and PUBLISHED to send.";
+                return RedirectToAction(nameof(SendCenter), new { templateId = vm.TemplateId });
+            }
+
+            // Build same query logic as Preview (GUID-based)
+            var q = BuildSendCenterQuery(vm);
+
+            // Require email/sms if selected
+            if (vm.SendEmail) q = q.Where(b => b.Email != null && b.Email != "");
+            if (vm.SendSms) q = q.Where(b => b.MobileNumber != null && b.MobileNumber != "");
+
+            // Execute list
+            var ids = await q.Select(b => b.Id).ToListAsync(ct);
+
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var sentBy = User?.Identity?.Name;
 
-            var (ok, error, sent, failed) = await _invites.SendBulkAsync(vm, baseUrl, sentBy, ct);
+            int sent = 0, failed = 0;
+            foreach (var id in ids)
+            {
+                var (ok, err) = await _invites.SendOneAsync(vm.TemplateId, id, vm.SendEmail, vm.SendSms, baseUrl, sentBy, ct);
+                if (ok) sent++;
+                else failed++;
+            }
 
-            TempData[ok ? "Success" : "Error"] = ok
-                ? $"Sent: {sent}, Failed: {failed}"
-                : (error ?? "Bulk send failed.");
-
+            TempData[sent > 0 ? "Success" : "Error"] = $"Bulk send done. Sent: {sent}, Failed: {failed}";
             return RedirectToAction(nameof(SendCenter), new { templateId = vm.TemplateId });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SendBulk(FormSendBulkVm vm, CancellationToken ct)
+        // ✅ single source of truth for filtering (same as Preview)
+        private IQueryable<Beneficiary> BuildSendCenterQuery(FormSendBulkVm f)
         {
-            // Validate template + must be Published Registration
-            var t = await _db.FormTemplates.AsNoTracking().FirstOrDefaultAsync(x => x.Id == vm.TemplateId, ct);
-            if (t is null) return NotFound();
+            var q = _db.Beneficiaries
+                .AsNoTracking()
+                .Where(b => b.IsActive)
+                .Include(b => b.Address)
+                    .ThenInclude(a => a.Province)
+                .AsQueryable();
 
-            if (t.Purpose != FormPurpose.Registration || t.Status != FormStatus.Published || !t.IsActive)
-            {
-                TempData["Error"] = "Bulk send is only available for an ACTIVE PUBLISHED Registration form.";
-                return RedirectToAction(nameof(Publish), new { id = vm.TemplateId });
-            }
+            if (f.Status.HasValue)
+                q = q.Where(b => b.RegistrationStatus == f.Status.Value);
 
-            // Query beneficiaries
-            var q = _db.Beneficiaries.AsQueryable();
-
-            if (vm.Status.HasValue)
-                q = q.Where(b => b.RegistrationStatus == vm.Status.Value);
-
-            if (vm.OnlyNotInvitedYet)
+            if (f.OnlyNotInvitedYet)
                 q = q.Where(b => b.InvitedAt == null);
 
-            if (vm.OnlyMissingPasswordOrUser)
+            if (f.OnlyMissingPasswordOrUser)
                 q = q.Where(b => string.IsNullOrWhiteSpace(b.UserId) || b.PasswordSetAt == null);
 
-            if (!string.IsNullOrWhiteSpace(vm.Programme))
-                q = q.Where(b => b.Programme == vm.Programme);
+            if (f.ProvinceId.HasValue && f.ProvinceId.Value != Guid.Empty)
+                q = q.Where(b => b.Address != null && b.Address.ProvinceId == f.ProvinceId.Value);
 
-            if (!string.IsNullOrWhiteSpace(vm.Provider))
-                q = q.Where(b => b.TrainingProvider == vm.Provider);
-
-            if (!string.IsNullOrWhiteSpace(vm.Employer))
-                q = q.Where(b => b.Employer == vm.Employer);
-
-            if (!string.IsNullOrWhiteSpace(vm.Province))
-                q = q.Where(b => b.Province == vm.Province);
-
-            if (!string.IsNullOrWhiteSpace(vm.Search))
+            // Enrollment/Cohort-based filters
+            if (f.QualificationTypeId.HasValue && f.QualificationTypeId.Value != Guid.Empty)
             {
-                var s = vm.Search.Trim();
+                var qid = f.QualificationTypeId.Value;
+                q = q.Where(b => _db.Enrollments.Any(e =>
+                    e.BeneficiaryId == b.Id &&
+                    _db.Cohorts.Any(c => c.Id == e.CohortId && c.QualificationTypeId == qid)));
+            }
+
+            if (f.ProgrammeId.HasValue && f.ProgrammeId.Value != Guid.Empty)
+            {
+                var pid = f.ProgrammeId.Value;
+                q = q.Where(b => _db.Enrollments.Any(e =>
+                    e.BeneficiaryId == b.Id &&
+                    _db.Cohorts.Any(c => c.Id == e.CohortId && c.ProgrammeId == pid)));
+            }
+
+            if (f.ProviderId.HasValue && f.ProviderId.Value != Guid.Empty)
+            {
+                var prid = f.ProviderId.Value;
+                q = q.Where(b => _db.Enrollments.Any(e =>
+                    e.BeneficiaryId == b.Id &&
+                    _db.Cohorts.Any(c => c.Id == e.CohortId && c.ProviderId == prid)));
+            }
+
+            if (f.EmployerId.HasValue && f.EmployerId.Value != Guid.Empty)
+            {
+                var eid = f.EmployerId.Value;
+                q = q.Where(b => _db.Enrollments.Any(e =>
+                    e.BeneficiaryId == b.Id &&
+                    _db.Cohorts.Any(c => c.Id == e.CohortId && c.EmployerId == eid)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(f.Search))
+            {
+                var s = f.Search.Trim();
                 q = q.Where(b =>
                     (b.FirstName + " " + b.LastName).Contains(s) ||
                     (b.Email ?? "").Contains(s) ||
@@ -415,22 +587,7 @@ namespace HWSETA_Impact_Hub.Controllers
                     (b.IdentifierValue ?? "").Contains(s));
             }
 
-            // If sending email/SMS require those fields
-            if (vm.SendEmail) q = q.Where(b => b.Email != null && b.Email != "");
-            if (vm.SendSms) q = q.Where(b => b.MobileNumber != null && b.MobileNumber != "");
-
-            var list = await q.Select(b => b.Id).ToListAsync(ct);
-
-            int sent = 0, failed = 0;
-            foreach (var id in list)
-            {
-                var (ok, err) = await _invites.SendInviteAsync(id, vm.SendEmail, vm.SendSms, ct);
-                if (ok) sent++;
-                else failed++;
-            }
-
-            TempData["Success"] = $"Bulk send done. Sent: {sent}, Failed: {failed}";
-            return RedirectToAction(nameof(Publish), new { id = vm.TemplateId });
+            return q;
         }
     }
 }
