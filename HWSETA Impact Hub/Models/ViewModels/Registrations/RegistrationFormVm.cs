@@ -71,7 +71,7 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Registrations
         // -------------------------
         // Consent (moved from Admin -> captured by Beneficiary)
         // -------------------------
-        [Required(ErrorMessage = "You must accept the consent to continue.")]
+        [Range(typeof(bool), "true", "true", ErrorMessage = "You must accept the consent to continue.")]
         [Display(Name = "I consent to the processing of my personal information.")]
         public bool ConsentGiven { get; set; }
 
@@ -100,7 +100,7 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Registrations
         [Display(Name = "Programme Status")]
         public string ProgressStatus { get; set; } = ""; // expected: "Completed", "Incomplete", "DroppedOut"
 
-        [Required, MaxLength(2000)]
+        [MaxLength(2000)]
         [Display(Name = "Comment / Experience")]
         public string Comment { get; set; } = "";
 

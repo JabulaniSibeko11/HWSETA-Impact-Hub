@@ -1,5 +1,4 @@
-﻿
-*, *::before, *::after {
+﻿*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0
@@ -395,19 +394,33 @@ body, html {
         color: var(--red)
     }
 /* Field error */
-.hw-field-error {
+.hw-field-error,
+.hw-upload-error {
     font-size: 11px;
     color: var(--red);
     font-weight: 600;
     display: none;
     align-items: center;
     gap: 4px;
-    margin-top: 4px
+    margin-top: 6px;
+    padding: 8px 12px;
+    background: var(--red-light);
+    border: 1.5px solid rgba(192,57,43,.2);
+    border-radius: 8px;
+    line-height: 1.4;
 }
 
-    .hw-field-error.field-validation-error {
+    .hw-field-error.field-validation-error,
+    .hw-upload-error.field-validation-error {
         display: flex
     }
+
+/* Spinner for submit button */
+@keyframes hwSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 /* Buttons */
 .hw-btn-primary {
     display: flex;
@@ -466,5 +479,3 @@ body, html {
         border-color: var(--dark);
         color: var(--dark)
     }
-
-

@@ -5,43 +5,68 @@
     ViewData["Title"] = "Send Centre";
 }
 
-<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<link href="~/css/sendcentercss.css" rel="stylesheet" />
+
+@* ── Page Header ──────────────────────────────────── *@
+<div class="sc-header">
     <div>
-        <div class="hw-page-eyebrow"><i class="bi bi-send me-1"></i>Form Operations</div>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-send" style="font-family:unset !important;"></i>
+            Form Operations
+        </div>
         <h1 class="hw-page-title">Send <span>Centre</span></h1>
         <p class="hw-page-desc">Filter beneficiaries, preview recipients, then send single or bulk invites.</p>
     </div>
-    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;">
-        <i class="bi bi-arrow-left"></i> Back to Forms
+    <a asp-action="Index" class="sc-back-btn">
+        <i class="bi bi-arrow-left" style="font-family:unset !important;"></i> Back to Forms
     </a>
 </div>
 
+@* ── Alerts ───────────────────────────────────────── *@
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <div class="sc-alert sc-alert-success">
+        <i class="bi bi-check-circle-fill" style="font-family:unset !important;font-size:15px;"></i>
+        @TempData["Success"]
+    </div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    <div class="sc-alert sc-alert-error">
+        <i class="bi bi-exclamation-circle-fill" style="font-family:unset !important;font-size:15px;"></i>
+        @TempData["Error"]
+    </div>
 }
 
-<div class="hw-card" style="margin-bottom:16px;">
-    <div class="hw-card-head">
-        <div class="hw-card-icon gold"><i class="bi bi-funnel"></i></div>
+@* ── Filter Card ──────────────────────────────────── *@
+<div class="sc-filter-card">
+
+    <div class="sc-filter-head">
+        <div class="sc-filter-icon">
+            <i class="bi bi-funnel-fill" style="font-family:unset !important;"></i>
+        </div>
         <div>
-            <div class="hw-card-title">Choose Template + Filters</div>
-            <div class="hw-card-sub">Preview shows top 50 matches. Bulk send will send to all matches.</div>
+            <div class="sc-filter-title">Choose Template &amp; Filters</div>
+            <div class="sc-filter-sub">Preview shows top 50 matches. Bulk send delivers to all matches.</div>
         </div>
     </div>
 
-    <div class="hw-card-body">
-        <form asp-action="PreviewSend" method="post">
+    <div class="sc-filter-body">
+
+        @* ── PREVIEW FORM ───────────────────────────── *@
+        <form asp-action="PreviewSend" method="post" id="sc-filter-form">
             @Html.AntiForgeryToken()
 
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Published Template</label>
-                    <select class="form-select" name="SelectedTemplateId">
+            <div class="sc-grid">
+
+                @* Template *@
+                <div class="sc-col-6">
+                    <label class="sc-field-label">Published Template</label>
+                    <select class="sc-select" name="SelectedTemplateId">
                         @foreach (var t in Model.Templates)
                         {
                             <option value="@t.TemplateId" selected="@(t.TemplateId == Model.SelectedTemplateId)">
@@ -51,9 +76,10 @@
                     </select>
                 </div>
 
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select class="form-select" name="Filters.Status">
+                @* Status *@
+                <div class="sc-col-3">
+                    <label class="sc-field-label">Status</label>
+                    <select class="sc-select" name="Filters.Status">
                         <option value="">(Any)</option>
                         @foreach (var s in Enum.GetValues(typeof(BeneficiaryRegistrationStatus)).Cast<BeneficiaryRegistrationStatus>())
                         {
@@ -64,9 +90,10 @@
                     </select>
                 </div>
 
-                <div class="col-md-3">
-                    <label class="form-label">Province</label>
-                    <select class="form-select" name="Filters.ProvinceId">
+                @* Province *@
+                <div class="sc-col-3">
+                    <label class="sc-field-label">Province</label>
+                    <select class="sc-select" name="Filters.ProvinceId">
                         <option value="">(Any)</option>
                         @foreach (var p in Model.Filters.Provinces)
                         {
@@ -77,9 +104,10 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Qualification Type</label>
-                    <select class="form-select" name="Filters.QualificationTypeId">
+                @* Qual Type *@
+                <div class="sc-col-4">
+                    <label class="sc-field-label">Qualification Type</label>
+                    <select class="sc-select" name="Filters.QualificationTypeId">
                         <option value="">(Any)</option>
                         @foreach (var x in Model.Filters.QualificationTypes)
                         {
@@ -90,9 +118,10 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Programme</label>
-                    <select class="form-select" name="Filters.ProgrammeId">
+                @* Programme *@
+                <div class="sc-col-4">
+                    <label class="sc-field-label">Programme</label>
+                    <select class="sc-select" name="Filters.ProgrammeId">
                         <option value="">(Any)</option>
                         @foreach (var x in Model.Filters.Programmes)
                         {
@@ -103,9 +132,10 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Training Provider</label>
-                    <select class="form-select" name="Filters.ProviderId">
+                @* Provider *@
+                <div class="sc-col-4">
+                    <label class="sc-field-label">Training Provider</label>
+                    <select class="sc-select" name="Filters.ProviderId">
                         <option value="">(Any)</option>
                         @foreach (var x in Model.Filters.Providers)
                         {
@@ -116,9 +146,10 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Employer</label>
-                    <select class="form-select" name="Filters.EmployerId">
+                @* Employer *@
+                <div class="sc-col-4">
+                    <label class="sc-field-label">Employer</label>
+                    <select class="sc-select" name="Filters.EmployerId">
                         <option value="">(Any)</option>
                         @foreach (var x in Model.Filters.Employers)
                         {
@@ -129,55 +160,82 @@
                     </select>
                 </div>
 
-                <div class="col-md-8">
-                    <label class="form-label">Search</label>
-                    <input class="form-control" name="Filters.Search" value="@Model.Filters.Search"
-                           placeholder="Name / Email / Mobile / ID" />
+                @* Search *@
+                <div class="sc-col-8">
+                    <label class="sc-field-label">Search</label>
+                    <input class="sc-input" name="Filters.Search" value="@Model.Filters.Search"
+                           placeholder="Name / Email / Mobile / ID Number" />
                 </div>
 
-                <div class="col-md-6 d-flex align-items-end gap-3">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Filters.OnlyNotInvitedYet" value="true"
-                               @(Model.Filters.OnlyNotInvitedYet ? "checked" : "") />
-                        <label class="form-check-label">Only not invited yet</label>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Filters.OnlyMissingPasswordOrUser" value="true"
-                               @(Model.Filters.OnlyMissingPasswordOrUser ? "checked" : "") />
-                        <label class="form-check-label">Only missing password/user</label>
-                    </div>
-                </div>
-
-                <div class="col-md-6 d-flex align-items-end gap-3">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Filters.SendEmail" value="true"
-                               @(Model.Filters.SendEmail ? "checked" : "") />
-                        <label class="form-check-label">Send Email</label>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Filters.SendSms" value="true"
-                               @(Model.Filters.SendSms ? "checked" : "") />
-                        <label class="form-check-label">Send SMS</label>
+                @* Filter toggles *@
+                <div class="sc-col-12">
+                    <div class="sc-section-label">Filter Flags</div>
+                    <div class="sc-checks-row">
+                        <label class="sc-check">
+                            <input type="checkbox" name="Filters.OnlyNotInvitedYet" value="true"
+                                   @(Model.Filters.OnlyNotInvitedYet ? "checked" : "") />
+                            <i class="bi bi-envelope-slash" style="font-family:unset !important;font-size:13px;"></i>
+                            Only not invited yet
+                        </label>
+                        <label class="sc-check">
+                            <input type="checkbox" name="Filters.OnlyMissingPasswordOrUser" value="true"
+                                   @(Model.Filters.OnlyMissingPasswordOrUser ? "checked" : "") />
+                            <i class="bi bi-key" style="font-family:unset !important;font-size:13px;"></i>
+                            Only missing password / user
+                        </label>
                     </div>
                 </div>
 
-                <div class="col-md-12 d-flex align-items-end justify-content-end gap-2">
-                    <button type="submit" class="hw-btn-outline">
-                        <i class="bi bi-search"></i> Preview
+                @* Send channels *@
+                <div class="sc-col-12">
+                    <div class="sc-section-label">Send Channels</div>
+                    <div class="sc-checks-row">
+                        <label class="sc-channel-check">
+                            <input type="checkbox" name="Filters.SendEmail" value="true"
+                                   @(Model.Filters.SendEmail ? "checked" : "") />
+                            <i class="bi bi-envelope-fill" style="font-family:unset !important;font-size:13px;"></i>
+                            Send Email
+                        </label>
+                        <label class="sc-channel-check">
+                            <input type="checkbox" name="Filters.SendSms" value="true"
+                                   @(Model.Filters.SendSms ? "checked" : "") />
+                            <i class="bi bi-phone-fill" style="font-family:unset !important;font-size:13px;"></i>
+                            Send SMS
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+            <hr class="sc-divider" />
+
+            @* Actions row *@
+            <div class="sc-filter-actions">
+                <div class="sc-matches-badge">
+                    <i class="bi bi-people-fill" style="font-family:unset !important;color:var(--hw-green);"></i>
+                    <span class="sc-count">@Model.PreviewTotal</span>
+                    matches
+                    <span class="sc-hint">(preview: top 50)</span>
+                </div>
+
+                <div class="sc-actions-right">
+                    <button type="submit" class="sc-btn-preview">
+                        <i class="bi bi-search" style="font-family:unset !important;"></i>
+                        Preview Recipients
+                    </button>
+                    <button type="button" class="sc-btn-send" onclick="scConfirmBulk()">
+                        <i class="bi bi-send-fill" style="font-family:unset !important;"></i>
+                        Send Bulk Now
                     </button>
                 </div>
             </div>
+
         </form>
 
-        <hr />
-
-        <form asp-action="SendBulkNow" method="post">
+        @* Hidden bulk send form — submitted by modal confirm *@
+        <form asp-action="SendBulkNow" method="post" id="sc-bulk-form" style="display:none;">
             @Html.AntiForgeryToken()
-
             <input type="hidden" name="TemplateId" value="@Model.SelectedTemplateId" />
-
             <input type="hidden" name="Status" value="@Model.Filters.Status" />
             <input type="hidden" name="ProvinceId" value="@Model.Filters.ProvinceId" />
             <input type="hidden" name="QualificationTypeId" value="@Model.Filters.QualificationTypeId" />
@@ -185,32 +243,30 @@
             <input type="hidden" name="ProviderId" value="@Model.Filters.ProviderId" />
             <input type="hidden" name="EmployerId" value="@Model.Filters.EmployerId" />
             <input type="hidden" name="Search" value="@Model.Filters.Search" />
-
-            <input type="hidden" name="OnlyNotInvitedYet" value="@(Model.Filters.OnlyNotInvitedYet)" />
-            <input type="hidden" name="OnlyMissingPasswordOrUser" value="@(Model.Filters.OnlyMissingPasswordOrUser)" />
-            <input type="hidden" name="SendEmail" value="@(Model.Filters.SendEmail)" />
-            <input type="hidden" name="SendSms" value="@(Model.Filters.SendSms)" />
-
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <b>Matches:</b> @Model.PreviewTotal
-                    <span style="color:var(--hw-muted);font-size:12px;">(Preview shows top 50)</span>
-                </div>
-                <button class="hw-btn-gold" type="submit">
-                    <i class="bi bi-send"></i> Send Bulk Now
-                </button>
-            </div>
+            <input type="hidden" name="OnlyNotInvitedYet" value="@Model.Filters.OnlyNotInvitedYet" />
+            <input type="hidden" name="OnlyMissingPasswordOrUser" value="@Model.Filters.OnlyMissingPasswordOrUser" />
+            <input type="hidden" name="SendEmail" value="@Model.Filters.SendEmail" />
+            <input type="hidden" name="SendSms" value="@Model.Filters.SendSms" />
         </form>
+
     </div>
 </div>
 
-<div class="hw-table-card">
-    <div class="hw-table-card-head">
-        <span class="hw-table-card-title"><i class="bi bi-people"></i> Preview Recipients</span>
+@* ── Preview Table ────────────────────────────────── *@
+<div class="sc-table-card">
+    <div class="sc-table-head">
+        <div class="sc-table-title">
+            <i class="bi bi-people-fill" style="font-family:unset !important;"></i>
+            Preview Recipients
+        </div>
+        @if (Model.PreviewRows != null && Model.PreviewRows.Count > 0)
+        {
+            <span class="sc-table-meta">Showing @Model.PreviewRows.Count of @Model.PreviewTotal total matches</span>
+        }
     </div>
 
-    <div style="overflow-x:auto;">
-        <table class="hw-dt">
+    <div class="sc-table-wrap">
+        <table class="sc-dt">
             <thead>
                 <tr>
                     <th>Beneficiary</th>
@@ -222,7 +278,7 @@
                     <th>Employer</th>
                     <th>Status</th>
                     <th>Invited</th>
-                    <th>Send One</th>
+                    <th>Send</th>
                 </tr>
             </thead>
             <tbody>
@@ -230,16 +286,49 @@
                 {
                     foreach (var r in Model.PreviewRows)
                     {
+                        var initials = string.Join("", (r.FullName ?? "?").Split(' ')
+                        .Where(w => w.Length > 0).Take(2).Select(w => w[0].ToString().ToUpper()));
+
+                        var statusClass = r.RegistrationStatus.ToString() switch
+                        {
+                                        "AddedByAdmin" => "sc-status-added",
+                                        "InviteSent" => "sc-status-invited",
+                                        "RegistrationSubmitted" => "sc-status-submitted",
+                                        "Completed" => "sc-status-completed",
+                            _ => "sc-status-default"
+                        };
+
                         <tr>
-                            <td>@r.FullName</td>
-                            <td>@r.Email</td>
-                            <td>@r.Mobile</td>
-                            <td>@r.Province</td>
-                            <td>@r.Programme</td>
-                            <td>@r.TrainingProvider</td>
-                            <td>@r.Employer</td>
-                            <td>@r.RegistrationStatus</td>
-                            <td>@(r.InvitedAt.HasValue? r.InvitedAt.Value.ToString("dd MMM yyyy") : "-")</td>
+                            <td>
+                                <div class="sc-name-cell">
+                                    <div class="sc-avatar">@initials</div>
+                                    <span class="sc-name-text">@r.FullName</span>
+                                </div>
+                            </td>
+                            <td><span class="sc-muted">@(r.Email ?? "—")</span></td>
+                            <td><span class="sc-muted">@(r.Mobile ?? "—")</span></td>
+                            <td>@(r.Province ?? "—")</td>
+                            <td>@(r.Programme ?? "—")</td>
+                            <td>@(r.TrainingProvider ?? "—")</td>
+                            <td>@(r.Employer ?? "—")</td>
+                            <td>
+                                <span class="sc-status @statusClass">
+                                    @r.RegistrationStatus
+                                </span>
+                            </td>
+                            <td>
+                                @if (r.InvitedAt.HasValue)
+                                {
+                                    <span class="sc-invited-yes">
+                                        <i class="bi bi-check2-circle" style="font-family:unset !important;"></i>
+                                        @r.InvitedAt.Value.ToString("dd MMM yyyy")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="sc-invited-no">—</span>
+                                }
+                            </td>
                             <td>
                                 <form asp-action="SendOne" method="post" style="display:inline;">
                                     @Html.AntiForgeryToken()
@@ -247,8 +336,8 @@
                                     <input type="hidden" name="beneficiaryId" value="@r.BeneficiaryId" />
                                     <input type="hidden" name="sendEmail" value="true" />
                                     <input type="hidden" name="sendSms" value="true" />
-                                    <button class="hw-btn-outline" type="submit">
-                                        <i class="bi bi-send"></i>
+                                    <button class="sc-btn-send-one" type="submit" title="Send invite to @r.FullName">
+                                        <i class="bi bi-send-fill" style="font-family:unset !important;font-size:11px;"></i>
                                     </button>
                                 </form>
                             </td>
@@ -258,8 +347,14 @@
                 else
                 {
                     <tr>
-                        <td colspan="10" style="color:var(--hw-muted);padding:14px;">
-                            No preview results yet. Set filters and click <b>Preview</b>.
+                        <td colspan="10">
+                            <div class="sc-empty">
+                                <div class="sc-empty-icon">
+                                    <i class="bi bi-funnel" style="font-family:unset !important;"></i>
+                                </div>
+                                <div class="sc-empty-title">No preview results yet</div>
+                                <div class="sc-empty-sub">Set your filters above and click <strong>Preview Recipients</strong> to see matching beneficiaries.</div>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -268,3 +363,54 @@
     </div>
 </div>
 
+@* ── Bulk Send Confirm Modal ───────────────────────── *@
+<div class="sc-modal-overlay" id="sc-bulk-modal">
+    <div class="sc-modal">
+        <div class="sc-modal-icon">
+            <i class="bi bi-send-fill" style="font-family:unset !important;"></i>
+        </div>
+        <div class="sc-modal-title">Confirm Bulk Send</div>
+        <div class="sc-modal-desc">
+            This will dispatch invites to <strong>all matching beneficiaries</strong> based on your current filters — not just the preview.
+        </div>
+        <div class="sc-modal-stat">
+            <i class="bi bi-people-fill" style="font-family:unset !important;color:var(--hw-green);font-size:18px;"></i>
+            <div>
+                <strong>@Model.PreviewTotal</strong>
+                <span style="font-size:13px;color:var(--hw-muted);font-weight:500;"> beneficiaries will receive this invite</span>
+            </div>
+        </div>
+        <div class="sc-modal-btns">
+            <button type="button" class="sc-modal-cancel" onclick="scCloseModal()">Cancel</button>
+            <button type="button" class="sc-btn-send" onclick="scSubmitBulk()">
+                <i class="bi bi-send-fill" style="font-family:unset !important;"></i>
+                Yes, Send Now
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function scConfirmBulk() {
+            document.getElementById('sc-bulk-modal').classList.add('sc-modal-open');
+        }
+        function scCloseModal() {
+            document.getElementById('sc-bulk-modal').classList.remove('sc-modal-open');
+        }
+        function scSubmitBulk() {
+            var btn = document.querySelector('#sc-bulk-modal .sc-btn-send');
+            btn.disabled = true;
+            btn.innerHTML = '<div style="width:16px;height:16px;border:2px solid rgba(0,0,0,.2);border-top-color:var(--hw-green-dark);border-radius:50%;animation:hwSpin .7s linear infinite;flex-shrink:0;"></div> Sending…';
+            document.getElementById('sc-bulk-form').submit();
+        }
+        // Close on backdrop click
+        document.getElementById('sc-bulk-modal').addEventListener('click', function(e) {
+            if (e.target === this) scCloseModal();
+        });
+        // Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') scCloseModal();
+        });
+    </script>
+}

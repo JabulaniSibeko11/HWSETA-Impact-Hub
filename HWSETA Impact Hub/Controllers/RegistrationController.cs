@@ -58,7 +58,7 @@ namespace HWSETA_Impact_Hub.Controllers
             if (!okToken) return View("InvalidToken", errToken);
 
             var (ok, err) = await _reg.SetPasswordAsync(beneficiaryId, vm.Email, vm.Password, ct);
-           
+
 
             await _invites.MarkPasswordSetAsync(beneficiaryId, ct);
 
@@ -77,7 +77,7 @@ namespace HWSETA_Impact_Hub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveLocation(LocationVm vm, CancellationToken ct)
         {
-            
+
 
             var (okToken, beneficiaryId, errToken) = await _invites.ValidateTokenAsync(vm.Token, ct);
             if (!okToken) return View("InvalidToken", errToken);
@@ -206,6 +206,17 @@ namespace HWSETA_Impact_Hub.Controllers
                     ? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>()
                     : await GetProgrammesSelectListAsync(vm.QualificationTypeId, ct);
 
+                return View("RegistrationForm", vm);
+            }
+
+            // ✅ Explicit consent guard (belt-and-suspenders — Range attribute handles client side)
+            if (!vm.ConsentGiven)
+            {
+                ModelState.AddModelError(nameof(vm.ConsentGiven), "You must accept the consent to continue.");
+                await LoadRegistrationDropdownsAsync(vm, ct);
+                vm.Programmes = vm.QualificationTypeId == Guid.Empty
+                    ? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>()
+                    : await GetProgrammesSelectListAsync(vm.QualificationTypeId, ct);
                 return View("RegistrationForm", vm);
             }
 
@@ -375,14 +386,16 @@ namespace HWSETA_Impact_Hub.Controllers
                 return View("UploadProof", vm);
             }
 
-            // Validate extension (force PDF)
+            // Validate extension
             var ext = Path.GetExtension(vm.File.FileName)?.ToLowerInvariant() ?? "";
-            if (_proofOpts.AllowedExtensions == null || _proofOpts.AllowedExtensions.Length == 0)
-                _proofOpts.AllowedExtensions = new[] { ".pdf" };
+            var allowedExts = (_proofOpts.AllowedExtensions != null && _proofOpts.AllowedExtensions.Length > 0)
+                ? _proofOpts.AllowedExtensions
+                : new[] { ".pdf", ".jpg", ".jpeg", ".png" };
 
-            if (!_proofOpts.AllowedExtensions.Contains(ext))
+            if (!allowedExts.Contains(ext))
             {
-                ModelState.AddModelError(nameof(vm.File), "Only PDF files are allowed for completion letters.");
+                var extsDisplay = string.Join(", ", allowedExts).ToUpperInvariant().Replace(".", "");
+                ModelState.AddModelError(nameof(vm.File), $"Invalid file type. Allowed: {extsDisplay}.");
                 return View("UploadProof", vm);
             }
 
