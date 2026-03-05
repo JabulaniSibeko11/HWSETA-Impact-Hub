@@ -1,0 +1,248 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Feedback.FeedbackIndexVm
+@using HWSETA_Impact_Hub.Domain.Entities
+@{
+    ViewData["Title"] = "Beneficiary Feedback";
+}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/FeedbackCss.css" rel="stylesheet" />
+
+@* ── Header ───────────────────────────────────────────── *@
+<div class="fb-header">
+    <div>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-chat-square-text" style="font-family:unset !important;"></i>
+            Monitoring
+        </div>
+        <h1 class="hw-page-title">Beneficiary <span>Feedback</span></h1>
+        <p class="hw-page-desc">Review, respond to, and track all beneficiary feedback and comments.</p>
+    </div>
+    <a asp-action="Create" class="fb-btn-primary">
+        <i class="bi bi-plus-lg" style="font-family:unset !important;"></i>
+        Record Feedback
+    </a>
+</div>
+
+@* ── Alerts ───────────────────────────────────────────── *@
+@if (TempData["Success"] != null)
+{
+    <div class="fb-alert fb-alert-success">
+        <i class="bi bi-check-circle-fill" style="font-family:unset !important;font-size:15px;"></i>
+        @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="fb-alert fb-alert-error">
+        <i class="bi bi-exclamation-circle-fill" style="font-family:unset !important;font-size:15px;"></i>
+        @TempData["Error"]
+    </div>
+}
+
+@* ── Stat Cards ───────────────────────────────────────── *@
+<div class="fb-stats-row">
+    <a class="fb-stat-card @(Model.FilterStatus == FeedbackStatus.New ? "active" : "")"
+       asp-action="Index" asp-route-status="@((int)FeedbackStatus.New)">
+        <div class="fb-stat-icon fb-stat-icon-new">
+            <i class="bi bi-envelope-open" style="font-family:unset !important;"></i>
+        </div>
+        <div class="fb-stat-body">
+            <div class="fb-stat-count">@Model.TotalNew</div>
+            <div class="fb-stat-label">New</div>
+        </div>
+    </a>
+    <a class="fb-stat-card @(Model.FilterStatus == FeedbackStatus.UnderReview ? "active" : "")"
+       asp-action="Index" asp-route-status="@((int)FeedbackStatus.UnderReview)">
+        <div class="fb-stat-icon fb-stat-icon-review">
+            <i class="bi bi-hourglass-split" style="font-family:unset !important;"></i>
+        </div>
+        <div class="fb-stat-body">
+            <div class="fb-stat-count">@Model.TotalUnderReview</div>
+            <div class="fb-stat-label">Under Review</div>
+        </div>
+    </a>
+    <a class="fb-stat-card @(Model.FilterStatus == FeedbackStatus.Resolved ? "active" : "")"
+       asp-action="Index" asp-route-status="@((int)FeedbackStatus.Resolved)">
+        <div class="fb-stat-icon fb-stat-icon-resolved">
+            <i class="bi bi-check-circle" style="font-family:unset !important;"></i>
+        </div>
+        <div class="fb-stat-body">
+            <div class="fb-stat-count">@Model.TotalResolved</div>
+            <div class="fb-stat-label">Resolved</div>
+        </div>
+    </a>
+    <a class="fb-stat-card @(Model.FilterStatus == FeedbackStatus.Closed ? "active" : "")"
+       asp-action="Index" asp-route-status="@((int)FeedbackStatus.Closed)">
+        <div class="fb-stat-icon fb-stat-icon-closed">
+            <i class="bi bi-archive" style="font-family:unset !important;"></i>
+        </div>
+        <div class="fb-stat-body">
+            <div class="fb-stat-count">@Model.TotalClosed</div>
+            <div class="fb-stat-label">Closed</div>
+        </div>
+    </a>
+</div>
+
+@* ── Filter Bar ───────────────────────────────────────── *@
+<form method="get" asp-action="Index" class="fb-filter-bar">
+    <span class="fb-filter-label">Filters</span>
+
+    <select class="fb-filter-select" name="status">
+        <option value="">(All Statuses)</option>
+        @foreach (var s in Enum.GetValues(typeof(FeedbackStatus)).Cast<FeedbackStatus>())
+        {
+            <option value="@((int)s)" selected="@(Model.FilterStatus == s)">@s</option>
+        }
+    </select>
+
+    <select class="fb-filter-select" name="category">
+        <option value="">(All Categories)</option>
+        @foreach (var c in Enum.GetValues(typeof(FeedbackCategory)).Cast<FeedbackCategory>())
+        {
+            <option value="@((int)c)" selected="@(Model.FilterCategory == c)">@c</option>
+        }
+    </select>
+
+    <input class="fb-filter-input" name="search" value="@Model.FilterSearch"
+           placeholder="Search name, ID, message…" />
+
+    <button type="submit" class="fb-filter-btn">
+        <i class="bi bi-search" style="font-family:unset !important;"></i> Search
+    </button>
+
+    @if (Model.FilterStatus.HasValue || Model.FilterCategory.HasValue || !string.IsNullOrWhiteSpace(Model.FilterSearch))
+    {
+        <a asp-action="Index" class="fb-filter-reset">
+            <i class="bi bi-x-circle" style="font-family:unset !important;"></i> Clear
+        </a>
+    }
+</form>
+
+@* ── Table ────────────────────────────────────────────── *@
+<div class="fb-table-card">
+    <div class="fb-table-head">
+        <div class="fb-table-title">
+            <i class="bi bi-chat-left-text-fill" style="font-family:unset !important;"></i>
+            Feedback Records
+        </div>
+        <span class="fb-table-meta">@Model.Rows.Count result@(Model.Rows.Count == 1 ? "" : "s")</span>
+    </div>
+
+    <div class="fb-table-wrap">
+        <table class="fb-dt">
+            <thead>
+                <tr>
+                    <th>Beneficiary</th>
+                    <th>Category</th>
+                    <th>Rating</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Replied</th>
+                    <th>Source</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Rows.Count > 0)
+                {
+                    foreach (var r in Model.Rows)
+                    {
+                        var initials = string.Join("", r.BeneficiaryName.Split(' ')
+                        .Where(w => w.Length > 0).Take(2).Select(w => w[0].ToString().ToUpper()));
+
+                        var catClass = r.Category switch
+                        {
+                            FeedbackCategory.ProgrammeQuality => "fb-cat-programme",
+                            FeedbackCategory.Support => "fb-cat-support",
+                            FeedbackCategory.Facilities => "fb-cat-facilities",
+                            FeedbackCategory.Complaint => "fb-cat-complaint",
+                            FeedbackCategory.Compliment => "fb-cat-compliment",
+                            _ => "fb-cat-general"
+                        };
+
+                        var statusClass = r.Status switch
+                        {
+                            FeedbackStatus.New => "fb-status-new",
+                            FeedbackStatus.UnderReview => "fb-status-review",
+                            FeedbackStatus.Resolved => "fb-status-resolved",
+                            FeedbackStatus.Closed => "fb-status-closed",
+                            _ => "fb-status-new"
+                        };
+
+                        <tr onclick="window.location='@Url.Action("Details", new { id = r.Id })'">
+                            <td>
+                                <div class="fb-name-cell">
+                                    <div class="fb-avatar">@initials</div>
+                                    <div>
+                                        <div class="fb-name-text">@r.BeneficiaryName</div>
+                                        <div class="fb-id-text">@r.BeneficiaryId_</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="fb-cat @catClass">@r.Category</span></td>
+                            <td>
+                                @if (r.Rating.HasValue)
+                                {
+                                    <span class="fb-stars">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <text>@(i <= r.Rating.Value ? "★" : "☆")</text>
+                                        }
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--hw-border);font-size:12px;">—</span>
+                                }
+                            </td>
+                            <td><div class="fb-msg-preview">@r.Message</div></td>
+                            <td><span class="fb-status @statusClass">@r.Status</span></td>
+                            <td>
+                                @if (r.HasReply)
+                                {
+                                    <i class="bi bi-check2-circle fb-replied-yes" style="font-family:unset !important;" title="Has reply"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-dash-circle fb-replied-no" style="font-family:unset !important;" title="No reply"></i>
+                                }
+                            </td>
+                            <td>
+                                <span style="font-size:11.5px;color:var(--hw-muted);">
+                                    @(r.SubmittedByAdmin ? "Admin" : "Beneficiary")
+                                </span>
+                            </td>
+                            <td style="font-size:12px;color:var(--hw-muted);white-space:nowrap;">
+                                @r.CreatedOnUtc.ToLocalTime().ToString("dd MMM yyyy")
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="fb-empty">
+                                <div class="fb-empty-icon">
+                                    <i class="bi bi-chat-square-text" style="font-family:unset !important;"></i>
+                                </div>
+                                <div class="fb-empty-title">No feedback found</div>
+                                <div class="fb-empty-sub">
+                                    @if (Model.FilterStatus.HasValue || Model.FilterCategory.HasValue || !string.IsNullOrWhiteSpace(Model.FilterSearch))
+                                    {
+                                        <text>No records match your current filters. <a asp-action="Index" style="color:var(--hw-green);">Clear filters</a> to see all feedback.</text>
+                                    }
+                                    else
+                                    {
+                                        <text>No feedback has been recorded yet. Click <strong>Record Feedback</strong> to add the first entry.</text>
+                                    }
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

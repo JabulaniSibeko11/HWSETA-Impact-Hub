@@ -1,0 +1,288 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Feedback.FeedbackDetailsVm
+@using HWSETA_Impact_Hub.Domain.Entities
+@{
+    ViewData["Title"] = "Feedback Details";
+    var catClass = Model.Category switch {
+        FeedbackCategory.ProgrammeQuality => "fb-cat-programme",
+        FeedbackCategory.Support          => "fb-cat-support",
+        FeedbackCategory.Facilities       => "fb-cat-facilities",
+        FeedbackCategory.Complaint        => "fb-cat-complaint",
+        FeedbackCategory.Compliment       => "fb-cat-compliment",
+        _                                 => "fb-cat-general"
+    };
+    var statusClass = Model.Status switch {
+        FeedbackStatus.New         => "fb-status-new",
+        FeedbackStatus.UnderReview => "fb-status-review",
+        FeedbackStatus.Resolved    => "fb-status-resolved",
+        FeedbackStatus.Closed      => "fb-status-closed",
+        _                          => "fb-status-new"
+    };
+    var initials = string.Join("", Model.BeneficiaryName.Split(' ')
+        .Where(w => w.Length > 0).Take(2).Select(w => w[0].ToString().ToUpper()));
+}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/FeedbackCss.css" rel="stylesheet" />
+
+@* ── Header ───────────────────────────────────────────── *@
+<div class="fb-header">
+    <div>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-chat-square-text" style="font-family:unset !important;"></i>
+            Beneficiary Feedback
+        </div>
+        <h1 class="hw-page-title">Feedback <span>Details</span></h1>
+        <p class="hw-page-desc">View, reply to, and manage this feedback record.</p>
+    </div>
+    <a asp-action="Index" class="fb-btn-outline">
+        <i class="bi bi-arrow-left" style="font-family:unset !important;"></i> Back to List
+    </a>
+</div>
+
+@* ── Alerts ───────────────────────────────────────────── *@
+@if (TempData["Success"] != null)
+{
+    <div class="fb-alert fb-alert-success">
+        <i class="bi bi-check-circle-fill" style="font-family:unset !important;font-size:15px;"></i>
+        @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="fb-alert fb-alert-error">
+        <i class="bi bi-exclamation-circle-fill" style="font-family:unset !important;font-size:15px;"></i>
+        @TempData["Error"]
+    </div>
+}
+
+<div class="fb-layout">
+
+    @* ── Main content ─────────────────────────────────── *@
+    <div>
+
+        @* Feedback card *@
+        <div class="fb-card">
+            <div class="fb-card-head">
+                <div class="fb-card-icon fb-card-icon-blue">
+                    <i class="bi bi-chat-left-text-fill" style="font-family:unset !important;"></i>
+                </div>
+                <div style="flex:1;">
+                    <div class="fb-card-title">
+                        @(string.IsNullOrWhiteSpace(Model.Subject) ? "Feedback" : Model.Subject)
+                    </div>
+                    <div class="fb-card-sub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;">
+                        <span class="fb-cat @catClass">@Model.Category</span>
+                        <span class="fb-status @statusClass">@Model.Status</span>
+                        @if (Model.Rating.HasValue)
+                        {
+                            <span class="fb-stars">
+                                @for (int i = 1; i <= 5; i++) { <text>@(i <= Model.Rating.Value ? "★" : "☆")</text> }
+                            </span>
+                        }
+                        <span style="font-size:11px;color:var(--hw-muted);">
+                            @Model.CreatedOnUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                            · @(Model.SubmittedByAdmin ? "Recorded by Admin" : "Submitted by Beneficiary")
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="fb-card-body">
+
+                @if (!string.IsNullOrWhiteSpace(Model.Programme))
+                {
+                    <div style="font-size:12px;color:var(--hw-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                        <i class="bi bi-mortarboard-fill" style="font-family:unset !important;color:var(--hw-green);"></i>
+                        Programme: <strong style="color:var(--hw-dark);">@Model.Programme</strong>
+                    </div>
+                }
+
+                <div class="fb-message-bubble">@Model.Message</div>
+
+                @* Existing reply *@
+                @if (!string.IsNullOrWhiteSpace(Model.AdminReply))
+                {
+                    <div style="margin-top:20px;">
+                        <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--hw-green);margin-bottom:6px;">
+                            <i class="bi bi-reply-fill" style="font-family:unset !important;"></i>
+                            Admin Reply
+                        </div>
+                        <div class="fb-reply-bubble">@Model.AdminReply</div>
+                        <div class="fb-reply-meta">
+                            <i class="bi bi-person-check" style="font-family:unset !important;"></i>
+                            @(Model.RepliedByEmail ?? "Admin")
+                            · @(Model.RepliedAt?.ToLocalTime().ToString("dd MMM yyyy HH:mm") ?? "")
+                        </div>
+                    </div>
+                }
+
+            </div>
+        </div>
+
+        @* Reply form *@
+        <div class="fb-card">
+            <div class="fb-card-head">
+                <div class="fb-card-icon fb-card-icon-green">
+                    <i class="bi bi-reply-all-fill" style="font-family:unset !important;"></i>
+                </div>
+                <div>
+                    <div class="fb-card-title">
+                        @(string.IsNullOrWhiteSpace(Model.AdminReply) ? "Reply to Feedback" : "Update Reply")
+                    </div>
+                    <div class="fb-card-sub">Reply and set the new status in one action</div>
+                </div>
+            </div>
+            <div class="fb-card-body">
+                <form asp-action="Reply" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+
+                    <div class="fb-field">
+                        <label class="fb-field-label">Your Reply <span class="fb-req">*</span></label>
+                        <textarea class="fb-textarea fb-textarea-lg" name="newReply"
+                                  placeholder="Type your response to this feedback…">@Model.AdminReply</textarea>
+                    </div>
+
+                    <div class="fb-field">
+                        <label class="fb-field-label">Update Status</label>
+                        <select class="fb-select" name="newStatus" style="max-width:240px;">
+                            @foreach (var s in Enum.GetValues(typeof(FeedbackStatus)).Cast<FeedbackStatus>())
+                            {
+                                <option value="@((int)s)" selected=@(Model.Status == s ? "selected" : "")>@s</option>
+                            }
+                        </select>
+                    </div>
+
+                    <button type="submit" class="fb-btn-primary">
+                        <i class="bi bi-send-fill" style="font-family:unset !important;"></i>
+                        Save Reply &amp; Update Status
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    @* ── Sidebar ──────────────────────────────────────── *@
+    <div>
+
+        @* Beneficiary info *@
+        <div class="fb-card">
+            <div class="fb-card-head">
+                <div class="fb-card-icon fb-card-icon-green">
+                    <i class="bi bi-person-vcard-fill" style="font-family:unset !important;"></i>
+                </div>
+                <div>
+                    <div class="fb-card-title">Beneficiary</div>
+                    <div class="fb-card-sub">Contact information</div>
+                </div>
+            </div>
+            <div class="fb-card-body">
+                <div class="fb-ben-card">
+                    <div class="fb-ben-avatar">@initials</div>
+                    <div>
+                        <div class="fb-ben-name">@Model.BeneficiaryName</div>
+                        <div class="fb-ben-id">@Model.BeneficiaryIdentifier</div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.BeneficiaryEmail))
+                {
+                    <div class="fb-detail-row">
+                        <span class="fb-detail-label">Email</span>
+                        <span class="fb-detail-value">
+                            <a href="mailto:@Model.BeneficiaryEmail" style="color:var(--hw-green);">@Model.BeneficiaryEmail</a>
+                        </span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.BeneficiaryMobile))
+                {
+                    <div class="fb-detail-row">
+                        <span class="fb-detail-label">Mobile</span>
+                        <span class="fb-detail-value">@Model.BeneficiaryMobile</span>
+                    </div>
+                }
+
+                <div style="margin-top:14px;">
+                    <a asp-controller="Beneficiaries" asp-action="Index"
+                       class="fb-btn-outline" style="width:100%;justify-content:center;font-size:12px;">
+                        <i class="bi bi-person-lines-fill" style="font-family:unset !important;"></i>
+                        View Beneficiary Record
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        @* Quick status change *@
+        <div class="fb-card">
+            <div class="fb-card-head">
+                <div class="fb-card-icon fb-card-icon-gold">
+                    <i class="bi bi-flag-fill" style="font-family:unset !important;"></i>
+                </div>
+                <div>
+                    <div class="fb-card-title">Quick Status</div>
+                    <div class="fb-card-sub">Change status without replying</div>
+                </div>
+            </div>
+            <div class="fb-card-body">
+                <div class="fb-quick-status">
+                    @foreach (var s in Enum.GetValues(typeof(FeedbackStatus)).Cast<FeedbackStatus>())
+                    {
+                        var sc = s switch {
+                            FeedbackStatus.New         => "fb-status-new",
+                            FeedbackStatus.UnderReview => "fb-status-review",
+                            FeedbackStatus.Resolved    => "fb-status-resolved",
+                            FeedbackStatus.Closed      => "fb-status-closed",
+                            _                          => ""
+                        };
+                        <form asp-action="UpdateStatus" method="post" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id"     value="@Model.Id" />
+                            <input type="hidden" name="status" value="@((int)s)" />
+                            <button type="submit"
+                                    class="fb-status-btn @sc @(Model.Status == s ? "active-btn" : "")">
+                                @s
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* Metadata *@
+        <div class="fb-card">
+            <div class="fb-card-head">
+                <div class="fb-card-icon fb-card-icon-muted">
+                    <i class="bi bi-info-circle-fill" style="font-family:unset !important;"></i>
+                </div>
+                <div>
+                    <div class="fb-card-title">Record Info</div>
+                </div>
+            </div>
+            <div class="fb-card-body" style="padding:16px 22px;">
+                <div class="fb-detail-row">
+                    <span class="fb-detail-label">Submitted</span>
+                    <span class="fb-detail-value" style="font-size:12px;">
+                        @Model.CreatedOnUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                    </span>
+                </div>
+                <div class="fb-detail-row">
+                    <span class="fb-detail-label">Source</span>
+                    <span class="fb-detail-value" style="font-size:12px;">
+                        @(Model.SubmittedByAdmin ? "Admin entry" : "Beneficiary")
+                    </span>
+                </div>
+                @if (Model.RepliedAt.HasValue)
+                {
+                    <div class="fb-detail-row">
+                        <span class="fb-detail-label">Replied</span>
+                        <span class="fb-detail-value" style="font-size:12px;">
+                            @Model.RepliedAt.Value.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>

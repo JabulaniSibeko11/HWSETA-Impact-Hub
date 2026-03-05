@@ -1,0 +1,245 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Feedback.FeedbackCreateVm
+@using HWSETA_Impact_Hub.Domain.Entities
+@{
+    ViewData["Title"] = "Record Feedback";
+}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/FeedbackCss.css" rel="stylesheet" />
+
+@* ── Header ───────────────────────────────────────────── *@
+<div class="fb-header">
+    <div>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-chat-square-text" style="font-family:unset !important;"></i>
+            Beneficiary Feedback
+        </div>
+        <h1 class="hw-page-title">Record <span>Feedback</span></h1>
+        <p class="hw-page-desc">Capture feedback, complaints or compliments from a beneficiary.</p>
+    </div>
+    <a asp-action="Index" class="fb-btn-outline">
+        <i class="bi bi-arrow-left" style="font-family:unset !important;"></i> Back
+    </a>
+</div>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="fb-layout">
+
+        @* ── Main form ────────────────────────────────── *@
+        <div>
+
+            @* Beneficiary + Enrollment *@
+            <div class="fb-card">
+                <div class="fb-card-head">
+                    <div class="fb-card-icon fb-card-icon-green">
+                        <i class="bi bi-person-fill" style="font-family:unset !important;"></i>
+                    </div>
+                    <div>
+                        <div class="fb-card-title">Beneficiary</div>
+                        <div class="fb-card-sub">Who is this feedback from?</div>
+                    </div>
+                </div>
+                <div class="fb-card-body">
+                    <div class="fb-grid-2">
+                        <div class="fb-field">
+                            <label class="fb-field-label" for="BeneficiaryId">
+                                Beneficiary <span class="fb-req">*</span>
+                            </label>
+                            <select class="fb-select" asp-for="BeneficiaryId"
+                                    id="BeneficiaryId" onchange="loadEnrollments(this.value)">
+                                <option value="">— Select Beneficiary —</option>
+                                
+
+                                @foreach (var b in Model.Beneficiaries)
+                                {
+                                    <option value="@b.Value" selected="@(b.Value == Model.BeneficiaryId.ToString())">
+                                        @b.Text
+                                    </option>
+                                }
+                            </select>
+                            <span asp-validation-for="BeneficiaryId" class="fb-field-error"></span>
+                        </div>
+
+                        <div class="fb-field">
+                            <label class="fb-field-label" for="EnrollmentId">
+                                Linked Enrollment <span style="color:var(--hw-muted);font-weight:500;">(optional)</span>
+                            </label>
+                            <select class="fb-select" asp-for="EnrollmentId" id="EnrollmentId">
+                                <option value="">— None —</option>
+                                @foreach (var e in Model.Enrollments)
+                                {
+                                    <option value="@e.Value" selected=@(e.Value == Model.EnrollmentId?.ToString() ? "selected" : "")>
+                                        @e.Text
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* Feedback content *@
+            <div class="fb-card">
+                <div class="fb-card-head">
+                    <div class="fb-card-icon fb-card-icon-blue">
+                        <i class="bi bi-chat-left-text-fill" style="font-family:unset !important;"></i>
+                    </div>
+                    <div>
+                        <div class="fb-card-title">Feedback Details</div>
+                        <div class="fb-card-sub">Category, rating and message content</div>
+                    </div>
+                </div>
+                <div class="fb-card-body">
+
+                    <div class="fb-grid-2">
+                        <div class="fb-field">
+                            <label class="fb-field-label">Category <span class="fb-req">*</span></label>
+                            <select class="fb-select" asp-for="Category">
+                                @foreach (var c in Enum.GetValues(typeof(FeedbackCategory)).Cast<FeedbackCategory>())
+                                {
+                                    <option value="@((int)c)">@c</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Category" class="fb-field-error"></span>
+                        </div>
+
+                        <div class="fb-field">
+                            <label class="fb-field-label">Star Rating <span style="color:var(--hw-muted);font-weight:500;">(optional)</span></label>
+                            <div style="display:flex;align-items:center;gap:10px;padding-top:4px;">
+                                <div class="fb-star-group" id="fb-star-group">
+                                    @for (int i = 5; i >= 1; i--)
+                                    {
+                                        <input type="radio" asp-for="Rating" value="@i" id="star_@i" />
+                                        <label for="star_@i" title="@i star@(i > 1 ? "s" : "")">★</label>
+                                    }
+                                </div>
+                                <span class="fb-star-hint" id="fb-star-hint">
+                                    @(Model.Rating.HasValue ? $"{Model.Rating} star{(Model.Rating > 1 ? "s" : "")}" : "Not rated")
+                                </span>
+                                @if (Model.Rating.HasValue)
+                                {
+                                    <a href="#" onclick="clearRating(event)" style="font-size:11px;color:var(--hw-muted);">Clear</a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fb-field">
+                        <label class="fb-field-label">Subject <span style="color:var(--hw-muted);font-weight:500;">(optional)</span></label>
+                        <input class="fb-input" asp-for="Subject" placeholder="Brief summary of the feedback…" maxlength="300" />
+                        <span asp-validation-for="Subject" class="fb-field-error"></span>
+                    </div>
+
+                    <div class="fb-field">
+                        <label class="fb-field-label">Feedback / Comment <span class="fb-req">*</span></label>
+                        <textarea class="fb-textarea fb-textarea-lg" asp-for="Message"
+                                  placeholder="Enter the full feedback or comment from the beneficiary…" maxlength="4000"></textarea>
+                        <span asp-validation-for="Message" class="fb-field-error"></span>
+                        <div style="text-align:right;font-size:11px;color:var(--hw-muted);margin-top:4px;">
+                            <span id="fb-char-count">0</span> / 4000 characters
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        @* ── Sidebar ──────────────────────────────────── *@
+        <div>
+
+            <div class="fb-card">
+                <div class="fb-card-head">
+                    <div class="fb-card-icon fb-card-icon-muted">
+                        <i class="bi bi-sliders" style="font-family:unset !important;"></i>
+                    </div>
+                    <div>
+                        <div class="fb-card-title">Options</div>
+                        <div class="fb-card-sub">Source and submission settings</div>
+                    </div>
+                </div>
+                <div class="fb-card-body">
+
+                    <div class="fb-field" style="margin-bottom:8px;">
+                        <label class="fb-field-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                            <input type="checkbox" asp-for="SubmittedByAdmin"
+                                   style="width:16px;height:16px;accent-color:var(--hw-green);cursor:pointer;" />
+                            Recorded by Admin
+                        </label>
+                        <div style="font-size:11.5px;color:var(--hw-muted);margin-top:4px;line-height:1.45;">
+                            Tick if admin is recording on behalf of the beneficiary. Untick if the beneficiary submitted directly.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button type="submit" class="fb-btn-primary" style="width:100%;justify-content:center;">
+                    <i class="bi bi-check-lg" style="font-family:unset !important;"></i>
+                    Save Feedback
+                </button>
+                <a asp-action="Index" class="fb-btn-outline" style="width:100%;justify-content:center;text-align:center;">
+                    Cancel
+                </a>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // ── Load enrollments on beneficiary change ────────
+        async function loadEnrollments(beneficiaryId) {
+            var sel = document.getElementById('EnrollmentId');
+            sel.innerHTML = '<option value="">Loading...</option>';
+
+            if (!beneficiaryId) {
+                sel.innerHTML = '<option value="">— None —</option>';
+                return;
+            }
+
+            try {
+                var r = await fetch('/Feedback/GetEnrollments?beneficiaryId=' + beneficiaryId);
+                var items = await r.json();
+                sel.innerHTML = '<option value="">— None —</option>';
+                items.forEach(function(i) {
+                    var o = document.createElement('option');
+                    o.value = i.id; o.textContent = i.name;
+                    sel.appendChild(o);
+                });
+            } catch(e) {
+                sel.innerHTML = '<option value="">— None —</option>';
+            }
+        }
+
+        // ── Star rating hint ─────────────────────────────
+        var labels = ['1 star', '2 stars', '3 stars', '4 stars', '5 stars'];
+        document.querySelectorAll('#fb-star-group input').forEach(function(inp) {
+            inp.addEventListener('change', function() {
+                document.getElementById('fb-star-hint').textContent = labels[parseInt(this.value) - 1];
+            });
+        });
+
+        function clearRating(e) {
+            e.preventDefault();
+            document.querySelectorAll('#fb-star-group input').forEach(function(i){ i.checked = false; });
+            document.getElementById('fb-star-hint').textContent = 'Not rated';
+        }
+
+        // ── Character counter ────────────────────────────
+        var msgArea = document.querySelector('[name="Message"]');
+        var counter = document.getElementById('fb-char-count');
+        if (msgArea && counter) {
+            counter.textContent = msgArea.value.length;
+            msgArea.addEventListener('input', function() {
+                counter.textContent = this.value.length;
+            });
+        }
+    </script>
+}

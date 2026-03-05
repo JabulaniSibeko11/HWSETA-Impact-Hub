@@ -7,6 +7,7 @@ namespace HWSETA_Impact_Hub.Data
 {
     public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
+        // ── DbSets ───────────────────────────────────────────────────────
         public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
         public DbSet<Programme> Programmes => Set<Programme>();
         public DbSet<Provider> Providers => Set<Provider>();
@@ -17,7 +18,7 @@ namespace HWSETA_Impact_Hub.Data
         public DbSet<Beneficiary> Beneficiaries => Set<Beneficiary>();
         public DbSet<Address> Addresses => Set<Address>();
 
-        // ── Lookups (all map to single "Lookups" table via TPH) ───────────
+        // ── Lookups (TPH — all share "Lookups" table) ────────────────────
         public DbSet<Province> Provinces => Set<Province>();
         public DbSet<Gender> Genders => Set<Gender>();
         public DbSet<Race> Races => Set<Race>();
@@ -32,6 +33,7 @@ namespace HWSETA_Impact_Hub.Data
         public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
         public DbSet<EnrollmentDocument> EnrollmentDocuments => Set<EnrollmentDocument>();
         public DbSet<BeneficiaryFormInvite> BeneficiaryFormInvites => Set<BeneficiaryFormInvite>();
+        public DbSet<BeneficiaryFeedback> BeneficiaryFeedbacks => Set<BeneficiaryFeedback>(); // ← NEW
 
         public DbSet<BeneficiaryInvite> BeneficiaryInvites => Set<BeneficiaryInvite>();
         public DbSet<OutboundMessageLog> OutboundMessageLogs => Set<OutboundMessageLog>();
@@ -43,6 +45,7 @@ namespace HWSETA_Impact_Hub.Data
         public DbSet<FormPublish> FormPublishes => Set<FormPublish>();
         public DbSet<FormSubmission> FormSubmissions => Set<FormSubmission>();
         public DbSet<FormAnswer> FormAnswers => Set<FormAnswer>();
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options) { }
 
@@ -55,7 +58,7 @@ namespace HWSETA_Impact_Hub.Data
 
             // ══════════════════════════════════════════════════════════════
             // STEP 2 — Lookup TPH table
-            // All 12 lookup subtypes share one "Lookups" table.
+            // All lookup subtypes share one "Lookups" table.
             // EF adds a "Discriminator" column automatically.
             // ══════════════════════════════════════════════════════════════
             b.Entity<LookupBase>(e =>
@@ -67,7 +70,6 @@ namespace HWSETA_Impact_Hub.Data
                 e.Property(x => x.IsActive).HasDefaultValue(true);
             });
 
-            // Register each subtype — no extra config needed per type
             b.Entity<Province>();
             b.Entity<Gender>();
             b.Entity<Race>();
@@ -93,20 +95,20 @@ namespace HWSETA_Impact_Hub.Data
             ConfigureEnrollment(b);
             ConfigureEnrollmentStatusHistory(b);
             ConfigureAddress(b);
+            ConfigureBeneficiaryFeedback(b); // ← NEW
 
             // ══════════════════════════════════════════════════════════════
             // STEP 4 — Global NoAction sweep (MUST be absolutely last)
             //
             // WHY: All lookup types use TPH. EF stores typeof(LookupBase)
-            // as the PrincipalEntityType for every FK that points at any
-            // lookup subtype (Gender, Race, Province, ProviderType, etc.).
-            // SQL Server error 1785 fires because multiple paths cascade to
-            // the same LookupBase table. The fix is NoAction — NOT Restrict.
-            // Restrict still causes EF to emit ON DELETE CASCADE in certain
-            // EF Core versions. NoAction emits ON DELETE NO ACTION which is
-            // exactly what SQL Server requires.
+            // as the PrincipalEntityType for every FK pointing at any lookup
+            // subtype (Gender, Race, Province, etc.). SQL Server error 1785
+            // fires because multiple paths cascade to the same LookupBase
+            // table. The fix is NoAction — NOT Restrict. Restrict still
+            // causes EF to emit ON DELETE CASCADE in certain EF Core versions.
+            // NoAction emits ON DELETE NO ACTION which SQL Server requires.
             //
-            // This sweep runs after ALL conventions have finalised so
+            // This sweep runs AFTER ALL conventions have finalised so
             // nothing can overwrite it.
             // ══════════════════════════════════════════════════════════════
             foreach (var entityType in b.Model.GetEntityTypes())
@@ -154,10 +156,10 @@ namespace HWSETA_Impact_Hub.Data
                  .IsUnique()
                  .HasFilter("[ProgrammeCode] IS NOT NULL");
                 e.Property(x => x.ProgrammeName).HasMaxLength(200).IsRequired();
-                e.HasOne(x => x.QualificationType)
+                e.HasOne(x => x.QualificationType)   // Programme → QualificationType (lookup)
                  .WithMany()
                  .HasForeignKey(x => x.QualificationTypeId)
-                 .OnDelete(DeleteBehavior.NoAction);
+                 .OnDelete(DeleteBehavior.NoAction);  // overridden by Step 4 sweep anyway
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
         }
@@ -178,7 +180,7 @@ namespace HWSETA_Impact_Hub.Data
                 e.Property(x => x.ContactEmail).HasMaxLength(256);
                 e.Property(x => x.ContactPhone).HasMaxLength(30);
                 e.Property(x => x.Phone).HasMaxLength(30);
-                e.HasOne(x => x.Address)
+                e.HasOne(x => x.Address)             // Provider → Address (NoAction)
                  .WithMany()
                  .HasForeignKey(x => x.AddressId)
                  .OnDelete(DeleteBehavior.NoAction);
@@ -196,7 +198,7 @@ namespace HWSETA_Impact_Hub.Data
                 e.Property(x => x.EmployerCode).HasMaxLength(50).IsRequired();
                 e.Property(x => x.RegistrationNumber).HasMaxLength(50).IsRequired();
                 e.Property(x => x.SetaLevyNumber).HasMaxLength(50).IsRequired();
-                e.HasOne(x => x.Address)
+                e.HasOne(x => x.Address)             // Employer → Address (NoAction)
                  .WithMany()
                  .HasForeignKey(x => x.AddressId)
                  .OnDelete(DeleteBehavior.NoAction);
@@ -216,38 +218,41 @@ namespace HWSETA_Impact_Hub.Data
                 e.Property(x => x.LastName).HasMaxLength(120).IsRequired();
                 e.Property(x => x.MobileNumber).HasMaxLength(30).IsRequired();
                 e.Property(x => x.Email).HasMaxLength(256);
-                e.HasOne(x => x.Address)
+
+                e.HasOne(x => x.Address)             // Beneficiary → Address
                  .WithMany()
                  .HasForeignKey(x => x.AddressId)
                  .OnDelete(DeleteBehavior.NoAction);
+
+                // ── 7 lookup FKs — all set NoAction (Step 4 also enforces this) ──
                 e.HasOne(x => x.Gender)
-                 .WithMany()
-                 .HasForeignKey(x => x.GenderId)
+                 .WithMany().HasForeignKey(x => x.GenderId)
                  .OnDelete(DeleteBehavior.NoAction);
+
                 e.HasOne(x => x.Race)
-                 .WithMany()
-                 .HasForeignKey(x => x.RaceId)
+                 .WithMany().HasForeignKey(x => x.RaceId)
                  .OnDelete(DeleteBehavior.NoAction);
+
                 e.HasOne(x => x.CitizenshipStatus)
-                 .WithMany()
-                 .HasForeignKey(x => x.CitizenshipStatusId)
+                 .WithMany().HasForeignKey(x => x.CitizenshipStatusId)
                  .OnDelete(DeleteBehavior.NoAction);
+
                 e.HasOne(x => x.DisabilityStatus)
-                 .WithMany()
-                 .HasForeignKey(x => x.DisabilityStatusId)
+                 .WithMany().HasForeignKey(x => x.DisabilityStatusId)
                  .OnDelete(DeleteBehavior.NoAction);
-                e.HasOne(x => x.DisabilityType)
-                 .WithMany()
-                 .HasForeignKey(x => x.DisabilityTypeId)
+
+                e.HasOne(x => x.DisabilityType)      // nullable — only when disabled
+                 .WithMany().HasForeignKey(x => x.DisabilityTypeId)
                  .OnDelete(DeleteBehavior.NoAction);
+
                 e.HasOne(x => x.EducationLevel)
-                 .WithMany()
-                 .HasForeignKey(x => x.EducationLevelId)
+                 .WithMany().HasForeignKey(x => x.EducationLevelId)
                  .OnDelete(DeleteBehavior.NoAction);
+
                 e.HasOne(x => x.EmploymentStatus)
-                 .WithMany()
-                 .HasForeignKey(x => x.EmploymentStatusId)
+                 .WithMany().HasForeignKey(x => x.EmploymentStatusId)
                  .OnDelete(DeleteBehavior.NoAction);
+
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
         }
@@ -260,23 +265,24 @@ namespace HWSETA_Impact_Hub.Data
                 e.ToTable("Cohorts");
                 e.HasIndex(x => x.CohortCode).IsUnique();
                 e.Property(x => x.CohortCode).HasMaxLength(60).IsRequired();
-                e.HasOne(x => x.Programme)
-                 .WithMany()
-                 .HasForeignKey(x => x.ProgrammeId)
+
+                e.HasOne(x => x.Programme)           // Cohort → Programme
+                 .WithMany().HasForeignKey(x => x.ProgrammeId)
                  .OnDelete(DeleteBehavior.NoAction);
-                e.HasOne(x => x.Provider)
-                 .WithMany()
-                 .HasForeignKey(x => x.ProviderId)
+
+                e.HasOne(x => x.Provider)            // Cohort → Provider
+                 .WithMany().HasForeignKey(x => x.ProviderId)
                  .OnDelete(DeleteBehavior.NoAction);
-                e.HasOne(x => x.Employer)
-                 .WithMany()
-                 .HasForeignKey(x => x.EmployerId)
+
+                e.HasOne(x => x.Employer)            // Cohort → Employer
+                 .WithMany().HasForeignKey(x => x.EmployerId)
                  .OnDelete(DeleteBehavior.NoAction);
-                e.Property(x => x.RowVersion).IsRowVersion();
-                e.HasOne(x => x.QualificationType)
-                 .WithMany()
-                 .HasForeignKey(x => x.QualificationTypeId)
+
+                e.HasOne(x => x.QualificationType)   // Cohort → QualificationType (lookup)
+                 .WithMany().HasForeignKey(x => x.QualificationTypeId)
                  .OnDelete(DeleteBehavior.Restrict);
+
+                e.Property(x => x.RowVersion).IsRowVersion();
             });
         }
 
@@ -286,24 +292,21 @@ namespace HWSETA_Impact_Hub.Data
             b.Entity<Enrollment>(e =>
             {
                 e.ToTable("Enrollments");
+                e.HasIndex(x => new { x.BeneficiaryId, x.CohortId }).IsUnique(); // one enrollment per beneficiary per cohort
 
-                e.HasIndex(x => new { x.BeneficiaryId, x.CohortId }).IsUnique();
-
-                e.HasOne(x => x.Beneficiary)
+                e.HasOne(x => x.Beneficiary)         // Enrollment → Beneficiary (Restrict)
                     .WithMany()
                     .HasForeignKey(x => x.BeneficiaryId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict); // cannot delete beneficiary with enrollments
 
-                e.HasOne(x => x.Cohort)
+                e.HasOne(x => x.Cohort)              // Enrollment → Cohort (Restrict)
                     .WithMany()
                     .HasForeignKey(x => x.CohortId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict); // cannot delete cohort with enrollments
 
                 e.Property(x => x.Notes).HasMaxLength(500);
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
-
-          
         }
 
         // ── EnrollmentStatusHistory ──────────────────────────────────────
@@ -314,10 +317,10 @@ namespace HWSETA_Impact_Hub.Data
                 e.ToTable("EnrollmentStatusHistory");
                 e.HasKey(x => x.Id);
 
-                e.HasOne(x => x.Enrollment)
+                e.HasOne(x => x.Enrollment)          // History → Enrollment (CASCADE)
                     .WithMany()
                     .HasForeignKey(x => x.EnrollmentId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Cascade); // history rows deleted when enrollment deleted
 
                 e.Property(x => x.Reason).HasMaxLength(200);
                 e.Property(x => x.Comment).HasMaxLength(1000);
@@ -325,7 +328,7 @@ namespace HWSETA_Impact_Hub.Data
             });
         }
 
-        // ── Address ──────────────────────────────────────────────────────
+        // ── Address + misc entities grouped here ─────────────────────────
         private static void ConfigureAddress(ModelBuilder b)
         {
             b.Entity<Address>(e =>
@@ -334,9 +337,8 @@ namespace HWSETA_Impact_Hub.Data
                 e.Property(x => x.AddressLine1).HasMaxLength(200).IsRequired();
                 e.Property(x => x.City).HasMaxLength(80).IsRequired();
                 e.Property(x => x.PostalCode).HasMaxLength(12).IsRequired();
-                e.HasOne(x => x.Province)
-                 .WithMany()
-                 .HasForeignKey(x => x.ProvinceId)
+                e.HasOne(x => x.Province)            // Address → Province (lookup)
+                 .WithMany().HasForeignKey(x => x.ProvinceId)
                  .OnDelete(DeleteBehavior.NoAction);
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
@@ -344,22 +346,18 @@ namespace HWSETA_Impact_Hub.Data
             b.Entity<EnrollmentDocument>(e =>
             {
                 e.ToTable("EnrollmentDocuments");
-
                 e.Property(x => x.FileName).HasMaxLength(260).IsRequired();
                 e.Property(x => x.StoredPath).HasMaxLength(500).IsRequired();
                 e.Property(x => x.Sha256).HasMaxLength(64);
-
                 e.Property(x => x.UploadedByUserId).HasMaxLength(80).IsRequired();
                 e.Property(x => x.RowVersion).IsRowVersion();
 
-                e.HasOne(x => x.Enrollment)
-                    .WithMany()
-                    .HasForeignKey(x => x.EnrollmentId)
+                e.HasOne(x => x.Enrollment)          // Document → Enrollment (Restrict)
+                    .WithMany().HasForeignKey(x => x.EnrollmentId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                e.HasOne(x => x.DocumentType)
-                    .WithMany()
-                    .HasForeignKey(x => x.DocumentTypeId)
+                e.HasOne(x => x.DocumentType)        // Document → DocumentType (lookup, Restrict)
+                    .WithMany().HasForeignKey(x => x.DocumentTypeId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 e.HasIndex(x => new { x.EnrollmentId, x.DocumentTypeId });
@@ -379,12 +377,10 @@ namespace HWSETA_Impact_Hub.Data
                 e.ToTable("FormSections");
                 e.Property(x => x.Title).HasMaxLength(200).IsRequired();
                 e.Property(x => x.Description).HasMaxLength(2000);
-
-                e.HasOne(x => x.FormTemplate)
+                e.HasOne(x => x.FormTemplate)        // Section → Template (Restrict)
                     .WithMany(t => t.Sections)
                     .HasForeignKey(x => x.FormTemplateId)
                     .OnDelete(DeleteBehavior.Restrict);
-
                 e.HasIndex(x => new { x.FormTemplateId, x.SortOrder });
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
@@ -396,12 +392,10 @@ namespace HWSETA_Impact_Hub.Data
                 e.Property(x => x.HelpText).HasMaxLength(2000);
                 e.Property(x => x.RegexPattern).HasMaxLength(500);
                 e.Property(x => x.SettingsJson).HasColumnType("nvarchar(max)");
-
-                e.HasOne(x => x.FormSection)
+                e.HasOne(x => x.FormSection)         // Field → Section (Restrict)
                     .WithMany(s => s.Fields)
                     .HasForeignKey(x => x.FormSectionId)
                     .OnDelete(DeleteBehavior.Restrict);
-
                 e.HasIndex(x => new { x.FormSectionId, x.SortOrder });
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
@@ -411,12 +405,10 @@ namespace HWSETA_Impact_Hub.Data
                 e.ToTable("FormFieldOptions");
                 e.Property(x => x.Value).HasMaxLength(200).IsRequired();
                 e.Property(x => x.Text).HasMaxLength(300).IsRequired();
-
-                e.HasOne(x => x.FormField)
+                e.HasOne(x => x.FormField)           // Option → Field (Restrict)
                     .WithMany(f => f.Options)
                     .HasForeignKey(x => x.FormFieldId)
                     .OnDelete(DeleteBehavior.Restrict);
-
                 e.HasIndex(x => new { x.FormFieldId, x.SortOrder });
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
@@ -424,17 +416,14 @@ namespace HWSETA_Impact_Hub.Data
             b.Entity<FormFieldCondition>(e =>
             {
                 e.ToTable("FormFieldConditions");
-
-                e.HasOne(x => x.TargetField)
+                e.HasOne(x => x.TargetField)         // Condition → TargetField (Restrict)
                     .WithMany(f => f.Conditions)
                     .HasForeignKey(x => x.TargetFieldId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                e.HasOne(x => x.SourceField)
+                e.HasOne(x => x.SourceField)         // Condition → SourceField (Restrict)
                     .WithMany()
                     .HasForeignKey(x => x.SourceFieldId)
                     .OnDelete(DeleteBehavior.Restrict);
-
                 e.HasIndex(x => new { x.TargetFieldId, x.SortOrder });
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
@@ -444,12 +433,10 @@ namespace HWSETA_Impact_Hub.Data
                 e.ToTable("FormPublishes");
                 e.Property(x => x.PublicToken).HasMaxLength(64).IsRequired();
                 e.HasIndex(x => x.PublicToken).IsUnique();
-
-                e.HasOne(x => x.FormTemplate)
+                e.HasOne(x => x.FormTemplate)        // Publish → Template (Restrict)
                     .WithMany()
                     .HasForeignKey(x => x.FormTemplateId)
                     .OnDelete(DeleteBehavior.Restrict);
-
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
 
@@ -457,12 +444,10 @@ namespace HWSETA_Impact_Hub.Data
             {
                 e.ToTable("FormSubmissions");
                 e.Property(x => x.SubmittedByUserId).HasMaxLength(80);
-
-                e.HasOne(x => x.FormPublish)
+                e.HasOne(x => x.FormPublish)         // Submission → Publish (Restrict)
                     .WithMany()
                     .HasForeignKey(x => x.FormPublishId)
                     .OnDelete(DeleteBehavior.Restrict);
-
                 e.HasIndex(x => new { x.FormPublishId, x.SubmittedOnUtc });
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
@@ -472,17 +457,14 @@ namespace HWSETA_Impact_Hub.Data
                 e.ToTable("FormAnswers");
                 e.Property(x => x.Value).HasColumnType("nvarchar(max)");
                 e.Property(x => x.ValueJson).HasColumnType("nvarchar(max)");
-
-                e.HasOne(x => x.FormSubmission)
+                e.HasOne(x => x.FormSubmission)      // Answer → Submission (Restrict)
                     .WithMany(s => s.Answers)
                     .HasForeignKey(x => x.FormSubmissionId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                e.HasOne(x => x.FormField)
+                e.HasOne(x => x.FormField)           // Answer → Field (Restrict)
                     .WithMany()
                     .HasForeignKey(x => x.FormFieldId)
                     .OnDelete(DeleteBehavior.Restrict);
-
                 e.HasIndex(x => new { x.FormSubmissionId, x.FormFieldId });
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
@@ -491,12 +473,10 @@ namespace HWSETA_Impact_Hub.Data
             {
                 e.HasKey(x => x.Id);
                 e.Property(x => x.TokenHash).HasMaxLength(128).IsRequired();
-
-                e.HasOne(x => x.Beneficiary)
+                e.HasOne(x => x.Beneficiary)         // Invite → Beneficiary (CASCADE)
                  .WithMany()
                  .HasForeignKey(x => x.BeneficiaryId)
-                 .OnDelete(DeleteBehavior.Cascade);
-
+                 .OnDelete(DeleteBehavior.Cascade);   // invites deleted when beneficiary deleted
                 e.HasIndex(x => x.TokenHash).IsUnique(false);
             });
 
@@ -505,28 +485,52 @@ namespace HWSETA_Impact_Hub.Data
                 e.HasKey(x => x.Id);
                 e.Property(x => x.To).HasMaxLength(200).IsRequired();
             });
+
             b.Entity<BeneficiaryFormInvite>(e =>
             {
                 e.HasIndex(x => x.InviteToken).IsUnique();
-
-                // prevents duplicates for same beneficiary+publish+channel (optional)
-                e.HasIndex(x => new { x.BeneficiaryId, x.FormPublishId, x.Channel });
-
+                e.HasIndex(x => new { x.BeneficiaryId, x.FormPublishId, x.Channel }); // no duplicate per channel
                 e.Property(x => x.InviteToken).HasMaxLength(64).IsRequired();
-
-                e.HasOne(x => x.Beneficiary)
+                e.HasOne(x => x.Beneficiary)         // FormInvite → Beneficiary (Restrict)
                     .WithMany()
                     .HasForeignKey(x => x.BeneficiaryId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                e.HasOne(x => x.FormPublish)
+                e.HasOne(x => x.FormPublish)         // FormInvite → Publish (Restrict)
                     .WithMany()
                     .HasForeignKey(x => x.FormPublishId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+        }
 
+        // ── BeneficiaryFeedback ──────────────────────────────────────── ← NEW
+        private static void ConfigureBeneficiaryFeedback(ModelBuilder b)
+        {
+            b.Entity<BeneficiaryFeedback>(e =>
+            {
+                e.ToTable("BeneficiaryFeedbacks");
+                e.HasKey(x => x.Id);
 
-         
+                e.Property(x => x.Message).HasMaxLength(4000).IsRequired();
+                e.Property(x => x.Subject).HasMaxLength(300);
+                e.Property(x => x.AdminReply).HasMaxLength(4000);
+                e.Property(x => x.SubmittedByUserId).HasMaxLength(80);
+                e.Property(x => x.RepliedByUserId).HasMaxLength(80);
+
+                e.HasOne(x => x.Beneficiary)         // Feedback → Beneficiary (REQUIRED, Restrict)
+                 .WithMany()
+                 .HasForeignKey(x => x.BeneficiaryId)
+                 .OnDelete(DeleteBehavior.Restrict);  // cannot delete a beneficiary who has feedback
+
+                e.HasOne(x => x.Enrollment)          // Feedback → Enrollment (OPTIONAL, SetNull)
+                 .WithMany()
+                 .HasForeignKey(x => x.EnrollmentId)
+                 .OnDelete(DeleteBehavior.SetNull);   // if enrollment deleted, EnrollmentId → null (feedback kept)
+
+                e.HasIndex(x => x.BeneficiaryId);                        // fast lookup by beneficiary
+                e.HasIndex(x => new { x.Status, x.CreatedOnUtc });       // fast filtered list queries
+
+                e.Property(x => x.RowVersion).IsRowVersion();
+            });
         }
     }
 }

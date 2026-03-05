@@ -104,7 +104,7 @@ builder.Services.AddScoped<IEnrollmentDocumentService, EnrollmentDocumentService
 builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IFormTemplateService, FormTemplateService>();
 builder.Services.AddScoped<IFormSubmissionService, FormSubmissionService>();
-
+builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<IEmailSenderService, SmtpEmailSenderService>();
 
 // SMS sender selection:
