@@ -2,6 +2,7 @@
 using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Infrastructure.Audit;
 using HWSETA_Impact_Hub.Infrastructure.Confugations;
+using HWSETA_Impact_Hub.Infrastructure.Encryption;
 using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Infrastructure.RequestContext;
 using HWSETA_Impact_Hub.Infrastructure.Seed;
@@ -10,15 +11,19 @@ using HWSETA_Impact_Hub.Services.Implementations.HWSETA_Impact_Hub.Services.Impl
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
+using HWSETA_Impact_Hub.Infrastructure.Encryption;
 var builder = WebApplication.CreateBuilder(args);
 
 // Connection string
+
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 // Bind Security settings
 builder.Services.Configure<SecurityOptions>(builder.Configuration.GetSection("Security"));
+builder.Services.Configure<AesEncryptionOptions>(builder.Configuration.GetSection("Encryption"));
+builder.Services.AddSingleton<IAesEncryptionService, AesEncryptionService>();
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
 builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection("Sms"));
 builder.Services.Configure<ProofUploadsOptions>(builder.Configuration.GetSection("ProofUploads"));
@@ -29,7 +34,10 @@ builder.Services.AddRazorPages();
 
 // DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options
+        .UseSqlServer(connectionString)
+        .ConfigureWarnings(w =>
+            w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -104,7 +112,7 @@ builder.Services.AddScoped<IEnrollmentDocumentService, EnrollmentDocumentService
 builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IFormTemplateService, FormTemplateService>();
 builder.Services.AddScoped<IFormSubmissionService, FormSubmissionService>();
-builder.Services.AddScoped<IFeedbackService, FeedbackService>();
+
 builder.Services.AddScoped<IEmailSenderService, SmtpEmailSenderService>();
 
 // SMS sender selection:
@@ -122,6 +130,7 @@ builder.Services.AddScoped<ISmsSenderService>(sp =>
 
 builder.Services.AddScoped<IBeneficiaryInviteService, BeneficiaryInviteService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
+builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 
 
 
@@ -145,7 +154,7 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();   // ensure schema
 
     await LookupSeeder.SeedAsync(db);   // add missing rows
-    
+
     await db.SaveChangesAsync();
 
     await FormTemplateSeeder.SeedAsync(db);// ✅ CRITICAL

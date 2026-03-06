@@ -3,6 +3,7 @@
     using ClosedXML.Excel;
     using global::HWSETA_Impact_Hub.Data;
     using global::HWSETA_Impact_Hub.Domain.Entities;
+    using global::HWSETA_Impact_Hub.Infrastructure.Encryption;
     using global::HWSETA_Impact_Hub.Infrastructure.Identity;
     using global::HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries;
     using global::HWSETA_Impact_Hub.Services.Interface;
@@ -15,11 +16,16 @@
         {
             private readonly ApplicationDbContext _db;
             private readonly ICurrentUserService _user;
+            private readonly IAesEncryptionService _enc;
 
-            public BeneficiaryService(ApplicationDbContext db, ICurrentUserService user)
+            public BeneficiaryService(
+                ApplicationDbContext db,
+                ICurrentUserService user,
+                IAesEncryptionService enc)
             {
                 _db = db;
                 _user = user;
+                _enc = enc;
             }
 
             public Task<List<Beneficiary>> ListAsync(CancellationToken ct) =>
@@ -30,10 +36,13 @@
             public async Task<(bool ok, string? error, Guid? beneficiaryId)> CreateAsync(BeneficiaryCreateVm vm, CancellationToken ct)
             {
                 var idVal = vm.IdentifierValue.Trim();
+                var idHash = _enc.BlindIndex(idVal) ?? "";
+                var emailVal = string.IsNullOrWhiteSpace(vm.Email) ? null : vm.Email.Trim();
 
+                // Duplicate check uses the blind index (IdentifierValue is encrypted)
                 var exists = await _db.Beneficiaries.AnyAsync(x =>
                     x.IdentifierType == vm.IdentifierType &&
-                    x.IdentifierValue == idVal, ct);
+                    x.IdentifierValueHash == idHash, ct);
 
                 if (exists)
                     return (false, "Beneficiary already exists (same ID/Passport).", null);
@@ -52,7 +61,8 @@
                 var b = new Beneficiary
                 {
                     IdentifierType = vm.IdentifierType,
-                    IdentifierValue = idVal,
+                    IdentifierValue = idVal,        // encrypted by EF Value Converter
+                    IdentifierValueHash = idHash,       // blind index for lookups/unique constraint
                     FirstName = vm.FirstName.Trim(),
                     MiddleName = string.IsNullOrWhiteSpace(vm.MiddleName) ? null : vm.MiddleName.Trim(),
                     LastName = vm.LastName.Trim(),
@@ -66,18 +76,17 @@
                     EducationLevelId = vm.EducationLevelId,
                     EmploymentStatusId = vm.EmploymentStatusId,
 
-                    Email = string.IsNullOrWhiteSpace(vm.Email) ? null : vm.Email.Trim(),
+                    Email = emailVal,             // encrypted by EF Value Converter
+                    EmailHash = _enc.BlindIndex(emailVal),
                     MobileNumber = vm.MobileNumber.Trim(),
                     AltNumber = string.IsNullOrWhiteSpace(vm.AltNumber) ? null : vm.AltNumber.Trim(),
 
-                    // Consent moved to beneficiary registration:
                     ConsentGiven = false,
                     ConsentDate = DateTime.MinValue,
                     RegistrationStatus = BeneficiaryRegistrationStatus.AddedByAdmin,
 
                     IsActive = vm.IsActive,
                     Address = addr,
-
                     CreatedOnUtc = DateTime.UtcNow,
                     CreatedByUserId = _user.UserId
                 };
@@ -376,7 +385,7 @@
                         .Include(x => x.Address)
                         .FirstOrDefaultAsync(x =>
                             x.IdentifierType == idType &&
-                            x.IdentifierValue == idVal, ct);
+                            x.IdentifierValueHash == (_enc.BlindIndex(idVal) ?? ""), ct);
 
                     if (existing != null)
                     {
@@ -437,6 +446,7 @@
                         {
                             IdentifierType = idType,
                             IdentifierValue = idVal,
+                            IdentifierValueHash = _enc.BlindIndex(idVal) ?? "",
                             FirstName = fn,
                             LastName = ln,
                             DateOfBirth = dob,

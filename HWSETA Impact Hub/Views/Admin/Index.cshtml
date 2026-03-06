@@ -1,21 +1,21 @@
-﻿@{
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Dashboard.DashboardVm
+@{
     ViewData["Title"] = "Admin Dashboard";
 }
 
-@* ── Inline page styles (scoped to this view) ── *@
+<link href="~/css/AdminDashboardCss1.css" rel="stylesheet" />
 
-<link href="~/css/admindashboardcss.css" rel="stylesheet" />
 @* ══════════════════════════════════════════════════════
    PAGE HEADER
 ══════════════════════════════════════════════════════ *@
 <div class="hw-page-header">
     <div>
         <div class="hw-page-eyebrow">
-            <i class="bi bi-shield-lock me-1"></i>Administration
+            <i class="bi bi-grid-1x2 me-1"></i>Administration
         </div>
         <h1 class="hw-page-title">Admin <span>Dashboard</span></h1>
         <p class="hw-page-desc">
-            Manage beneficiaries, programmes, communications, and system configuration.
+            Live overview of beneficiaries, enrolments, and programme delivery.
         </p>
     </div>
     <div class="hw-header-actions">
@@ -26,6 +26,221 @@
             <i class="bi bi-person-plus"></i> New User
         </a>
     </div>
+</div>
+
+@* ══════════════════════════════════════════════════════
+   KPI STAT STRIP — real numbers from DB
+══════════════════════════════════════════════════════ *@
+<div class="hw-kpi-strip">
+
+    <div class="hw-kpi-card green">
+        <div class="hw-kpi-icon green">
+            <i class="bi bi-people-fill" style="font-family:unset!important"></i>
+        </div>
+        <div class="hw-kpi-body">
+            <div class="hw-kpi-value">@Model.TotalBeneficiaries.ToString("N0")</div>
+            <div class="hw-kpi-label">Total Beneficiaries</div>
+            <div class="hw-kpi-sub green">
+                <i class="bi bi-person-check" style="font-family:unset!important"></i>
+                @Model.ActiveBeneficiaries active
+            </div>
+        </div>
+    </div>
+
+    <div class="hw-kpi-card gold">
+        <div class="hw-kpi-icon gold">
+            <i class="bi bi-person-lines-fill" style="font-family:unset!important"></i>
+        </div>
+        <div class="hw-kpi-body">
+            <div class="hw-kpi-value">@Model.TotalEnrollments.ToString("N0")</div>
+            <div class="hw-kpi-label">Total Enrolments</div>
+            <div class="hw-kpi-sub gold">
+                <i class="bi bi-diagram-3" style="font-family:unset!important"></i>
+                @Model.TotalCohorts cohorts
+            </div>
+        </div>
+    </div>
+
+    <div class="hw-kpi-card blue">
+        <div class="hw-kpi-icon blue">
+            <i class="bi bi-patch-check-fill" style="font-family:unset!important"></i>
+        </div>
+        <div class="hw-kpi-body">
+            <div class="hw-kpi-value">@Model.CompletedEnrollments.ToString("N0")</div>
+            <div class="hw-kpi-label">Completed Enrolments</div>
+            <div class="hw-kpi-sub green">
+                <i class="bi bi-percent" style="font-family:unset!important"></i>
+                @Model.CompletionRatePct% completion rate
+            </div>
+        </div>
+    </div>
+
+    <div class="hw-kpi-card red">
+        <div class="hw-kpi-icon red">
+            <i class="bi bi-chat-square-text-fill" style="font-family:unset!important"></i>
+        </div>
+        <div class="hw-kpi-body">
+            <div class="hw-kpi-value">@Model.NewFeedbackCount.ToString("N0")</div>
+            <div class="hw-kpi-label">Unread Feedback</div>
+            <div class="hw-kpi-sub @(Model.NewFeedbackCount > 0 ? "red" : "green")">
+                <i class="bi bi-@(Model.NewFeedbackCount > 0 ? "exclamation-circle" : "check-circle")" style="font-family:unset!important"></i>
+                @(Model.NewFeedbackCount > 0 ? "Needs attention" : "All reviewed")
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@* ══════════════════════════════════════════════════════
+   ROW 1 — Two doughnuts side by side
+══════════════════════════════════════════════════════ *@
+<div class="hw-charts-eyebrow">
+    <div class="hw-charts-title">
+        <i class="bi bi-bar-chart-line-fill" style="font-family:unset!important"></i>
+        Visual Analytics
+    </div>
+    <span class="hw-charts-meta">Live data · refreshed on page load</span>
+</div>
+
+<div class="hw-chart-row-2">
+
+    @* Chart 1: Enrollment Status Doughnut *@
+    <div class="hw-chart-card">
+        <div class="hw-chart-card-head">
+            <div class="hw-chart-card-icon green">
+                <i class="bi bi-pie-chart-fill" style="font-family:unset!important"></i>
+            </div>
+            <div>
+                <div class="hw-chart-card-title">Enrolment Status</div>
+                <div class="hw-chart-card-sub">Breakdown of all @Model.TotalEnrollments enrolments</div>
+            </div>
+        </div>
+        <div class="hw-chart-card-body">
+            @if (Model.TotalEnrollments > 0)
+            {
+                <div class="hw-doughnut-wrap">
+                    <canvas id="chartEnrolStatus" class="hw-doughnut-canvas"></canvas>
+                    <div class="hw-legend" id="legendEnrolStatus"></div>
+                </div>
+            }
+            else
+            {
+                <div class="hw-chart-empty">
+                    <i class="bi bi-pie-chart" style="font-family:unset!important"></i>
+                    No enrolment data yet
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Chart 2: Registration Pipeline Doughnut *@
+    <div class="hw-chart-card">
+        <div class="hw-chart-card-head">
+            <div class="hw-chart-card-icon gold">
+                <i class="bi bi-funnel-fill" style="font-family:unset!important"></i>
+            </div>
+            <div>
+                <div class="hw-chart-card-title">Registration Pipeline</div>
+                <div class="hw-chart-card-sub">Onboarding stages for @Model.TotalBeneficiaries beneficiaries</div>
+            </div>
+        </div>
+        <div class="hw-chart-card-body">
+            @if (Model.TotalBeneficiaries > 0)
+            {
+                <div class="hw-doughnut-wrap">
+                    <canvas id="chartRegPipeline" class="hw-doughnut-canvas"></canvas>
+                    <div class="hw-legend" id="legendRegPipeline"></div>
+                </div>
+            }
+            else
+            {
+                <div class="hw-chart-empty">
+                    <i class="bi bi-funnel" style="font-family:unset!important"></i>
+                    No beneficiary data yet
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+@* ══════════════════════════════════════════════════════
+   ROW 2 — Full-width line chart (monthly trend)
+══════════════════════════════════════════════════════ *@
+<div class="hw-chart-row-1">
+    <div class="hw-chart-card">
+        <div class="hw-chart-card-head">
+            <div class="hw-chart-card-icon blue">
+                <i class="bi bi-graph-up-arrow" style="font-family:unset!important"></i>
+            </div>
+            <div>
+                <div class="hw-chart-card-title">Monthly Enrolment Trend</div>
+                <div class="hw-chart-card-sub">New enrolments vs completions — last 12 months</div>
+            </div>
+        </div>
+        <div class="hw-chart-card-body" style="padding:20px 24px;">
+            <canvas id="chartMonthlyTrend" style="width:100%;max-height:240px;"></canvas>
+        </div>
+    </div>
+</div>
+
+@* ══════════════════════════════════════════════════════
+   ROW 3 — Top Programmes + Province breakdown
+══════════════════════════════════════════════════════ *@
+<div class="hw-chart-row-2">
+
+    @* Chart 4: Top Programmes *@
+    <div class="hw-chart-card">
+        <div class="hw-chart-card-head">
+            <div class="hw-chart-card-icon teal">
+                <i class="bi bi-mortarboard-fill" style="font-family:unset!important"></i>
+            </div>
+            <div>
+                <div class="hw-chart-card-title">Top Programmes</div>
+                <div class="hw-chart-card-sub">Enrolments by programme (top 5)</div>
+            </div>
+        </div>
+        <div class="hw-chart-card-body" style="padding:16px 20px;">
+            @if (Model.ProgrammeLabelsJson != "[]")
+            {
+                <canvas id="chartProgrammes" style="width:100%;max-height:220px;"></canvas>
+            }
+            else
+            {
+                <div class="hw-chart-empty">
+                    <i class="bi bi-mortarboard" style="font-family:unset!important"></i>
+                    No programme data yet
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Chart 5: Beneficiaries by Province *@
+    <div class="hw-chart-card">
+        <div class="hw-chart-card-head">
+            <div class="hw-chart-card-icon gold">
+                <i class="bi bi-geo-alt-fill" style="font-family:unset!important"></i>
+            </div>
+            <div>
+                <div class="hw-chart-card-title">Beneficiaries by Province</div>
+                <div class="hw-chart-card-sub">Geographic spread across South Africa</div>
+            </div>
+        </div>
+        <div class="hw-chart-card-body" style="padding:16px 20px;">
+            @if (Model.ProvinceLabelsJson != "[]")
+            {
+                <canvas id="chartProvinces" style="width:100%;max-height:220px;"></canvas>
+            }
+            else
+            {
+                <div class="hw-chart-empty">
+                    <i class="bi bi-geo-alt" style="font-family:unset!important"></i>
+                    No province data yet
+                </div>
+            }
+        </div>
+    </div>
+
 </div>
 
 @* ══════════════════════════════════════════════════════
@@ -50,76 +265,47 @@
 ══════════════════════════════════════════════════════ *@
 <div class="hw-section-heading">Quick Actions</div>
 <div class="hw-qa-grid">
-
-    @* System Setup *@
     <div class="hw-qa-card green">
         <div class="hw-qa-icon-wrap green"><i class="bi bi-mortarboard"></i></div>
         <div>
             <h5 class="hw-qa-card-title">System Setup</h5>
-            <p class="hw-qa-card-desc">
-                Create and manage Programmes, Employers, and Training Providers to prepare the system for beneficiary enrolment.
-            </p>
+            <p class="hw-qa-card-desc">Create and manage Programmes, Employers, and Training Providers to prepare the system for beneficiary enrolment.</p>
         </div>
-        <a asp-controller="Programmes" asp-action="Index" class="hw-qa-link">
-            Go to Programmes <i class="bi bi-arrow-right"></i>
-        </a>
+        <a asp-controller="Programmes" asp-action="Index" class="hw-qa-link">Go to Programmes <i class="bi bi-arrow-right"></i></a>
     </div>
-
-    @* User Management *@
     <div class="hw-qa-card gold">
         <div class="hw-qa-icon-wrap gold"><i class="bi bi-person-lines-fill"></i></div>
         <div>
             <h5 class="hw-qa-card-title">User Management</h5>
-            <p class="hw-qa-card-desc">
-                Create staff accounts and beneficiary profiles with the appropriate roles, permissions, and programme assignments.
-            </p>
+            <p class="hw-qa-card-desc">Create staff accounts and beneficiary profiles with the appropriate roles, permissions, and programme assignments.</p>
         </div>
-        <a asp-controller="AdminUsers" asp-action="Create" class="hw-qa-link gold">
-            Create Users <i class="bi bi-arrow-right"></i>
-        </a>
+        <a asp-controller="AdminUsers" asp-action="Create" class="hw-qa-link gold">Create Users <i class="bi bi-arrow-right"></i></a>
     </div>
-
-    @* Reporting *@
     <div class="hw-qa-card dark">
         <div class="hw-qa-icon-wrap dark"><i class="bi bi-bar-chart-line"></i></div>
         <div>
             <h5 class="hw-qa-card-title">Reporting &amp; Analytics</h5>
-            <p class="hw-qa-card-desc">
-                View real-time dashboards, export beneficiary tables, and generate progress and outcome reports by programme.
-            </p>
+            <p class="hw-qa-card-desc">View real-time dashboards, export beneficiary tables, and generate progress and outcome reports by programme.</p>
         </div>
-        <a asp-controller="Reports" asp-action="Index" class="hw-qa-link dark">
-            Open Reporting <i class="bi bi-arrow-right"></i>
-        </a>
+        <a asp-controller="Reports" asp-action="Index" class="hw-qa-link dark">Open Reporting <i class="bi bi-arrow-right"></i></a>
     </div>
-
-    @* Forms Builder *@
     <div class="hw-qa-card red">
         <div class="hw-qa-icon-wrap red"><i class="bi bi-ui-checks-grid"></i></div>
         <div>
             <h5 class="hw-qa-card-title">Forms Builder</h5>
-            <p class="hw-qa-card-desc">
-                Design and publish dynamic web forms to collect beneficiary feedback, track training challenges, and log outcomes.
-            </p>
+            <p class="hw-qa-card-desc">Design and publish dynamic web forms to collect beneficiary feedback, track training challenges, and log outcomes.</p>
         </div>
-        <a asp-controller="Forms" asp-action="Index" class="hw-qa-link red">
-            Manage Forms <i class="bi bi-arrow-right"></i>
-        </a>
+        <a asp-controller="FormTemplates" asp-action="Index" class="hw-qa-link red">Manage Forms <i class="bi bi-arrow-right"></i></a>
     </div>
-
 </div>
 
 @* ══════════════════════════════════════════════════════
-   LOWER GRID  ─  Getting Started  +  Shortcuts
+   LOWER GRID
 ══════════════════════════════════════════════════════ *@
 <div class="hw-lower-grid">
-
-    @* Getting Started Steps *@
     <div class="hw-info-card">
         <div class="hw-info-card-head">
-            <span class="hw-info-card-title">
-                <i class="bi bi-list-check"></i> Getting Started
-            </span>
+            <span class="hw-info-card-title"><i class="bi bi-list-check"></i> Getting Started</span>
             <span style="font-size:11px;color:var(--hw-muted);">Recommended setup order</span>
         </div>
         <div class="hw-info-card-body">
@@ -129,11 +315,7 @@
                     <div class="hw-step-body">
                         <div class="hw-step-title">Configure Programmes</div>
                         <div class="hw-step-desc">Add health and social development programmes with start and end dates, NQF levels, and linked providers.</div>
-                        <div class="hw-step-action">
-                            <a asp-controller="Programmes" asp-action="Create" class="btn-hw-outline" style="font-size:11px;padding:5px 11px;">
-                                <i class="bi bi-plus-lg"></i> Add Programme
-                            </a>
-                        </div>
+                        <div class="hw-step-action"><a asp-controller="Programmes" asp-action="Create" class="btn-hw-outline" style="font-size:11px;padding:5px 11px;"><i class="bi bi-plus-lg"></i> Add Programme</a></div>
                     </div>
                 </li>
                 <li class="hw-step-item">
@@ -147,12 +329,8 @@
                     <div class="hw-step-num">3</div>
                     <div class="hw-step-body">
                         <div class="hw-step-title">Create User Accounts</div>
-                        <div class="hw-step-desc">Set up staff and beneficiary accounts with the correct roles. Beneficiaries will use these to register and upload proof of completion.</div>
-                        <div class="hw-step-action">
-                            <a asp-controller="AdminUsers" asp-action="Create" class="btn-hw-outline" style="font-size:11px;padding:5px 11px;">
-                                <i class="bi bi-person-plus"></i> Create User
-                            </a>
-                        </div>
+                        <div class="hw-step-desc">Set up staff and beneficiary accounts with the correct roles.</div>
+                        <div class="hw-step-action"><a asp-controller="AdminUsers" asp-action="Create" class="btn-hw-outline" style="font-size:11px;padding:5px 11px;"><i class="bi bi-person-plus"></i> Create User</a></div>
                     </div>
                 </li>
                 <li class="hw-step-item">
@@ -173,55 +351,26 @@
         </div>
     </div>
 
-    @* Shortcuts *@
     <div class="hw-info-card">
         <div class="hw-info-card-head">
-            <span class="hw-info-card-title">
-                <i class="bi bi-lightning-charge"></i> Shortcuts
-            </span>
+            <span class="hw-info-card-title"><i class="bi bi-lightning-charge"></i> Shortcuts</span>
             <span style="font-size:11px;color:var(--hw-muted);">Frequently used actions</span>
         </div>
         <div class="hw-info-card-body">
             <div class="hw-shortcut-grid">
-                <a asp-controller="Beneficiaries" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-people" style="color:var(--hw-green);"></i> Beneficiaries
-                </a>
-                <a asp-controller="Beneficiaries" asp-action="Create" class="hw-shortcut">
-                    <i class="bi bi-person-plus" style="color:var(--hw-green);"></i> Add Beneficiary
-                </a>
-                <a asp-controller="Forms" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-ui-checks-grid" style="color:var(--hw-gold-dark);"></i> View Forms
-                </a>
-                <a asp-controller="Forms" asp-action="Create" class="hw-shortcut">
-                    <i class="bi bi-plus-square" style="color:var(--hw-gold-dark);"></i> New Form
-                </a>
-                <a asp-controller="Chat" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-chat-square-text" style="color:var(--hw-green);"></i> Email Chat
-                </a>
-                <a asp-controller="Documents" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-folder2-open" style="color:var(--hw-green);"></i> Documents
-                </a>
-                <a asp-controller="Reports" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-bar-chart-line" style="color:var(--hw-dark);"></i> Reports
-                </a>
-                <a asp-controller="AdminUsers" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-person-lines-fill" style="color:var(--hw-dark);"></i> All Users
-                </a>
-                <a asp-controller="Programmes" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-mortarboard" style="color:var(--hw-green);"></i> Programmes
-                </a>
-                <a asp-controller="Notifications" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-bell" style="color:var(--hw-red);"></i> Notifications
-                </a>
-                <a asp-controller="Progress" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-graph-up-arrow" style="color:var(--hw-green);"></i> Progress
-                </a>
-                <a asp-controller="Settings" asp-action="Index" class="hw-shortcut">
-                    <i class="bi bi-gear" style="color:var(--hw-muted);"></i> Settings
-                </a>
+                <a asp-controller="Beneficiaries" asp-action="Index" class="hw-shortcut"><i class="bi bi-people" style="color:var(--hw-green);"></i> Beneficiaries</a>
+                <a asp-controller="Beneficiaries" asp-action="Create" class="hw-shortcut"><i class="bi bi-person-plus" style="color:var(--hw-green);"></i> Add Beneficiary</a>
+                <a asp-controller="FormTemplates" asp-action="Index" class="hw-shortcut"><i class="bi bi-ui-checks-grid" style="color:var(--hw-gold-dark);"></i> View Forms</a>
+                <a asp-controller="Enrollments" asp-action="Index" class="hw-shortcut"><i class="bi bi-person-check" style="color:var(--hw-green);"></i> Enrolments</a>
+                <a asp-controller="Feedback" asp-action="Index" class="hw-shortcut"><i class="bi bi-chat-square-text" style="color:var(--hw-red);"></i> Feedback</a>
+                <a asp-controller="Cohorts" asp-action="Index" class="hw-shortcut"><i class="bi bi-diagram-3" style="color:var(--hw-green);"></i> Cohorts</a>
+                <a asp-controller="Reports" asp-action="Index" class="hw-shortcut"><i class="bi bi-bar-chart-line" style="color:var(--hw-dark);"></i> Reports</a>
+                <a asp-controller="AdminUsers" asp-action="Index" class="hw-shortcut"><i class="bi bi-person-lines-fill" style="color:var(--hw-dark);"></i> All Users</a>
+                <a asp-controller="Programmes" asp-action="Index" class="hw-shortcut"><i class="bi bi-mortarboard" style="color:var(--hw-green);"></i> Programmes</a>
+                <a asp-controller="Providers" asp-action="Index" class="hw-shortcut"><i class="bi bi-building" style="color:var(--hw-muted);"></i> Providers</a>
+                <a asp-controller="Employers" asp-action="Index" class="hw-shortcut"><i class="bi bi-briefcase" style="color:var(--hw-gold-dark);"></i> Employers</a>
+                <a asp-controller="FormSubmissions" asp-action="Index" class="hw-shortcut"><i class="bi bi-inbox" style="color:var(--hw-green);"></i> Submissions</a>
             </div>
-
-            @* Help note *@
             <div style="margin-top:20px;padding:14px 16px;background:var(--hw-gold-light);border:1.5px solid #f0d060;border-radius:10px;display:flex;gap:10px;align-items:flex-start;">
                 <i class="bi bi-info-circle" style="color:var(--hw-gold-dark);font-size:16px;flex-shrink:0;margin-top:1px;"></i>
                 <div style="font-size:12.5px;color:var(--hw-dark);line-height:1.55;">
@@ -232,5 +381,313 @@
             </div>
         </div>
     </div>
-
 </div>
+
+@* ══════════════════════════════════════════════════════
+   CHART.JS — loaded from CDN, no build step needed
+══════════════════════════════════════════════════════ *@
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            // ── Brand palette ──────────────────────────────────
+            var GREEN      = '#1a7a3c';
+            var GREEN_DARK = '#135a2c';
+            var GREEN_LIGHT= 'rgba(26,122,60,0.12)';
+            var GOLD       = '#e6b000';
+            var GOLD_LIGHT = 'rgba(230,176,0,0.12)';
+            var RED        = '#c0392b';
+            var RED_LIGHT  = 'rgba(192,57,43,0.1)';
+            var BLUE       = '#3b82f6';
+            var BLUE_LIGHT = 'rgba(59,130,246,0.1)';
+            var TEAL       = '#059669';
+            var MUTED      = '#6b7280';
+            var BORDER     = '#e5e7eb';
+
+            // ── Doughnut colour sets ───────────────────────────
+            var ENROL_COLOURS = [GOLD, BLUE, GREEN, RED];
+            var REG_COLOURS   = [MUTED, GOLD, BLUE, TEAL, '#8b5cf6', GREEN];
+
+            // ── Chart.js global defaults ───────────────────────
+            Chart.defaults.font.family   = "'Montserrat', 'Segoe UI', sans-serif";
+            Chart.defaults.font.size     = 11;
+            Chart.defaults.color         = MUTED;
+            Chart.defaults.plugins.legend.display = false;
+
+            // ── Helper: build inline legend ───────────────────
+            function buildLegend(containerId, labels, data, colours) {
+                var el = document.getElementById(containerId);
+                if (!el) return;
+                el.innerHTML = '';
+                labels.forEach(function(label, i) {
+                    var item = document.createElement('div');
+                    item.className = 'hw-legend-item';
+                    item.innerHTML =
+                        '<div class="hw-legend-dot" style="background:' + colours[i % colours.length] + '"></div>' +
+                        '<span>' + label + '</span>' +
+                        '<span class="hw-legend-count">' + (data[i] || 0) + '</span>';
+                    el.appendChild(item);
+                });
+            }
+
+            // ── Chart 1: Enrolment Status Doughnut ────────────
+            var ctx1 = document.getElementById('chartEnrolStatus');
+            if (ctx1) {
+                var enrLabels = @Html.Raw(Model.EnrollmentStatusLabelsJson);
+                var enrData   = @Html.Raw(Model.EnrollmentStatusDataJson);
+
+                new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: enrLabels,
+                        datasets: [{
+                            data: enrData,
+                            backgroundColor: ENROL_COLOURS,
+                            borderColor: '#fff',
+                            borderWidth: 3,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        cutout: '68%',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        var total = ctx.dataset.data.reduce(function(a,b){return a+b;},0);
+                                        var pct = total > 0 ? Math.round(ctx.parsed / total * 100) : 0;
+                                        return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                buildLegend('legendEnrolStatus', enrLabels, enrData, ENROL_COLOURS);
+            }
+
+            // ── Chart 2: Registration Pipeline Doughnut ───────
+            var ctx2 = document.getElementById('chartRegPipeline');
+            if (ctx2) {
+                var regLabels = @Html.Raw(Model.RegistrationLabelsJson);
+                var regData   = @Html.Raw(Model.RegistrationDataJson);
+
+                new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: regLabels,
+                        datasets: [{
+                            data: regData,
+                            backgroundColor: REG_COLOURS,
+                            borderColor: '#fff',
+                            borderWidth: 3,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        cutout: '68%',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        var total = ctx.dataset.data.reduce(function(a,b){return a+b;},0);
+                                        var pct = total > 0 ? Math.round(ctx.parsed / total * 100) : 0;
+                                        return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                buildLegend('legendRegPipeline', regLabels, regData, REG_COLOURS);
+            }
+
+            // ── Chart 3: Monthly Enrolment Trend Line ─────────
+            var ctx3 = document.getElementById('chartMonthlyTrend');
+            if (ctx3) {
+                var monthLabels    = @Html.Raw(Model.MonthLabelsJson);
+                var monthEnrolled  = @Html.Raw(Model.MonthEnrolledJson);
+                var monthCompleted = @Html.Raw(Model.MonthCompletedJson);
+
+                new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [
+                            {
+                                label: 'New Enrolments',
+                                data: monthEnrolled,
+                                borderColor: GREEN,
+                                backgroundColor: GREEN_LIGHT,
+                                borderWidth: 2.5,
+                                pointBackgroundColor: GREEN,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                fill: true,
+                                tension: 0.35
+                            },
+                            {
+                                label: 'Completions',
+                                data: monthCompleted,
+                                borderColor: BLUE,
+                                backgroundColor: BLUE_LIGHT,
+                                borderWidth: 2,
+                                pointBackgroundColor: BLUE,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                fill: true,
+                                tension: 0.35
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                align: 'end',
+                                labels: {
+                                    boxWidth: 12,
+                                    boxHeight: 12,
+                                    borderRadius: 3,
+                                    usePointStyle: false,
+                                    padding: 16,
+                                    font: { size: 11, weight: '600' }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: BORDER, lineWidth: 1 },
+                                ticks: { font: { size: 10, weight: '600' } }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: BORDER, lineWidth: 1 },
+                                ticks: {
+                                    font: { size: 10 },
+                                    stepSize: 1,
+                                    callback: function(v) { return Number.isInteger(v) ? v : ''; }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // ── Chart 4: Top Programmes Horizontal Bar ────────
+            var ctx4 = document.getElementById('chartProgrammes');
+            if (ctx4) {
+                var progLabels = @Html.Raw(Model.ProgrammeLabelsJson);
+                var progData   = @Html.Raw(Model.ProgrammeDataJson);
+
+                new Chart(ctx4, {
+                    type: 'bar',
+                    data: {
+                        labels: progLabels,
+                        datasets: [{
+                            label: 'Enrolments',
+                            data: progData,
+                            backgroundColor: [GREEN, GOLD, BLUE, TEAL, RED],
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) { return '  ' + ctx.parsed.x + ' enrolments'; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: { color: BORDER },
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: function(v) { return Number.isInteger(v) ? v : ''; }
+                                }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: {
+                                    font: { size: 10, weight: '600' },
+                                    callback: function(v) {
+                                        var lbl = this.getLabelForValue(v);
+                                        return lbl && lbl.length > 22 ? lbl.substring(0,20) + '…' : lbl;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // ── Chart 5: Beneficiaries by Province ────────────
+            var ctx5 = document.getElementById('chartProvinces');
+            if (ctx5) {
+                var provLabels = @Html.Raw(Model.ProvinceLabelsJson);
+                var provData   = @Html.Raw(Model.ProvinceDataJson);
+
+                var provColours = [GREEN, GOLD, BLUE, TEAL, RED, '#8b5cf6', '#f59e0b', '#06b6d4', MUTED];
+
+                new Chart(ctx5, {
+                    type: 'bar',
+                    data: {
+                        labels: provLabels,
+                        datasets: [{
+                            label: 'Beneficiaries',
+                            data: provData,
+                            backgroundColor: provColours,
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) { return '  ' + ctx.parsed.x + ' beneficiaries'; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: { color: BORDER },
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: function(v) { return Number.isInteger(v) ? v : ''; }
+                                }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { font: { size: 10, weight: '600' } }
+                            }
+                        }
+                    }
+                });
+            }
+
+        })();
+    </script>
+}

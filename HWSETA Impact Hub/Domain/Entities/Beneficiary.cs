@@ -22,7 +22,16 @@ namespace HWSETA_Impact_Hub.Domain.Entities
     {
 
         public IdentifierType IdentifierType { get; set; }
+
+        /// <summary>Stored AES-256 encrypted. Use IdentifierValueHash for lookups.</summary>
         public string IdentifierValue { get; set; } = "";
+
+        /// <summary>
+        /// HMAC-SHA256 blind index of IdentifierValue (normalised lowercase).
+        /// Used for the unique constraint and duplicate detection queries.
+        /// Never store the plaintext in this column.
+        /// </summary>
+        public string IdentifierValueHash { get; set; } = "";
 
         public string FirstName { get; set; } = "";
         public string? MiddleName { get; set; }
@@ -47,8 +56,16 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public EmploymentStatus EmploymentStatus { get; set; } = null!;
 
         // Contact (at least one should be mandatory in validation)
+        /// <summary>Stored AES-256 encrypted.</summary>
         public string? Email { get; set; }
+
+        /// <summary>HMAC-SHA256 blind index of Email for duplicate detection queries.</summary>
+        public string? EmailHash { get; set; }
+
+        /// <summary>Stored AES-256 encrypted.</summary>
         public string MobileNumber { get; set; } = "";
+
+        /// <summary>Stored AES-256 encrypted.</summary>
         public string? AltNumber { get; set; }
 
         // Address
@@ -64,9 +81,9 @@ namespace HWSETA_Impact_Hub.Domain.Entities
 
         public bool IsActive { get; set; } = true;
 
-   
 
-        
+
+
         public string? Phone { get; set; }
 
         // Address (simple MVP)
@@ -76,7 +93,7 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public string? PostalCode { get; set; }
 
         // Future link to Identity user account (optional)
-       
+
         public ApplicationUser? User { get; set; }
 
 
