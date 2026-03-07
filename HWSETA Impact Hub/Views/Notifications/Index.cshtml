@@ -1,0 +1,210 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Notifications.NotificationFeedVm
+@using HWSETA_Impact_Hub.Models.ViewModels.Notifications
+@{
+    ViewData["Title"] = "Feed & Notifications";
+}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/NotificationsCss.css" rel="stylesheet" />
+
+<div class="nf-header">
+    <div>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-bell" style="font-family:unset !important;"></i>
+            Monitoring
+        </div>
+        <h1 class="hw-page-title">Feed & <span>Notifications</span></h1>
+        <p class="hw-page-desc">
+            Status changes, form submissions, and alerts across the beneficiary monitoring system.
+        </p>
+    </div>
+</div>
+
+<div class="nf-stats-row">
+    <div class="nf-stat-card">
+        <div class="nf-stat-icon green">
+            <i class="bi bi-list-ul" style="font-family:unset !important;"></i>
+        </div>
+        <div class="nf-stat-body">
+            <div class="nf-stat-count">@Model.TotalItems</div>
+            <div class="nf-stat-label">Visible Feed Items</div>
+        </div>
+    </div>
+
+    <div class="nf-stat-card">
+        <div class="nf-stat-icon blue">
+            <i class="bi bi-arrow-repeat" style="font-family:unset !important;"></i>
+        </div>
+        <div class="nf-stat-body">
+            <div class="nf-stat-count">@Model.StatusChangeCount</div>
+            <div class="nf-stat-label">Status Changes</div>
+        </div>
+    </div>
+
+    <div class="nf-stat-card">
+        <div class="nf-stat-icon teal">
+            <i class="bi bi-ui-checks-grid" style="font-family:unset !important;"></i>
+        </div>
+        <div class="nf-stat-body">
+            <div class="nf-stat-count">@Model.SubmissionCountToday</div>
+            <div class="nf-stat-label">Today's Submissions</div>
+        </div>
+    </div>
+
+    <div class="nf-stat-card">
+        <div class="nf-stat-icon red">
+            <i class="bi bi-envelope-x-fill" style="font-family:unset !important;"></i>
+        </div>
+        <div class="nf-stat-body">
+            <div class="nf-stat-count">@Model.InviteFailureCount</div>
+            <div class="nf-stat-label">Invite Failures</div>
+        </div>
+    </div>
+
+    <div class="nf-stat-card">
+        <div class="nf-stat-icon gold">
+            <i class="bi bi-chat-left-dots-fill" style="font-family:unset !important;"></i>
+        </div>
+        <div class="nf-stat-body">
+            <div class="nf-stat-count">@Model.NewFeedbackCount</div>
+            <div class="nf-stat-label">New Feedback</div>
+        </div>
+    </div>
+</div>
+
+<form method="get" asp-action="Index" class="nf-filter-card">
+    <div class="nf-filter-head">
+        <div class="nf-filter-icon">
+            <i class="bi bi-funnel-fill" style="font-family:unset !important;"></i>
+        </div>
+        <div>
+            <div class="nf-filter-title">Filter Feed</div>
+            <div class="nf-filter-sub">Refine by activity type or search beneficiary / text.</div>
+        </div>
+    </div>
+
+    <div class="nf-filter-body">
+        <div class="nf-filter-grid">
+            <div>
+                <label class="nf-field-label">Activity Type</label>
+                <select class="nf-select" name="filter">
+                    @foreach (var f in Enum.GetValues(typeof(NotificationFeedFilter)).Cast<NotificationFeedFilter>())
+                    {
+                        <option value="@((int)f)" selected="@(Model.Filter == f)">@f</option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label class="nf-field-label">Search</label>
+                <input class="nf-input"
+                       type="text"
+                       name="search"
+                       value="@Model.Search"
+                       placeholder="Search name, ID, programme, cohort, text..." />
+            </div>
+
+            <div class="nf-filter-actions">
+                <button type="submit" class="nf-btn-primary">
+                    <i class="bi bi-search" style="font-family:unset !important;"></i>
+                    Apply
+                </button>
+                <a asp-action="Index" class="nf-btn-reset">
+                    <i class="bi bi-x-circle" style="font-family:unset !important;"></i>
+                    Clear
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="nf-feed-card">
+    <div class="nf-feed-head">
+        <div class="nf-feed-title-wrap">
+            <i class="bi bi-activity" style="font-family:unset !important;"></i>
+            <span class="nf-feed-title">Activity Timeline</span>
+        </div>
+        <span class="nf-feed-meta">@Model.Items.Count item@(Model.Items.Count == 1 ? "" : "s")</span>
+    </div>
+
+    @if (Model.Items.Count == 0)
+    {
+        <div class="nf-empty">
+            <i class="bi bi-bell-slash" style="font-family:unset !important;"></i>
+            <div class="nf-empty-title">No feed items found</div>
+            <div class="nf-empty-sub">Try a different filter or search term.</div>
+        </div>
+    }
+    else
+    {
+        <div class="nf-feed-list">
+            @foreach (var item in Model.Items)
+            {
+                <div class="nf-feed-item @(item.IsAlert ? "alert-row" : "")">
+                    <div class="nf-feed-icon @item.IconWrapClass">
+                        <i class="bi @item.IconClass" style="font-family:unset !important;"></i>
+                    </div>
+
+                    <div class="nf-feed-body">
+                        <div class="nf-feed-top">
+                            <div>
+                                <div class="nf-feed-item-title">@item.Title</div>
+                                <div class="nf-feed-item-desc">@item.Description</div>
+                            </div>
+                            <div class="nf-feed-time">
+                                @item.OccurredOnUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                            </div>
+                        </div>
+
+                        <div class="nf-feed-meta-row">
+                            @if (!string.IsNullOrWhiteSpace(item.BeneficiaryName))
+                            {
+                                <span class="nf-meta-chip">
+                                    <i class="bi bi-person" style="font-family:unset !important;"></i>
+                                    @item.BeneficiaryName
+                                </span>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(item.BeneficiaryIdentifier))
+                            {
+                                <span class="nf-meta-chip">
+                                    <i class="bi bi-card-text" style="font-family:unset !important;"></i>
+                                    @item.BeneficiaryIdentifier
+                                </span>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(item.ProgrammeName))
+                            {
+                                <span class="nf-meta-chip">
+                                    <i class="bi bi-mortarboard" style="font-family:unset !important;"></i>
+                                    @item.ProgrammeName
+                                </span>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(item.CohortCode))
+                            {
+                                <span class="nf-meta-chip">
+                                    <i class="bi bi-diagram-3" style="font-family:unset !important;"></i>
+                                    @item.CohortCode
+                                </span>
+                            }
+
+                            <span class="nf-badge @item.BadgeClass">@item.BadgeText</span>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(item.LinkUrl) && !string.IsNullOrWhiteSpace(item.LinkText))
+                        {
+                            <div class="nf-feed-actions">
+                                <a href="@item.LinkUrl" class="nf-link">
+                                    <i class="bi bi-arrow-right-circle" style="font-family:unset !important;"></i>
+                                    @item.LinkText
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,14 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Notifications.TopbarNotificationVm
+
+<a class="hw-icon-btn hw-notif-btn"
+   title="Notifications"
+   asp-controller="Notifications"
+   asp-action="Index"
+   aria-label="Notifications">
+    <i class="bi bi-bell"></i>
+
+    @if (Model.HasItems)
+    {
+        <span class="hw-notif-badge">@Model.BadgeText</span>
+    }
+</a>

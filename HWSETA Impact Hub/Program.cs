@@ -132,7 +132,7 @@ builder.Services.AddScoped<IBeneficiaryInviteService, BeneficiaryInviteService>(
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 
-
+builder.Services.AddScoped<INotificationFeedService, NotificationFeedService>();
 
 
 var app = builder.Build();

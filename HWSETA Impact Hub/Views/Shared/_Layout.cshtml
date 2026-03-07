@@ -186,11 +186,7 @@
                     @* Notifications *@
                     @if (User?.Identity?.IsAuthenticated == true)
                     {
-                        <button class="hw-icon-btn" title="Notifications"
-                                onclick="hwToast('info','Notifications','No new notifications at this time.')">
-                            <i class="bi bi-bell"></i>
-                            <span class="hw-notif-dot"></span>
-                        </button>
+                        @await Component.InvokeAsync("TopbarNotifications")
                     }
 
                     @* Login partial (sign in / sign out / register links) *@
