@@ -1,42 +1,458 @@
 ﻿@model List<HWSETA_Impact_Hub.Domain.Entities.Provider>
 @{
     ViewData["Title"] = "Providers";
+
+    var total = Model?.Count ?? 0;
+    var active = Model?.Count(x => x.IsActive) ?? 0;
+    var inactive = total - active;
+    var withAccreditationDates = Model?.Count(x => x.AccreditationStartDate != null || x.AccreditationEndDate != null) ?? 0;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">Providers</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css" />
+
+<style>
+    #hw-body, #hw-body * {
+        font-family: 'Montserrat','Segoe UI',sans-serif !important;
+    }
+
+    .hw-page-eyebrow {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--hw-gold-dark);
+        margin-bottom: 4px;
+    }
+
+    .hw-page-title {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -.02em;
+        color: var(--hw-dark);
+        margin: 0;
+    }
+
+        .hw-page-title span {
+            color: var(--hw-green);
+        }
+
+    .hw-page-desc {
+        font-size: 13px;
+        color: var(--hw-muted);
+        margin-top: 5px;
+    }
+
+    .hw-stat-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .hw-strip-card {
+        background: var(--hw-white);
+        border: 1.5px solid var(--hw-border);
+        border-radius: var(--hw-radius-lg);
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        transition: box-shadow .2s,border-color .2s;
+    }
+
+        .hw-strip-card:hover {
+            box-shadow: var(--hw-shadow-sm);
+            border-color: var(--hw-green);
+        }
+
+    .hw-strip-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+        .hw-strip-icon.green {
+            background: var(--hw-green-light);
+            color: var(--hw-green);
+        }
+
+        .hw-strip-icon.gold {
+            background: var(--hw-gold-light);
+            color: var(--hw-gold-dark);
+        }
+
+        .hw-strip-icon.red {
+            background: var(--hw-red-light);
+            color: var(--hw-red);
+        }
+
+        .hw-strip-icon.blue {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+    .hw-strip-val {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--hw-dark);
+        letter-spacing: -.03em;
+        line-height: 1;
+    }
+
+    .hw-strip-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--hw-muted);
+        margin-top: 3px;
+    }
+
+    .hw-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        background: var(--hw-green);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 700;
+        font-family: 'Montserrat',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .2s,box-shadow .2s,transform .15s;
+    }
+
+        .hw-btn-primary:hover {
+            background: var(--hw-green-dark);
+            box-shadow: 0 4px 14px rgba(26,122,60,.3);
+            transform: translateY(-1px);
+            color: #fff;
+        }
+
+    .hw-btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 15px;
+        background: transparent;
+        color: var(--hw-muted);
+        border: 1.5px solid var(--hw-border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'Montserrat',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: border-color .2s,color .2s;
+    }
+
+        .hw-btn-outline:hover {
+            border-color: var(--hw-green);
+            color: var(--hw-green);
+        }
+
+    .hw-table-card {
+        background: var(--hw-white);
+        border: 1.5px solid var(--hw-border);
+        border-radius: var(--hw-radius-lg);
+        overflow: hidden;
+    }
+
+    .hw-table-card-head {
+        padding: 14px 22px;
+        border-bottom: 1px solid var(--hw-border);
+        background: var(--hw-offwhite);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .hw-table-card-title {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--hw-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .hw-table-card-title i {
+            color: var(--hw-green);
+        }
+
+    .dataTables_wrapper {
+        padding: 0;
+        font-family: 'Montserrat',sans-serif;
+    }
+
+    .hw-dt-toolbar {
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        border-bottom: 1px solid var(--hw-border);
+    }
+
+    .hw-dt-foot {
+        padding: 12px 20px;
+        border-top: 1px solid var(--hw-border);
+        background: var(--hw-offwhite);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .dataTables_wrapper .dataTables_filter label,
+    .dataTables_wrapper .dataTables_length label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--hw-muted);
+        font-family: 'Montserrat',sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1.5px solid var(--hw-border);
+        border-radius: 8px;
+        padding: 7px 12px;
+        font-size: 12px;
+        font-family: 'Montserrat',sans-serif;
+        color: var(--hw-dark);
+        outline: none;
+        width: 200px;
+        transition: border-color .2s,box-shadow .2s,width .3s;
+    }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--hw-green);
+            box-shadow: 0 0 0 3px rgba(26,122,60,.1);
+            width: 250px;
+        }
+
+    .dataTables_wrapper .dataTables_length select {
+        border: 1.5px solid var(--hw-border);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-family: 'Montserrat',sans-serif;
+        outline: none;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--hw-muted);
+    }
+
+    table.dataTable thead th {
+        font-size: 11px !important;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--hw-muted);
+        background: #fcfcfd;
+        border-bottom: 1px solid var(--hw-border) !important;
+        padding: 14px 16px !important;
+    }
+
+    table.dataTable tbody td {
+        padding: 14px 16px !important;
+        font-size: 12.5px;
+        color: var(--hw-dark);
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f3f5 !important;
+    }
+
+    .hw-status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .01em;
+    }
+
+        .hw-status-badge.active {
+            background: var(--hw-green-light);
+            color: var(--hw-green-dark);
+        }
+
+        .hw-status-badge.inactive {
+            background: var(--hw-red-light);
+            color: var(--hw-red);
+        }
+
+    .hw-mini {
+        font-size: 11px;
+        color: var(--hw-muted);
+    }
+
+    .hw-empty {
+        padding: 38px 22px;
+        color: var(--hw-muted);
+        text-align: center;
+        font-size: 13px;
+    }
+</style>
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
     <div>
-        <a class="btn btn-outline-secondary" asp-action="DownloadTemplate">Download Excel Template</a>
-        <a class="btn btn-outline-secondary" asp-action="Upload">Bulk Upload</a>
-        <a class="btn btn-primary" asp-action="Create">Add Provider</a>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-journal-bookmark-fill me-1"></i>Provider Management
+        </div>
+        <h1 class="hw-page-title">Training <span>Providers</span></h1>
+        <p class="hw-page-desc">Manage accredited providers, contacts, and bulk imports.</p>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+        <a class="hw-btn-outline" asp-action="DownloadTemplate">
+            <i class="bi bi-file-earmark-excel"></i> Download Template
+        </a>
+        <a class="hw-btn-outline" asp-action="Upload">
+            <i class="bi bi-cloud-upload"></i> Bulk Upload
+        </a>
+        <a class="hw-btn-primary" asp-action="Create">
+            <i class="bi bi-plus-circle"></i> Add Provider
+        </a>
     </div>
 </div>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <div class="alert alert-success mb-3">@TempData["Success"]</div>
 }
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Accreditation</th>
-            <th>Province</th>
-            <th>Contact</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var p in Model)
-        {
-            <tr>
-                <td>@p.ProviderCode</td>
-                <td>@p.ProviderName</td>
-                <td>@p.AccreditationNo</td>
-                <td>@p.Province</td>
-                <td>@(p.ContactName ?? "") @(string.IsNullOrWhiteSpace(p.ContactEmail) ? "" : $"({p.ContactEmail})")</td>
-            </tr>
-        }
-    </tbody>
-</table>
+<div class="hw-stat-strip">
+    <div class="hw-strip-card">
+        <div class="hw-strip-icon green"><i class="bi bi-buildings"></i></div>
+        <div>
+            <div class="hw-strip-val">@total</div>
+            <div class="hw-strip-label">Total Providers</div>
+        </div>
+    </div>
+
+    <div class="hw-strip-card">
+        <div class="hw-strip-icon blue"><i class="bi bi-patch-check"></i></div>
+        <div>
+            <div class="hw-strip-val">@active</div>
+            <div class="hw-strip-label">Active Providers</div>
+        </div>
+    </div>
+
+    <div class="hw-strip-card">
+        <div class="hw-strip-icon red"><i class="bi bi-slash-circle"></i></div>
+        <div>
+            <div class="hw-strip-val">@inactive</div>
+            <div class="hw-strip-label">Inactive Providers</div>
+        </div>
+    </div>
+
+    <div class="hw-strip-card">
+        <div class="hw-strip-icon gold"><i class="bi bi-calendar-check"></i></div>
+        <div>
+            <div class="hw-strip-val">@withAccreditationDates</div>
+            <div class="hw-strip-label">With Accreditation Dates</div>
+        </div>
+    </div>
+</div>
+
+<div class="hw-table-card">
+    <div class="hw-table-card-head">
+        <div class="hw-table-card-title">
+            <i class="bi bi-table"></i>
+            Providers Register
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="hw-empty">
+            No providers found yet.
+        </div>
+    }
+    else
+    {
+        <table id="providersTable" class="display" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Provider</th>
+                    <th>Accreditation No</th>
+                    <th>Accreditation Period</th>
+                    <th>Province</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    var accreditationPeriod =
+                    p.AccreditationStartDate.HasValue || p.AccreditationEndDate.HasValue
+                    ? $"{(p.AccreditationStartDate?.ToString("dd MMM yyyy") ?? "—")} - {(p.AccreditationEndDate?.ToString("dd MMM yyyy") ?? "—")}"
+                    : "—";
+
+                    <tr>
+                        <td>@(string.IsNullOrWhiteSpace(p.ProviderCode) ? "—" : p.ProviderCode)</td>
+                        <td>
+                            <div style="font-weight:700;">@p.ProviderName</div>
+                            <div class="hw-mini">Training provider</div>
+                        </td>
+                        <td>@(string.IsNullOrWhiteSpace(p.AccreditationNo) ? "—" : p.AccreditationNo)</td>
+                        <td>@accreditationPeriod</td>
+                        <td>@(string.IsNullOrWhiteSpace(p.Province) ? "—" : p.Province)</td>
+                        <td>
+                            <div style="font-weight:600;">@(string.IsNullOrWhiteSpace(p.ContactName) ? "—" : p.ContactName)</div>
+                            <div class="hw-mini">@(string.IsNullOrWhiteSpace(p.ContactEmail) ? "No email" : p.ContactEmail)</div>
+                        </td>
+                        <td>
+                            <span class="hw-status-badge @(p.IsActive ? "active" : "inactive")">
+                                @(p.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(function () {
+            const table = $('#providersTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                order: [[1, 'asc']],
+                dom: '<"hw-dt-toolbar"lf>rt<"hw-dt-foot"ip>',
+                language: {
+                    search: "",
+                    searchPlaceholder: "Search providers..."
+                }
+            });
+
+            $('.dataTables_filter input').attr('placeholder', 'Search providers...');
+        });
+    </script>
+}

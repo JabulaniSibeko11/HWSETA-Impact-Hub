@@ -5,9 +5,14 @@ namespace HWSETA_Impact_Hub.Services.Interface
 {
     public interface IBeneficiaryService
     {
-        Task<List<Beneficiary>> ListAsync(CancellationToken ct);
+        Task<List<BeneficiaryListVm>> ListAsync(CancellationToken ct);
         //Task<(bool ok, string? error)> CreateAsync(BeneficiaryCreateVm vm, CancellationToken ct);
         Task<(bool ok, string? error, Guid? beneficiaryId)> CreateAsync(BeneficiaryCreateVm vm, CancellationToken ct);
         Task<BeneficiaryImportResultVm> ImportFromExcelAsync(IFormFile file, CancellationToken ct);
+
+        Task<BeneficiaryDetailsVm?> GetDetailsAsync(Guid id, CancellationToken ct);
+        Task<BeneficiaryEditVm?> GetEditAsync(Guid id, CancellationToken ct);
+        Task<(bool ok, string? error)> UpdateAsync(BeneficiaryEditVm vm, CancellationToken ct);
+        Task<(bool ok, string? error)> SetActiveAsync(Guid id, bool isActive, CancellationToken ct);
     }
 }

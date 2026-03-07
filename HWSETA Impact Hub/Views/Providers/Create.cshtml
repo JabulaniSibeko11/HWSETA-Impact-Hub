@@ -3,103 +3,246 @@
     ViewData["Title"] = "Add Provider";
 }
 
-<h1>Add Provider</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/employercreatecss.css" rel="stylesheet" />
 
-<form method="post">
-    @Html.AntiForgeryToken()
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-journal-bookmark me-1"></i>Provider Management</div>
+        <h1 class="hw-page-title">Add <span>Provider</span></h1>
+    </div>
+    <a asp-action="Index" class="hw-btn-outline" style="margin-top:4px;">
+        <i class="bi bi-arrow-left"></i> All Providers
+    </a>
+</div>
 
-    <div class="row g-3">
-        <div class="col-md-4">
-            <label class="form-label">Provider Code (optional)</label>
-            <input asp-for="ProviderCode" class="form-control" />
-        </div>
-        <div class="col-md-8">
-            <label class="form-label">Provider Name</label>
-            <input asp-for="ProviderName" class="form-control" />
-            <span asp-validation-for="ProviderName" class="text-danger"></span>
+<div class="hw-layout">
+    <div>
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.TryGetValue(string.Empty, out var re) && re.Errors.Count > 0)
+        {
+            <div class="hw-val-summary">
+                <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;font-size:16px;margin-top:1px;"></i>
+                <div>
+                    <strong>Please fix:</strong>
+                    <ul>
+                        @foreach (var err in re.Errors)
+                        {
+                            <li>@err.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+
+        <form method="post" id="hw-provider-form">
+            @Html.AntiForgeryToken()
+
+            <div class="hw-card">
+                <div class="hw-card-head">
+                    <div class="hw-card-icon green"><i class="bi bi-buildings"></i></div>
+                    <div>
+                        <div class="hw-card-title">Provider Identity</div>
+                        <div class="hw-card-sub">Core provider and accreditation details</div>
+                    </div>
+                </div>
+                <div class="hw-card-body">
+                    <div class="hw-g2" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label class="hw-field-label">Provider Code <span class="hw-opt">(optional)</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-hash hw-field-ico"></i>
+                                <input asp-for="ProviderCode" class="hw-input" placeholder="e.g. PROV-001" />
+                            </div>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Provider Name <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-building hw-field-ico"></i>
+                                <input asp-for="ProviderName" class="hw-input" placeholder="Registered training provider name" />
+                            </div>
+                            <span asp-validation-for="ProviderName" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g3" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label class="hw-field-label">Accreditation Number <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-award hw-field-ico"></i>
+                                <input asp-for="AccreditationNo" class="hw-input" placeholder="Accreditation reference number" />
+                            </div>
+                            <span asp-validation-for="AccreditationNo" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Accreditation Start Date</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-calendar-event hw-field-ico"></i>
+                                <input asp-for="AccreditationStartDate" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="AccreditationStartDate" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Accreditation End Date</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-calendar-check hw-field-ico"></i>
+                                <input asp-for="AccreditationEndDate" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="AccreditationEndDate" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g2">
+                        <div class="hw-field">
+                            <label asp-for="ProvinceId" class="hw-field-label">Province <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-geo-alt hw-field-ico"></i>
+                                <select asp-for="ProvinceId" asp-items="Model.Provinces" class="hw-input">
+                                    <option value="">-- Select Province --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="ProvinceId" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Phone</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-telephone hw-field-ico"></i>
+                                <input asp-for="Phone" class="hw-input" placeholder="Provider main line" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hw-card">
+                <div class="hw-card-head">
+                    <div class="hw-card-icon gold"><i class="bi bi-person-lines-fill"></i></div>
+                    <div>
+                        <div class="hw-card-title">Contact Person</div>
+                        <div class="hw-card-sub">Primary communication details</div>
+                    </div>
+                </div>
+                <div class="hw-card-body">
+                    <div class="hw-g3" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label class="hw-field-label">Contact Name</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-person hw-field-ico"></i>
+                                <input asp-for="ContactName" class="hw-input" placeholder="Full name" />
+                            </div>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Contact Email</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-envelope hw-field-ico"></i>
+                                <input asp-for="ContactEmail" class="hw-input" placeholder="name@provider.co.za" />
+                            </div>
+                            <span asp-validation-for="ContactEmail" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Contact Phone</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-phone hw-field-ico"></i>
+                                <input asp-for="ContactPhone" class="hw-input" placeholder="Mobile or office number" />
+                            </div>
+                            <span asp-validation-for="ContactPhone" class="hw-field-error"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hw-card">
+                <div class="hw-card-head">
+                    <div class="hw-card-icon green"><i class="bi bi-geo-alt-fill"></i></div>
+                    <div>
+                        <div class="hw-card-title">Address Information</div>
+                        <div class="hw-card-sub">Physical location details</div>
+                    </div>
+                </div>
+                <div class="hw-card-body">
+                    <div class="hw-g2" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label class="hw-field-label">Street Address <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-signpost hw-field-ico"></i>
+                                <input asp-for="AddressLine1" class="hw-input" placeholder="Street and number" />
+                            </div>
+                            <span asp-validation-for="AddressLine1" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">City <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-buildings hw-field-ico"></i>
+                                <input asp-for="City" class="hw-input" placeholder="City / town" />
+                            </div>
+                            <span asp-validation-for="City" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g2" style="margin-bottom:6px;">
+                        <div class="hw-field">
+                            <label class="hw-field-label">Postal Code <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-mailbox hw-field-ico"></i>
+                                <input asp-for="PostalCode" class="hw-input" placeholder="Postal code" />
+                            </div>
+                            <span asp-validation-for="PostalCode" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Status</label>
+                            <div style="display:flex;align-items:center;height:46px;padding:0 12px;border:1.5px solid var(--hw-border);border-radius:12px;background:#fafbfc;">
+                                <input asp-for="IsActive" class="form-check-input" style="margin-right:10px;" />
+                                <label asp-for="IsActive" class="form-check-label" style="font-weight:600;color:var(--hw-dark);margin:0;">Active Provider</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+                <button class="hw-btn-primary" type="submit">
+                    <i class="bi bi-check2-circle"></i> Save Provider
+                </button>
+                <a class="hw-btn-outline" asp-action="Index">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="hw-side-stack">
+        <div class="hw-side-card">
+            <div class="hw-side-title">
+                <i class="bi bi-info-circle"></i> Provider Guidance
+            </div>
+            <ul class="hw-side-list">
+                <li>Use the official provider name as registered.</li>
+                <li>Accreditation number should be unique and valid.</li>
+                <li>Province, city, and postal code should match the physical address.</li>
+                <li>Keep contact email and phone current for form delivery and communication.</li>
+            </ul>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Accreditation No</label>
-            <input asp-for="AccreditationNo" class="form-control" />
-            <span asp-validation-for="AccreditationNo" class="text-danger"></span>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Accreditation Start Date</label>
-            <input asp-for="AccreditationStartDate" class="form-control" />
-            <span asp-validation-for="AccreditationStartDate" class="text-danger"></span>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Accreditation End Date</label>
-            <input asp-for="AccreditationEndDate" class="form-control" />
-            <span asp-validation-for="AccreditationEndDate" class="text-danger"></span>
-        </div>
-
-        @* <div class="col-md-6">
-            <label class="form-label">Province</label>
-            <input asp-for="Province" class="form-control" />
-            <span asp-validation-for="Province" class="text-danger"></span>
-        </div> *@
-
-        <div class="col-md-4">
-            <label class="form-label">Contact Name</label>
-            <input asp-for="ContactName" class="form-control" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Contact Email</label>
-            <input asp-for="ContactEmail" class="form-control" />
-            <span asp-validation-for="ContactEmail" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Contact Phone</label>
-            <input asp-for="ContactPhone" class="form-control" />
-            <span asp-validation-for="ContactPhone" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Phone</label>
-            <input asp-for="Phone" class="form-control" />
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">Street Address</label>
-            <input asp-for="AddressLine1" class="form-control" />
-            <span asp-validation-for="AddressLine1" class="text-danger"></span>
-        </div>
-        <div class="col-md-6">
-            <label asp-for="ProvinceId" class="form-label">Province</label>
-            <select asp-for="ProvinceId" asp-items="Model.Provinces" class="form-select">
-                <option value="">-- Select Province --</option>
-            </select>
-            <span asp-validation-for="ProvinceId" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label">City</label>
-            <input asp-for="City" class="form-control" />
-            <span asp-validation-for="City" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label">PostalCode</label>
-            <input asp-for="PostalCode" class="form-control" />
-            <span asp-validation-for="PostalCode" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <div class="form-check mt-4">
-                <input asp-for="IsActive" class="form-check-input" />
-                <label asp-for="IsActive" class="form-check-label">Active</label>
+        <div class="hw-side-card">
+            <div class="hw-side-title">
+                <i class="bi bi-lightning-charge"></i> Quick Actions
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <a asp-action="Upload" class="hw-btn-outline"><i class="bi bi-cloud-upload"></i> Bulk Upload Providers</a>
+                <a asp-action="DownloadTemplate" class="hw-btn-outline"><i class="bi bi-file-earmark-excel"></i> Download Template</a>
             </div>
         </div>
-
     </div>
-     
-    <div class="mt-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

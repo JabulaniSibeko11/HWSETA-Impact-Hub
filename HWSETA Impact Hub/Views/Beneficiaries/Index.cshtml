@@ -1,16 +1,14 @@
-﻿@model List<HWSETA_Impact_Hub.Domain.Entities.Beneficiary>
+﻿@model List<HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries.BeneficiaryListVm>
 @{
     ViewData["Title"] = "Beneficiaries";
 }
 
 <style>
-    /* ── Switch to Montserrat for this page and all children ── */
     #hw-body,
     #hw-body * {
         font-family: 'Montserrat', 'Segoe UI', sans-serif !important;
     }
 
-    /* ── Page header ── */
     .hw-page-eyebrow {
         font-size: 10px;
         font-weight: 700;
@@ -39,7 +37,6 @@
         margin-top: 5px;
     }
 
-    /* ── Stat strip ── */
     .hw-stat-strip {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
@@ -110,7 +107,6 @@
         letter-spacing: .01em;
     }
 
-    /* ── Table card ── */
     .hw-table-card {
         background: var(--hw-white);
         border: 1.5px solid var(--hw-border);
@@ -142,7 +138,6 @@
             color: var(--hw-green);
         }
 
-    /* ── Action buttons ── */
     .hw-btn-primary {
         display: inline-flex;
         align-items: center;
@@ -214,7 +209,6 @@
             transform: translateY(-1px);
         }
 
-    /* ── DataTable custom styles ── */
     .dataTables_wrapper {
         padding: 0;
         font-family: 'Montserrat', sans-serif;
@@ -299,7 +293,6 @@
         font-family: 'Montserrat', sans-serif;
     }
 
-    /* Pagination */
     .dataTables_wrapper .dataTables_paginate {
         font-family: 'Montserrat', sans-serif;
     }
@@ -339,7 +332,6 @@
                 cursor: default !important;
             }
 
-    /* Table itself */
     .hw-dt {
         width: 100% !important;
         border-collapse: collapse;
@@ -410,7 +402,6 @@
             vertical-align: middle;
         }
 
-    /* Identifier chip */
     .hw-id-chip {
         display: inline-flex;
         align-items: center;
@@ -431,7 +422,6 @@
             font-size: 12px;
         }
 
-    /* Name cell */
     .hw-name-cell {
         display: flex;
         align-items: center;
@@ -459,8 +449,7 @@
         color: var(--hw-dark);
     }
 
-    /* Province badge */
-    .hw-province-badge {
+    .hw-city-text {
         display: inline-flex;
         align-items: center;
         gap: 4px;
@@ -469,12 +458,11 @@
         color: var(--hw-muted);
     }
 
-        .hw-province-badge i {
+        .hw-city-text i {
             color: var(--hw-green);
             font-size: 12px;
         }
 
-    /* Status badge */
     .hw-status-badge {
         display: inline-flex;
         align-items: center;
@@ -504,7 +492,19 @@
             color: var(--hw-muted);
         }
 
-    /* Row actions */
+    .hw-reg-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 10.5px;
+        font-weight: 700;
+        background: var(--hw-gold-light);
+        color: var(--hw-gold-dark);
+        margin-left: 6px;
+    }
+
     .hw-row-actions {
         display: flex;
         gap: 5px;
@@ -538,17 +538,29 @@
             background: var(--hw-red-light);
             color: var(--hw-red);
         }
+
+    .hw-send-btn {
+        border: none;
+        background: var(--hw-green);
+        color: #fff;
+        border-radius: 7px;
+        padding: 5px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        transition: background .18s, transform .15s;
+    }
+
+        .hw-send-btn:hover {
+            background: var(--hw-green-dark);
+            transform: translateY(-1px);
+        }
 </style>
 
-@* ── Montserrat font ── *@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
-@* ── DataTables CSS ── *@
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css" />
 
-@* ── TempData toast ── *@
 @if (TempData["Success"] != null)
 {
     <script>
@@ -559,7 +571,6 @@
     </script>
 }
 
-@* ══ PAGE HEADER ══════════════════════════════════════════════════ *@
 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px;">
     <div>
         <div class="hw-page-eyebrow"><i class="bi bi-person-lines-fill me-1"></i>Beneficiary Management</div>
@@ -579,7 +590,6 @@
     </div>
 </div>
 
-@* ══ STAT STRIP ═══════════════════════════════════════════════════ *@
 <div class="hw-stat-strip">
     <div class="hw-strip-card">
         <div class="hw-strip-icon dark"><i class="bi bi-people"></i></div>
@@ -605,26 +615,25 @@
     <div class="hw-strip-card">
         <div class="hw-strip-icon gold"><i class="bi bi-geo-alt"></i></div>
         <div>
-            <div class="hw-strip-val">@Model.Select(b => b.Address?.Province?.Name).Where(p => p != null).Distinct().Count()</div>
+            <div class="hw-strip-val">@Model.Select(b => b.Province).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().Count()</div>
             <div class="hw-strip-label">Provinces Covered</div>
         </div>
     </div>
     <div class="hw-strip-card">
-        <div class="hw-strip-icon green"><i class="bi bi-calendar-check"></i></div>
+        <div class="hw-strip-icon green"><i class="bi bi-person-badge"></i></div>
         <div>
-            <div class="hw-strip-val">@Model.Count(b => b.CreatedOnUtc.Month == DateTime.Now.Month && b.CreatedOnUtc.Year == DateTime.Now.Year)</div>
-            <div class="hw-strip-label">Added This Month</div>
+            <div class="hw-strip-val">@Model.Count(b => !string.IsNullOrWhiteSpace(b.RegistrationStatus))</div>
+            <div class="hw-strip-label">With Registration Status</div>
         </div>
     </div>
 </div>
 
-@* ══ TABLE CARD ═══════════════════════════════════════════════════ *@
 <div class="hw-table-card">
     <div class="hw-table-card-head">
         <span class="hw-table-card-title">
             <i class="bi bi-table"></i> Beneficiary Register
         </span>
-        <div style="display:flex;gap:8px;">
+        @* <div style="display:flex;gap:8px;">
             <button class="hw-btn-outline" style="font-size:11.5px;padding:6px 12px;" onclick="hwExport('csv')" title="Export CSV">
                 <i class="bi bi-filetype-csv"></i> CSV
             </button>
@@ -634,7 +643,7 @@
             <button class="hw-btn-outline" style="font-size:11.5px;padding:6px 12px;" onclick="window.print()" title="Print">
                 <i class="bi bi-printer"></i> Print
             </button>
-        </div>
+        </div> *@
     </div>
 
     <div style="overflow-x:auto;">
@@ -643,34 +652,36 @@
                 <tr>
                     <th>Identifier</th>
                     <th>Name</th>
-                    <th>Date of Birth</th>
                     <th>Email</th>
                     <th>Mobile</th>
                     <th>Province</th>
+                    <th>City</th>
+                    <th>Registration</th>
                     <th>Status</th>
-                    <th style="width:90px;">Actions</th>
+                    <th style="width:140px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var b in Model)
                 {
-                    var initials = $"{b.FirstName?.FirstOrDefault()}{b.LastName?.FirstOrDefault()}".ToUpper();
+                    var displayName = string.IsNullOrWhiteSpace(b.FullName) ? "Unknown Beneficiary" : b.FullName.Trim();
+                    var nameParts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var initials = nameParts.Length == 0
+                    ? "?"
+                    : string.Concat(nameParts.Take(2).Select(x => x[0])).ToUpper();
 
                     <tr>
                         <td>
                             <span class="hw-id-chip">
                                 <i class="bi bi-fingerprint"></i>
-                                @b.IdentifierType · @b.IdentifierValue
+                                @b.IdentifierType · @(string.IsNullOrWhiteSpace(b.IdentifierValue) ? "—" : b.IdentifierValue)
                             </span>
                         </td>
                         <td>
                             <div class="hw-name-cell">
                                 <div class="hw-name-av">@initials</div>
-                                <span class="hw-name-full">@b.FirstName @b.LastName</span>
+                                <span class="hw-name-full">@displayName</span>
                             </div>
-                        </td>
-                        <td style="white-space:nowrap;font-size:12px;color:var(--hw-muted);font-weight:600;">
-                            @b.DateOfBirth.ToString("dd MMM yyyy")
                         </td>
                         <td>
                             @if (!string.IsNullOrWhiteSpace(b.Email))
@@ -687,12 +698,24 @@
                         </td>
                         <td style="font-size:12px;font-weight:600;white-space:nowrap;">
                             <i class="bi bi-phone" style="color:var(--hw-green);margin-right:4px;"></i>
-                            @b.MobileNumber
+                            @(string.IsNullOrWhiteSpace(b.MobileNumber) ? "—" : b.MobileNumber)
                         </td>
                         <td>
-                            <span class="hw-province-badge">
+                            <span class="hw-city-text">
                                 <i class="bi bi-geo-alt-fill"></i>
-                                @(b.Address?.Province?.Name ?? "—")
+                                @(string.IsNullOrWhiteSpace(b.Province) ? "—" : b.Province)
+                            </span>
+                        </td>
+                        <td>
+                            <span class="hw-city-text">
+                                <i class="bi bi-buildings"></i>
+                                @(string.IsNullOrWhiteSpace(b.City) ? "—" : b.City)
+                            </span>
+                        </td>
+                        <td>
+                            <span class="hw-reg-badge">
+                                <i class="bi bi-journal-check"></i>
+                                @(string.IsNullOrWhiteSpace(b.RegistrationStatus) ? "Unknown" : b.RegistrationStatus)
                             </span>
                         </td>
                         <td>
@@ -700,13 +723,9 @@
                             {
                                 <span class="hw-status-badge active">Active</span>
                             }
-                            else if (!b.IsActive)
-                            {
-                                <span class="hw-status-badge inactive">Inactive</span>
-                            }
                             else
                             {
-                               <span class="badge bg-secondary">@b.RegistrationStatus</span>
+                                <span class="hw-status-badge inactive">Inactive</span>
                             }
                         </td>
                         <td>
@@ -719,16 +738,21 @@
                                    class="hw-row-btn" title="Edit beneficiary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <button class="hw-row-btn danger" title="Deactivate"
-                                        onclick="hwConfirmDeactivate('@b.Id', '@b.FirstName @b.LastName')">
-                                    <i class="bi bi-person-dash"></i>
-                                </button>
+                                <form asp-action="@(b.IsActive ? "Deactivate" : "Reactivate")" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@b.Id" />
+                                    <button type="submit"
+                                            class="hw-row-btn @(b.IsActive ? "danger" : "")"
+                                            title="@(b.IsActive ? "Deactivate" : "Reactivate")">
+                                        <i class="bi @(b.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
+                                    </button>
+                                </form>
                                 <form asp-action="SendInvite" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@b.Id" />
                                     <input type="hidden" name="sendEmail" value="true" />
                                     <input type="hidden" name="sendSms" value="true" />
-                                    <button type="submit" class="btn btn-sm btn-primary">
+                                    <button type="submit" class="hw-send-btn" title="Send invite">
                                         Send
                                     </button>
                                 </form>
@@ -744,6 +768,7 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -755,32 +780,36 @@
 
         $(document).ready(function () {
             _hwTable = $('#beneficiariesTable').DataTable({
-                pageLength:  15,
+                pageLength: 15,
                 lengthMenu: [[10, 15, 25, 50, 100, -1], [10, 15, 25, 50, 100, 'All']],
-                order:      [[1, 'asc']],
-                columnDefs: [{ targets: [7], orderable: false }],
-                dom:        '<"hw-dt-toolbar"lf>t<"hw-dt-foot"ip>',
-                buttons:    ['csvHtml5', 'excelHtml5', 'print'],
+                order: [[1, 'asc']],
+                columnDefs: [{ targets: [8], orderable: false }],
+                dom: '<"hw-dt-toolbar"lf>Bt<"hw-dt-foot"ip>',
+                // buttons: [
+                //     { extend: 'csvHtml5', title: 'Beneficiaries' },
+                //     { extend: 'excelHtml5', title: 'Beneficiaries' },
+                //     { extend: 'print', title: 'Beneficiaries' }
+                // ],
                 language: {
-                    search:      '',
+                    search: '',
                     searchPlaceholder: 'Search beneficiaries…',
-                    lengthMenu:  'Show _MENU_ per page',
-                    info:        'Showing _START_–_END_ of _TOTAL_ beneficiaries',
-                    infoEmpty:   'No beneficiaries found',
+                    lengthMenu: 'Show _MENU_ per page',
+                    info: 'Showing _START_–_END_ of _TOTAL_ beneficiaries',
+                    infoEmpty: 'No beneficiaries found',
                     zeroRecords: 'No matching beneficiaries found',
                     paginate: {
                         previous: '‹',
-                        next:     '›'
+                        next: '›'
                     }
                 }
             });
         });
 
-        function hwExport(type) {
-            if (type === 'csv')   _hwTable.button('.buttons-csv').trigger();
-            if (type === 'excel') _hwTable.button('.buttons-excel').trigger();
-            if (type === 'print') _hwTable.button('.buttons-print').trigger();
-        }
+        // function hwExport(type) {
+        //     if (type === 'csv') _hwTable.button('.buttons-csv').trigger();
+        //     if (type === 'excel') _hwTable.button('.buttons-excel').trigger();
+        //     if (type === 'print') _hwTable.button('.buttons-print').trigger();
+        // }
 
         function hwConfirmDeactivate(id, name) {
             if (typeof hwToast === 'function') {

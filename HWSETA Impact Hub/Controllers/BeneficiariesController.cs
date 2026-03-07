@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Domain.Entities;
 using HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries;
@@ -236,6 +237,145 @@ namespace HWSETA_Impact_Hub.Controllers
 
             var (ok, err) = await _invites.SendInviteAsync(id, sendEmail, sendSms, ct);
             TempData[ok ? "Success" : "Error"] = ok ? "Invite sent successfully." : err;
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<(bool ok, string? error)> SetActiveAsync(Guid id, bool isActive, CancellationToken ct)
+        {
+            var entity = await _db.Beneficiaries.FirstOrDefaultAsync(x => x.Id == id, ct);
+            if (entity == null)
+                return (false, "Beneficiary not found.");
+
+            entity.IsActive = isActive;
+            entity.UpdatedOnUtc = DateTime.UtcNow;
+            //entity.UpdatedByUserId = _user.UserId;
+
+            await _db.SaveChangesAsync(ct);
+            return (true, null);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Details(Guid id, CancellationToken ct)
+        {
+            var vm = await _svc.GetDetailsAsync(id, ct);
+            if (vm == null) return NotFound();
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
+        {
+            var vm = await _svc.GetEditAsync(id, ct);
+            if (vm == null) return NotFound();
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(BeneficiaryEditVm vm, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+            {
+                var reload = await _svc.GetEditAsync(vm.Id, ct);
+                if (reload == null) return NotFound();
+
+                reload.IdentifierType = vm.IdentifierType;
+                reload.IdentifierValue = vm.IdentifierValue;
+                reload.FirstName = vm.FirstName;
+                reload.MiddleName = vm.MiddleName;
+                reload.LastName = vm.LastName;
+                reload.DateOfBirth = vm.DateOfBirth;
+                reload.GenderId = vm.GenderId;
+                reload.RaceId = vm.RaceId;
+                reload.CitizenshipStatusId = vm.CitizenshipStatusId;
+                reload.DisabilityStatusId = vm.DisabilityStatusId;
+                reload.DisabilityTypeId = vm.DisabilityTypeId;
+                reload.EducationLevelId = vm.EducationLevelId;
+                reload.EmploymentStatusId = vm.EmploymentStatusId;
+                reload.Email = vm.Email;
+                reload.MobileNumber = vm.MobileNumber;
+                reload.AltNumber = vm.AltNumber;
+                reload.Phone = vm.Phone;
+                reload.ProvinceId = vm.ProvinceId;
+                reload.City = vm.City;
+                reload.AddressLine1 = vm.AddressLine1;
+                reload.PostalCode = vm.PostalCode;
+                reload.IsActive = vm.IsActive;
+                reload.Programme = vm.Programme;
+                reload.TrainingProvider = vm.TrainingProvider;
+                reload.Employer = vm.Employer;
+
+                return View(reload);
+            }
+
+            var (ok, error) = await _svc.UpdateAsync(vm, ct);
+            if (!ok)
+            {
+                ModelState.AddModelError(string.Empty, error ?? "Failed to update beneficiary.");
+
+                var reload = await _svc.GetEditAsync(vm.Id, ct);
+                if (reload == null) return NotFound();
+
+                reload.IdentifierType = vm.IdentifierType;
+                reload.IdentifierValue = vm.IdentifierValue;
+                reload.FirstName = vm.FirstName;
+                reload.MiddleName = vm.MiddleName;
+                reload.LastName = vm.LastName;
+                reload.DateOfBirth = vm.DateOfBirth;
+                reload.GenderId = vm.GenderId;
+                reload.RaceId = vm.RaceId;
+                reload.CitizenshipStatusId = vm.CitizenshipStatusId;
+                reload.DisabilityStatusId = vm.DisabilityStatusId;
+                reload.DisabilityTypeId = vm.DisabilityTypeId;
+                reload.EducationLevelId = vm.EducationLevelId;
+                reload.EmploymentStatusId = vm.EmploymentStatusId;
+                reload.Email = vm.Email;
+                reload.MobileNumber = vm.MobileNumber;
+                reload.AltNumber = vm.AltNumber;
+                reload.Phone = vm.Phone;
+                reload.ProvinceId = vm.ProvinceId;
+                reload.City = vm.City;
+                reload.AddressLine1 = vm.AddressLine1;
+                reload.PostalCode = vm.PostalCode;
+                reload.IsActive = vm.IsActive;
+                reload.Programme = vm.Programme;
+                reload.TrainingProvider = vm.TrainingProvider;
+                reload.Employer = vm.Employer;
+
+                return View(reload);
+            }
+
+            TempData["Success"] = "Beneficiary updated successfully.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Deactivate(Guid id, CancellationToken ct)
+        {
+            var (ok, error) = await _svc.SetActiveAsync(id, false, ct);
+            if (!ok)
+            {
+                TempData["Error"] = error ?? "Failed to deactivate beneficiary.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["Success"] = "Beneficiary deactivated successfully.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reactivate(Guid id, CancellationToken ct)
+        {
+            var (ok, error) = await _svc.SetActiveAsync(id, true, ct);
+            if (!ok)
+            {
+                TempData["Error"] = error ?? "Failed to reactivate beneficiary.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["Success"] = "Beneficiary reactivated successfully.";
             return RedirectToAction(nameof(Index));
         }
     }

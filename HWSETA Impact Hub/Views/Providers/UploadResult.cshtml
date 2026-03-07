@@ -1,32 +1,130 @@
 ﻿@model HWSETA_Impact_Hub.Models.ViewModels.Provider.ProviderImportResultVm
 @{
-    ViewData["Title"] = "Upload Result";
+    ViewData["Title"] = "Provider Upload Result";
 }
 
-<h1>Upload Result</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/uploadbeneficiarycss.css" rel="stylesheet" />
 
-<div class="row g-3">
-    <div class="col-md-3"><div class="card"><div class="card-body"><b>Total Rows</b><div>@Model.TotalRows</div></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><b>Inserted</b><div>@Model.Inserted</div></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><b>Updated</b><div>@Model.Updated</div></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><b>Skipped</b><div>@Model.Skipped</div></div></div></div>
+<style>
+    #hw-body, #hw-body * {
+        font-family: 'Montserrat', 'Segoe UI', sans-serif !important;
+    }
+
+    .pr-result-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .pr-result-card {
+        background: var(--hw-white);
+        border: 1.5px solid var(--hw-border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    }
+
+    .pr-result-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--hw-muted);
+        margin-bottom: 8px;
+    }
+
+    .pr-result-value {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--hw-dark);
+    }
+
+    .pr-alert {
+        background: #fff8e7;
+        border: 1px solid #f2d38a;
+        color: #7a5a00;
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 18px;
+    }
+
+    .pr-error-list {
+        margin: 10px 0 0;
+        padding-left: 18px;
+        font-size: 12.5px;
+    }
+
+    .pr-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+    }
+</style>
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-cloud-check me-1"></i>Provider Management
+        </div>
+        <h1 class="hw-page-title">Upload <span>Result</span></h1>
+        <p class="hw-page-desc">Review the provider import summary and any row-level issues.</p>
+    </div>
+</div>
+
+<div class="pr-result-grid">
+    <div class="pr-result-card">
+        <div class="pr-result-title">Total Rows</div>
+        <div class="pr-result-value">@Model.TotalRows</div>
+    </div>
+    <div class="pr-result-card">
+        <div class="pr-result-title">Inserted</div>
+        <div class="pr-result-value" style="color:var(--hw-green-dark);">@Model.Inserted</div>
+    </div>
+    <div class="pr-result-card">
+        <div class="pr-result-title">Updated</div>
+        <div class="pr-result-value" style="color:#0369a1;">@Model.Updated</div>
+    </div>
+    <div class="pr-result-card">
+        <div class="pr-result-title">Skipped</div>
+        <div class="pr-result-value" style="color:var(--hw-red);">@Model.Skipped</div>
+    </div>
 </div>
 
 @if (Model.Errors.Any())
 {
-    <div class="alert alert-warning mt-3">
-        <b>Errors (@Model.Errors.Count)</b>
-        <ul class="mb-0">
+    <div class="pr-alert">
+        <div style="font-weight:800;font-size:13px;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Import Warnings / Errors (@Model.Errors.Count)
+        </div>
+
+        <ul class="pr-error-list">
             @foreach (var e in Model.Errors.Take(50))
             {
                 <li>@e</li>
             }
         </ul>
+
         @if (Model.Errors.Count > 50)
         {
-            <div class="mt-2">Showing first 50 errors.</div>
+            <div style="margin-top:10px;font-size:12px;font-weight:600;">
+                Showing first 50 errors only.
+            </div>
         }
     </div>
 }
 
-<a class="btn btn-primary" asp-action="Index">Back to Providers</a>
+<div class="pr-actions">
+    <a class="hw-btn-primary" asp-action="Index">
+        <i class="bi bi-arrow-left-circle"></i> Back to Providers
+    </a>
+    <a class="hw-btn-outline" asp-action="Upload">
+        <i class="bi bi-cloud-upload"></i> Upload Another File
+    </a>
+</div>

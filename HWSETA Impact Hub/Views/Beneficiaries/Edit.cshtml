@@ -1,0 +1,362 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries.BeneficiaryEditVm
+@{
+    ViewData["Title"] = "Edit Beneficiary";
+}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="~/css/employercreatecss.css" rel="stylesheet" />
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-pencil-square me-1"></i>Beneficiary Management</div>
+        <h1 class="hw-page-title">Edit <span>Beneficiary</span></h1>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a asp-action="Details" asp-route-id="@Model.Id" class="hw-btn-outline"><i class="bi bi-eye"></i> Details</a>
+        <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState.TryGetValue(string.Empty, out var rootErrors) && rootErrors.Errors.Count > 0)
+{
+    <div class="hw-val-summary">
+        <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;font-size:16px;margin-top:1px;"></i>
+        <div>
+            <strong>Please fix:</strong>
+            <ul>
+                @foreach (var err in rootErrors.Errors)
+                {
+                    <li>@err.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="hw-layout">
+        <div>
+            <div class="hw-card">
+                <div class="hw-card-head">
+                    <div class="hw-card-icon green"><i class="bi bi-person-vcard"></i></div>
+                    <div>
+                        <div class="hw-card-title">Identity & Personal Information</div>
+                        <div class="hw-card-sub">Update the beneficiary’s identity and demographic profile.</div>
+                    </div>
+                </div>
+                <div class="hw-card-body">
+                    <div class="hw-g3" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label class="hw-field-label">Identifier Type <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-fingerprint hw-field-ico"></i>
+                                <select asp-for="IdentifierType" class="hw-input" asp-items="Html.GetEnumSelectList<HWSETA_Impact_Hub.Domain.Entities.IdentifierType>()"></select>
+                            </div>
+                            <span asp-validation-for="IdentifierType" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Identifier Value <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-card-text hw-field-ico"></i>
+                                <input asp-for="IdentifierValue" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="IdentifierValue" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Date of Birth <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-calendar-event hw-field-ico"></i>
+                                <input asp-for="DateOfBirth" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="DateOfBirth" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g3" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label class="hw-field-label">First Name <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-person hw-field-ico"></i>
+                                <input asp-for="FirstName" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="FirstName" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Middle Name</label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-person hw-field-ico"></i>
+                                <input asp-for="MiddleName" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="MiddleName" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Last Name <span class="hw-req">*</span></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-person hw-field-ico"></i>
+                                <input asp-for="LastName" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="LastName" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g3" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label asp-for="GenderId" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-person-badge hw-field-ico"></i>
+                                <select asp-for="GenderId" asp-items="Model.Genders" class="hw-input">
+                                    <option value="">-- Select Gender --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="GenderId" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="RaceId" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-people hw-field-ico"></i>
+                                <select asp-for="RaceId" asp-items="Model.Races" class="hw-input">
+                                    <option value="">-- Select Race --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="RaceId" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="CitizenshipStatusId" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-globe hw-field-ico"></i>
+                                <select asp-for="CitizenshipStatusId" asp-items="Model.CitizenshipStatuses" class="hw-input">
+                                    <option value="">-- Select Citizenship Status --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="CitizenshipStatusId" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g3">
+                        <div class="hw-field">
+                            <label asp-for="DisabilityStatusId" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-universal-access hw-field-ico"></i>
+                                <select asp-for="DisabilityStatusId" asp-items="Model.DisabilityStatuses" class="hw-input">
+                                    <option value="">-- Select Disability Status --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="DisabilityStatusId" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="DisabilityTypeId" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-heart-pulse hw-field-ico"></i>
+                                <select asp-for="DisabilityTypeId" asp-items="Model.DisabilityTypes" class="hw-input">
+                                    <option value="">-- Select Disability Type --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="DisabilityTypeId" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="EducationLevelId" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-mortarboard hw-field-ico"></i>
+                                <select asp-for="EducationLevelId" asp-items="Model.EducationLevels" class="hw-input">
+                                    <option value="">-- Select Education Level --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="EducationLevelId" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g2" style="margin-top:15px;">
+                        <div class="hw-field">
+                            <label asp-for="EmploymentStatusId" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-briefcase hw-field-ico"></i>
+                                <select asp-for="EmploymentStatusId" asp-items="Model.EmploymentStatuses" class="hw-input">
+                                    <option value="">-- Select Employment Status --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="EmploymentStatusId" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label class="hw-field-label">Active</label>
+                            <div style="display:flex;align-items:center;height:46px;padding:0 12px;border:1.5px solid var(--hw-border);border-radius:12px;background:#fafbfc;">
+                                <input asp-for="IsActive" class="form-check-input" style="margin-right:10px;" />
+                                <label asp-for="IsActive" class="form-check-label" style="font-weight:600;color:var(--hw-dark);margin:0;">Active Beneficiary</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hw-card">
+                <div class="hw-card-head">
+                    <div class="hw-card-icon gold"><i class="bi bi-telephone"></i></div>
+                    <div>
+                        <div class="hw-card-title">Contact & Address</div>
+                        <div class="hw-card-sub">Update contact details and location information.</div>
+                    </div>
+                </div>
+                <div class="hw-card-body">
+                    <div class="hw-g3" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label asp-for="Email" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-envelope hw-field-ico"></i>
+                                <input asp-for="Email" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="Email" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="MobileNumber" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-phone hw-field-ico"></i>
+                                <input asp-for="MobileNumber" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="MobileNumber" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="AltNumber" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-telephone-plus hw-field-ico"></i>
+                                <input asp-for="AltNumber" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="AltNumber" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g2" style="margin-bottom:15px;">
+                        <div class="hw-field">
+                            <label asp-for="Phone" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-telephone hw-field-ico"></i>
+                                <input asp-for="Phone" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="Phone" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="ProvinceId" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-geo-alt hw-field-ico"></i>
+                                <select asp-for="ProvinceId" asp-items="Model.Provinces" class="hw-input">
+                                    <option value="">-- Select Province --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="ProvinceId" class="hw-field-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="hw-g3">
+                        <div class="hw-field">
+                            <label asp-for="City" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-buildings hw-field-ico"></i>
+                                <input asp-for="City" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="City" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="AddressLine1" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-signpost hw-field-ico"></i>
+                                <input asp-for="AddressLine1" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="AddressLine1" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="PostalCode" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-mailbox hw-field-ico"></i>
+                                <input asp-for="PostalCode" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="PostalCode" class="hw-field-error"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hw-card">
+                <div class="hw-card-head">
+                    <div class="hw-card-icon green"><i class="bi bi-mortarboard"></i></div>
+                    <div>
+                        <div class="hw-card-title">Programme Information</div>
+                        <div class="hw-card-sub">Optional programme and placement details.</div>
+                    </div>
+                </div>
+                <div class="hw-card-body">
+                    <div class="hw-g3">
+                        <div class="hw-field">
+                            <label asp-for="Programme" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-journal-bookmark hw-field-ico"></i>
+                                <input asp-for="Programme" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="Programme" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="TrainingProvider" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-building hw-field-ico"></i>
+                                <input asp-for="TrainingProvider" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="TrainingProvider" class="hw-field-error"></span>
+                        </div>
+
+                        <div class="hw-field">
+                            <label asp-for="Employer" class="hw-field-label"></label>
+                            <div class="hw-field-wrap">
+                                <i class="bi bi-briefcase hw-field-ico"></i>
+                                <input asp-for="Employer" class="hw-input" />
+                            </div>
+                            <span asp-validation-for="Employer" class="hw-field-error"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+                <button class="hw-btn-primary" type="submit">
+                    <i class="bi bi-check2-circle"></i> Save Changes
+                </button>
+                <a class="hw-btn-outline" asp-action="Details" asp-route-id="@Model.Id">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            </div>
+        </div>
+
+        <div class="hw-side-stack">
+            <div class="hw-side-card">
+                <div class="hw-side-title">
+                    <i class="bi bi-info-circle"></i> Editing Notes
+                </div>
+                <ul class="hw-side-list">
+                    <li>Changing Identifier Type and Identifier Value will re-check duplicates.</li>
+                    <li>Address updates are saved to the linked Address record.</li>
+                    <li>Keep demographic fields aligned with HWSETA reporting needs.</li>
+                    <li>Use deactivation instead of deleting beneficiary records.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

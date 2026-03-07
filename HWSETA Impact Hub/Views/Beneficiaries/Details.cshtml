@@ -1,0 +1,119 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Beneficiaries.BeneficiaryDetailsVm
+@{
+    ViewData["Title"] = "Beneficiary Details";
+    var initials = string.Concat(
+        (Model.FirstName ?? "").Take(1),
+        (Model.LastName ?? "").Take(1)
+    ).ToUpper();
+    if (string.IsNullOrWhiteSpace(initials)) { initials = "?"; }
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<link href="~/css/beneficiarydetailscss.css" rel="stylesheet" />
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-person-vcard me-1"></i>Beneficiary Management</div>
+        <h1 class="hw-page-title">Beneficiary <span>Details</span></h1>
+        <p class="hw-page-desc">View beneficiary identity, profile, registration progress, and programme information.</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="hw-btn-primary"><i class="bi bi-pencil"></i> Edit</a>
+    </div>
+</div>
+
+<div class="bd-top">
+    <div class="bd-avatar">@initials</div>
+    <div>
+        <div class="bd-name">@Model.FullName</div>
+        <div class="bd-sub">
+            <span><i class="bi bi-fingerprint"></i> @Model.IdentifierType · @Model.IdentifierValue</span>
+            <span><i class="bi bi-journal-check"></i> @Model.RegistrationStatus</span>
+        </div>
+    </div>
+    <div>
+        @if (Model.IsActive)
+        {
+            <span class="bd-badge active"><i class="bi bi-check-circle"></i> Active</span>
+        }
+        else
+        {
+            <span class="bd-badge inactive"><i class="bi bi-x-circle"></i> Inactive</span>
+        }
+    </div>
+</div>
+
+<div class="bd-grid">
+    <div class="bd-card">
+        <div class="bd-card-head"><i class="bi bi-person-lines-fill"></i> Personal Information</div>
+        <div class="bd-card-body">
+            <div class="bd-kv">
+                <div class="bd-k">First Name</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.FirstName) ? "—" : Model.FirstName)</div>
+                <div class="bd-k">Middle Name</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.MiddleName) ? "—" : Model.MiddleName)</div>
+                <div class="bd-k">Last Name</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.LastName) ? "—" : Model.LastName)</div>
+                <div class="bd-k">Date of Birth</div><div class="bd-v">@(Model.DateOfBirth?.ToString("dd MMM yyyy") ?? "—")</div>
+                <div class="bd-k">Gender</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.Gender) ? "—" : Model.Gender)</div>
+                <div class="bd-k">Race</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.Race) ? "—" : Model.Race)</div>
+                <div class="bd-k">Citizenship</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.CitizenshipStatus) ? "—" : Model.CitizenshipStatus)</div>
+                <div class="bd-k">Disability Status</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.DisabilityStatus) ? "—" : Model.DisabilityStatus)</div>
+                <div class="bd-k">Disability Type</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.DisabilityType) ? "—" : Model.DisabilityType)</div>
+                <div class="bd-k">Education Level</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.EducationLevel) ? "—" : Model.EducationLevel)</div>
+                <div class="bd-k">Employment Status</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.EmploymentStatus) ? "—" : Model.EmploymentStatus)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bd-card">
+        <div class="bd-card-head"><i class="bi bi-telephone"></i> Contact & Address</div>
+        <div class="bd-card-body">
+            <div class="bd-kv">
+                <div class="bd-k">Email</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</div>
+                <div class="bd-k">Mobile Number</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.MobileNumber) ? "—" : Model.MobileNumber)</div>
+                <div class="bd-k">Alternative Number</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.AltNumber) ? "—" : Model.AltNumber)</div>
+                <div class="bd-k">Phone</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.Phone) ? "—" : Model.Phone)</div>
+                <div class="bd-k">Province</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.Province) ? "—" : Model.Province)</div>
+                <div class="bd-k">City</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.City) ? "—" : Model.City)</div>
+                <div class="bd-k">Address Line 1</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.AddressLine1) ? "—" : Model.AddressLine1)</div>
+                <div class="bd-k">Postal Code</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.PostalCode) ? "—" : Model.PostalCode)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bd-card">
+        <div class="bd-card-head"><i class="bi bi-mortarboard"></i> Programme & Registration</div>
+        <div class="bd-card-body">
+            <div class="bd-kv">
+                <div class="bd-k">Programme</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.Programme) ? "—" : Model.Programme)</div>
+                <div class="bd-k">Training Provider</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.TrainingProvider) ? "—" : Model.TrainingProvider)</div>
+                <div class="bd-k">Employer</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.Employer) ? "—" : Model.Employer)</div>
+                <div class="bd-k">Registration Status</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.RegistrationStatus) ? "—" : Model.RegistrationStatus)</div>
+                <div class="bd-k">Invited At</div><div class="bd-v">@(Model.InvitedAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</div>
+                <div class="bd-k">Password Set At</div><div class="bd-v">@(Model.PasswordSetAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</div>
+                <div class="bd-k">Location Captured At</div><div class="bd-v">@(Model.LocationCapturedAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</div>
+                <div class="bd-k">Registration Submitted At</div><div class="bd-v">@(Model.RegistrationSubmittedAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</div>
+                <div class="bd-k">Proof Uploaded At</div><div class="bd-v">@(Model.ProofUploadedAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</div>
+                <div class="bd-k">Proof File</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.ProofOfCompletionPath) ? "—" : Model.ProofOfCompletionPath)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bd-card">
+        <div class="bd-card-head"><i class="bi bi-shield-check"></i> System & Audit</div>
+        <div class="bd-card-body">
+            <div class="bd-kv">
+                <div class="bd-k">Consent Given</div><div class="bd-v">@(Model.ConsentGiven ? "Yes" : "No")</div>
+                <div class="bd-k">Consent Date</div><div class="bd-v">@(Model.ConsentDate?.ToString("dd MMM yyyy") ?? "—")</div>
+                <div class="bd-k">Latitude</div><div class="bd-v">@(Model.Latitude?.ToString() ?? "—")</div>
+                <div class="bd-k">Longitude</div><div class="bd-v">@(Model.Longitude?.ToString() ?? "—")</div>
+                <div class="bd-k">Created On</div><div class="bd-v">@Model.CreatedOnUtc.ToString("dd MMM yyyy HH:mm")</div>
+                <div class="bd-k">Created By</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.CreatedByUserId) ? "—" : Model.CreatedByUserId)</div>
+                <div class="bd-k">Updated On</div><div class="bd-v">@(Model.UpdatedOnUtc?.ToString("dd MMM yyyy HH:mm") ?? "—")</div>
+                <div class="bd-k">Updated By</div><div class="bd-v">@(string.IsNullOrWhiteSpace(Model.UpdatedByUserId) ? "—" : Model.UpdatedByUserId)</div>
+            </div>
+        </div>
+    </div>
+</div>

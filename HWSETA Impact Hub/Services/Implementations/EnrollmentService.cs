@@ -18,21 +18,45 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             _user = user;
         }
 
-        public Task<List<Enrollment>> ListAsync(CancellationToken ct) =>
-            _db.Enrollments.AsNoTracking()
-                .Include(x => x.Beneficiary)
-                .Include(x => x.Cohort)
-                    .ThenInclude(c => c.Programme)
-                        .ThenInclude(p => p.QualificationType)
-                .Include(x => x.Cohort)
-                    .ThenInclude(c => c.Provider)
-                .Include(x => x.Cohort)
-                    .ThenInclude(c => c.Employer)
-                .Include(x => x.Cohort)
-                    .ThenInclude(c => c.FundingType)
+        public async Task<List<EnrollmentListVm>> ListAsync(CancellationToken ct)
+        {
+            var list = await _db.Enrollments
+                .AsNoTracking()
+                .Select(x => new EnrollmentListVm
+                {
+                    Id = x.Id,
+
+                    BeneficiaryName =
+                        (((x.Beneficiary.FirstName ?? "") + " " + (x.Beneficiary.LastName ?? "")).Trim()),
+
+                    BeneficiaryIdentifier = x.Beneficiary.IdentifierValue ?? "",
+
+                    CohortCode = x.Cohort.CohortCode ?? "",
+                    ProgrammeName = x.Cohort.Programme.ProgrammeName ?? "",
+                    QualificationType = x.Cohort.Programme.QualificationType != null
+                        ? (x.Cohort.Programme.QualificationType.Name ?? "")
+                        : "",
+                    ProviderName = x.Cohort.Provider != null
+                        ? (x.Cohort.Provider.ProviderName ?? "")
+                        : "",
+                    EmployerName = x.Cohort.Employer != null
+                        ? (x.Cohort.Employer.EmployerName ?? "")
+                        : "",
+                    FundingType = x.Cohort.FundingType != null
+                        ? (x.Cohort.FundingType.Name ?? "")
+                        : "",
+
+                    StartDate = x.StartDate,
+                    EndDate = x.EndDate,
+
+                    Status = x.CurrentStatus.ToString(),
+                    IsActive = x.IsActive
+                })
                 .OrderByDescending(x => x.StartDate)
                 .ToListAsync(ct);
 
+            return list;
+        }
         public Task<Enrollment?> GetAsync(Guid id, CancellationToken ct) =>
             _db.Enrollments.AsNoTracking()
                 .Include(x => x.Beneficiary)

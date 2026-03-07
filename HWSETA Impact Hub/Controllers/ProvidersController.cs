@@ -45,7 +45,11 @@ namespace HWSETA_Impact_Hub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProviderCreateVm vm, CancellationToken ct)
         {
-            if (!ModelState.IsValid) return View(vm);
+            if (!ModelState.IsValid)
+            {
+                await LoadDropdowns(vm);
+                return View(vm);
+            }
 
             var (ok, error) = await _svc.CreateAsync(vm, ct);
 
@@ -58,13 +62,13 @@ namespace HWSETA_Impact_Hub.Controllers
             if (!ok)
             {
                 ModelState.AddModelError(string.Empty, error ?? "Failed.");
+                await LoadDropdowns(vm);
                 return View(vm);
             }
 
             TempData["Success"] = "Provider added successfully.";
             return RedirectToAction(nameof(Index));
         }
-
         [HttpGet]
         public IActionResult Upload() => View();
 
