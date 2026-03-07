@@ -1,0 +1,97 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Chats.ChatThreadVm
+@{
+    ViewData["Title"] = "Conversation";
+}
+
+<link rel="stylesheet" href="~/css/beneficiarycreatecss.css" />
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-chat-left-text me-1"></i>Communication Centre</div>
+        <h1 class="hw-page-title">@Model.Subject</h1>
+        <p class="hw-page-desc">@Model.BeneficiaryName · @Model.Status</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+        @if (Model.Status == "Open")
+        {
+            <form asp-action="Close" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.ThreadId" />
+                <button type="submit" class="hw-btn-outline">
+                    <i class="bi bi-x-circle"></i> Close Thread
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="hw-card" style="margin-bottom:18px;">
+    <div class="hw-card-head">
+        <div class="hw-card-icon gold"><i class="bi bi-chat-dots"></i></div>
+        <div>
+            <div class="hw-card-title">Conversation</div>
+            <div class="hw-card-sub">Threaded communication history</div>
+        </div>
+    </div>
+    <div class="hw-card-body">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            @foreach (var msg in Model.Messages)
+            {
+                <div style="display:flex;justify-content:@(msg.IsMine ? "flex-end" : "flex-start");">
+                    <div style="max-width:70%;padding:12px 14px;border-radius:14px;
+                                    background:@(msg.IsMine ? "var(--hw-green-light)" : "var(--hw-offwhite)");
+                                    border:1px solid var(--hw-border);">
+                        <div style="font-size:11px;font-weight:700;color:var(--hw-muted);margin-bottom:6px;">
+                            @msg.SenderDisplayName · @msg.SentOnUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                        </div>
+                        <div style="font-size:13px;color:var(--hw-dark);white-space:pre-wrap;">@msg.MessageText</div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (Model.Status == "Open")
+{
+    <div class="hw-card">
+        <div class="hw-card-head">
+            <div class="hw-card-icon green"><i class="bi bi-reply"></i></div>
+            <div>
+                <div class="hw-card-title">Reply</div>
+                <div class="hw-card-sub">Send a message to the beneficiary using a system chatter name.</div>
+            </div>
+        </div>
+        <div class="hw-card-body">
+            <form asp-action="Reply" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ThreadId" />
+
+                <div class="hw-field" style="margin-bottom:16px;">
+                    <label asp-for="AdminChatProfileId" class="hw-field-label">Reply As</label>
+                    <select asp-for="AdminChatProfileId" asp-items="Model.AdminChatProfiles" class="hw-select">
+                        <option value="">— Select chatter name —</option>
+                    </select>
+                    <span asp-validation-for="AdminChatProfileId" class="hw-field-error"></span>
+                </div>
+
+                <div class="hw-field">
+                    <label asp-for="ReplyText" class="hw-field-label">Message</label>
+                    <textarea asp-for="ReplyText" class="hw-input" rows="6"></textarea>
+                    <span asp-validation-for="ReplyText" class="hw-field-error"></span>
+                </div>
+
+                <div style="margin-top:14px;">
+                    <button type="submit" class="hw-btn-primary">
+                        <i class="bi bi-send"></i> Send Reply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

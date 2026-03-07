@@ -27,6 +27,7 @@ builder.Services.AddSingleton<IAesEncryptionService, AesEncryptionService>();
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
 builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection("Sms"));
 builder.Services.Configure<ProofUploadsOptions>(builder.Configuration.GetSection("ProofUploads"));
+builder.Services.Configure<ChatProfileSeedOptions>(builder.Configuration.GetSection("ChatProfileSeed"));
 
 // MVC + Razor Pages (Identity UI)
 builder.Services.AddControllersWithViews();
@@ -114,6 +115,7 @@ builder.Services.AddScoped<IFormTemplateService, FormTemplateService>();
 builder.Services.AddScoped<IFormSubmissionService, FormSubmissionService>();
 
 builder.Services.AddScoped<IEmailSenderService, SmtpEmailSenderService>();
+builder.Services.AddScoped<ISaIdParserService, SaIdParserService>();
 
 // SMS sender selection:
 builder.Services.AddHttpClient(); // for gateway sender
@@ -133,7 +135,8 @@ builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 
 builder.Services.AddScoped<INotificationFeedService, NotificationFeedService>();
-
+builder.Services.AddScoped<AdminChatProfileSeeder>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 var app = builder.Build();
 await IdentitySeeder.SeedAsync(app.Services);
@@ -150,6 +153,7 @@ else
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var adminChatProfileSeeder = scope.ServiceProvider.GetRequiredService<AdminChatProfileSeeder>();
 
     await db.Database.MigrateAsync();   // ensure schema
 
@@ -158,6 +162,9 @@ using (var scope = app.Services.CreateScope())
     await db.SaveChangesAsync();
 
     await FormTemplateSeeder.SeedAsync(db);// ✅ CRITICAL
+
+  
+    await adminChatProfileSeeder.SeedAsync();
 }
 app.UseHttpsRedirection();
 

@@ -21,7 +21,6 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                .Include(x => x.Provider)
                .Include(x => x.Employer)
                .Include(x => x.FundingType)
-               // ❌ Removed: .Include(x => x.Province) (Cohort has no Province)
                .AsNoTracking()
                .OrderByDescending(x => x.StartDate)
                .ToListAsync(ct);
@@ -31,20 +30,12 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (cohort == null) return (false, "Invalid cohort payload.");
             if (currentUserId == Guid.Empty) return (false, "Current user is not available.");
 
-            var code = (cohort.CohortCode ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(code))
-                return (false, "CohortCode is required.");
-
-            if (await _db.Cohorts.AnyAsync(x => x.CohortCode == code, ct))
-                return (false, "CohortCode already exists.");
-
             if (cohort.IntakeYear < 2000 || cohort.IntakeYear > 2100)
                 return (false, "IntakeYear is invalid.");
 
             if (cohort.PlannedEndDate.Date < cohort.StartDate.Date)
                 return (false, "Planned End Date cannot be earlier than Start Date.");
 
-            // REQUIRED
             if (cohort.ProgrammeId == Guid.Empty)
                 return (false, "Programme is required.");
 
@@ -54,19 +45,17 @@ namespace HWSETA_Impact_Hub.Services.Implementations
             if (cohort.EmployerId == Guid.Empty)
                 return (false, "Employer is required.");
 
-            // ✅ Get Programme (and derive QualificationTypeId from it)
-            var programme = await _db.Programmes.AsNoTracking()
+            // Validate Programme and derive QualificationTypeId
+            var programme = await _db.Programmes
+                .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == cohort.ProgrammeId && p.IsActive, ct);
 
             if (programme is null)
                 return (false, "Selected Programme is invalid or inactive.");
 
-            // IMPORTANT: Programme must have QualificationTypeId
-            // Adjust property name if yours differs (e.g. programme.QualificationTypeId / programme.QualificationTypeRefId)
             if (programme.QualificationTypeId == Guid.Empty)
                 return (false, "Selected Programme is missing a Qualification Type. Fix the programme setup first.");
 
-            // ✅ Derive if empty OR enforce match if provided
             if (cohort.QualificationTypeId == Guid.Empty)
             {
                 cohort.QualificationTypeId = programme.QualificationTypeId;
@@ -76,31 +65,52 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 return (false, "Qualification Type does not match the selected Programme.");
             }
 
-            // Validate derived QualificationType exists
-            var qtExists = await _db.QualificationTypes.AsNoTracking()
+            var qtExists = await _db.QualificationTypes
+                .AsNoTracking()
                 .AnyAsync(x => x.Id == cohort.QualificationTypeId && x.IsActive, ct);
 
             if (!qtExists)
                 return (false, "Derived Qualification Type is invalid or missing from seed data.");
 
-            // Validate Provider + Employer exist
-            var providerExists = await _db.Providers.AsNoTracking()
+            var providerExists = await _db.Providers
+                .AsNoTracking()
                 .AnyAsync(x => x.Id == cohort.ProviderId && x.IsActive, ct);
 
             if (!providerExists)
                 return (false, "Selected Provider is invalid or inactive.");
 
-            var employerExists = await _db.Employers.AsNoTracking()
+            var employerExists = await _db.Employers
+                .AsNoTracking()
                 .AnyAsync(x => x.Id == cohort.EmployerId && x.IsActive, ct);
 
             if (!employerExists)
                 return (false, "Selected Employer is invalid or inactive.");
 
             // Normalise dates
-            cohort.CohortCode = code;
             cohort.StartDate = cohort.StartDate.Date;
             cohort.PlannedEndDate = cohort.PlannedEndDate.Date;
 
+            // Auto-generate cohort code
+            // Ignore any manually supplied value
+            const int maxAttempts = 5;
+            string generatedCode = "";
+
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                generatedCode = await GenerateNextCohortCodeAsync(cohort.IntakeYear, ct);
+
+                var exists = await _db.Cohorts
+                    .AsNoTracking()
+                    .AnyAsync(x => x.CohortCode == generatedCode, ct);
+
+                if (!exists)
+                    break;
+
+                if (attempt == maxAttempts)
+                    return (false, "Failed to generate a unique cohort code. Please try again.");
+            }
+
+            cohort.CohortCode = generatedCode;
             cohort.CreatedOnUtc = DateTime.UtcNow;
             cohort.CreatedByUserId = currentUserId;
 
@@ -109,5 +119,31 @@ namespace HWSETA_Impact_Hub.Services.Implementations
 
             return (true, null);
         }
+
+        private async Task<string> GenerateNextCohortCodeAsync(int intakeYear, CancellationToken ct)
+        {
+            var prefix = $"COH-{intakeYear}-";
+
+            var existingCodes = await _db.Cohorts
+                .AsNoTracking()
+                .Where(x => x.CohortCode != null && x.CohortCode.StartsWith(prefix))
+                .Select(x => x.CohortCode!)
+                .ToListAsync(ct);
+
+            var maxNumber = 0;
+
+            foreach (var code in existingCodes)
+            {
+                var tail = code[prefix.Length..];
+
+                if (int.TryParse(tail, out var n) && n > maxNumber)
+                    maxNumber = n;
+            }
+
+            var nextNumber = maxNumber + 1;
+            return $"{prefix}{nextNumber:D4}";
+        }
+        public Task<string> PreviewNextCodeAsync(int intakeYear, CancellationToken ct) =>
+    GenerateNextCohortCodeAsync(intakeYear, ct);
     }
 }

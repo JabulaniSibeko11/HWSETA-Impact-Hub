@@ -18,13 +18,15 @@ namespace HWSETA_Impact_Hub.Controllers
         private readonly IAuditService _audit;
         private readonly ApplicationDbContext _db;
         private readonly IBeneficiaryInviteService _invites;
+        private readonly ISaIdParserService _saIdParser;
 
-        public BeneficiariesController(IBeneficiaryService svc, IAuditService audit, ApplicationDbContext db, IBeneficiaryInviteService invites)
+        public BeneficiariesController(IBeneficiaryService svc, IAuditService audit, ApplicationDbContext db, IBeneficiaryInviteService invites, ISaIdParserService saIdParser)
         {
             _svc = svc;
             _audit = audit;
             _db = db;
             _invites = invites;
+            _saIdParser = saIdParser;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -377,6 +379,75 @@ namespace HWSETA_Impact_Hub.Controllers
 
             TempData["Success"] = "Beneficiary reactivated successfully.";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ParseSaId(string idNumber, CancellationToken ct)
+        {
+            var parsed = _saIdParser.Parse(idNumber);
+
+            if (!parsed.IsValid)
+            {
+                return Json(new
+                {
+                    ok = false,
+                    error = parsed.Error ?? "Invalid South African ID number."
+                });
+            }
+
+            var genderName = parsed.IsMale == true ? "Male" : "Female";
+            var citizenshipName = parsed.IsSouthAfricanCitizen == true
+                ? "South African Citizen"
+                : "Permanent Resident";
+
+            var gender = await _db.Genders
+                .AsNoTracking()
+                .Where(x => x.IsActive && x.Name == genderName)
+                .Select(x => new
+                {
+                    id = x.Id.ToString(),
+                    name = x.Name
+                })
+                .FirstOrDefaultAsync(ct);
+
+            var citizenship = await _db.CitizenshipStatuses
+                .AsNoTracking()
+                .Where(x => x.IsActive && x.Name == citizenshipName)
+                .Select(x => new
+                {
+                    id = x.Id.ToString(),
+                    name = x.Name
+                })
+                .FirstOrDefaultAsync(ct);
+
+            if (gender == null)
+            {
+                return Json(new
+                {
+                    ok = false,
+                    error = $"Gender lookup '{genderName}' is missing."
+                });
+            }
+
+            if (citizenship == null)
+            {
+                return Json(new
+                {
+                    ok = false,
+                    error = $"Citizenship lookup '{citizenshipName}' is missing."
+                });
+            }
+
+            return Json(new
+            {
+                ok = true,
+                normalisedId = parsed.NormalisedId,
+                dateOfBirth = parsed.DateOfBirth?.ToString("yyyy-MM-dd"),
+                genderId = gender.id,
+                genderName = gender.name,
+                citizenshipStatusId = citizenship.id,
+                citizenshipStatusName = citizenship.name
+            });
         }
     }
 }

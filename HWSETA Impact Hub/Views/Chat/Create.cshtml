@@ -1,0 +1,67 @@
+﻿@model HWSETA_Impact_Hub.Models.ViewModels.Chats.CreateThreadVm
+@{
+    ViewData["Title"] = "New Conversation";
+}
+
+<link rel="stylesheet" href="~/css/beneficiarycreatecss.css" />
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="hw-page-eyebrow"><i class="bi bi-envelope-plus me-1"></i>Communication Centre</div>
+        <h1 class="hw-page-title">Start <span>Conversation</span></h1>
+    </div>
+    <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div class="hw-card">
+    <div class="hw-card-head">
+        <div class="hw-card-icon green"><i class="bi bi-chat-square-text"></i></div>
+        <div>
+            <div class="hw-card-title">New Thread</div>
+            <div class="hw-card-sub">Send the first message to a beneficiary using a system chatter name.</div>
+        </div>
+    </div>
+    <div class="hw-card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="hw-field" style="margin-bottom:16px;">
+                <label asp-for="AdminChatProfileId" class="hw-field-label">Send As</label>
+                <select asp-for="AdminChatProfileId" asp-items="Model.AdminChatProfiles" class="hw-select">
+                    <option value="">— Select chatter name —</option>
+                </select>
+                <span asp-validation-for="AdminChatProfileId" class="hw-field-error"></span>
+            </div>
+
+            <div class="hw-field" style="margin-bottom:16px;">
+                <label asp-for="BeneficiaryId" class="hw-field-label">Beneficiary</label>
+                <select asp-for="BeneficiaryId" asp-items="Model.Beneficiaries" class="hw-select">
+                    <option value="">— Select beneficiary —</option>
+                </select>
+                <span asp-validation-for="BeneficiaryId" class="hw-field-error"></span>
+            </div>
+
+            <div class="hw-field" style="margin-bottom:16px;">
+                <label asp-for="Subject" class="hw-field-label">Subject</label>
+                <input asp-for="Subject" class="hw-input" />
+                <span asp-validation-for="Subject" class="hw-field-error"></span>
+            </div>
+
+            <div class="hw-field">
+                <label asp-for="MessageText" class="hw-field-label">Message</label>
+                <textarea asp-for="MessageText" class="hw-input" rows="7"></textarea>
+                <span asp-validation-for="MessageText" class="hw-field-error"></span>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="hw-btn-primary">
+                    <i class="bi bi-send"></i> Start Conversation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

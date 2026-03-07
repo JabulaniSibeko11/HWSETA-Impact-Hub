@@ -10,7 +10,6 @@
 
 <link href="~/css/beneficiarycreatecss.css" rel="stylesheet" />
 
-@* ── PAGE HEADER ── *@
 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
     <div>
         <div class="hw-page-eyebrow"><i class="bi bi-person-lines-fill me-1"></i>Beneficiary Management</div>
@@ -22,7 +21,6 @@
     </a>
 </div>
 
-@* ── STEPPER ── *@
 <div class="hw-stepper" id="hw-stepper">
     <div class="hw-step active" data-step="0" onclick="hwGoStep(0)">
         <div class="hw-step-dot"><i class="bi bi-fingerprint"></i></div>
@@ -61,13 +59,15 @@
             <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;margin-top:1px;font-size:16px;"></i>
             <div>
                 <strong>Please correct the following errors:</strong>
-                <ul>@foreach (var e in rootEntry.Errors) {
-                <li>@e.ErrorMessage</li>
-            }
-</ul>
+                <ul>
+                    @foreach (var e in rootEntry.Errors)
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
         </div>
-    </div>
-        }
+    }
 
     @* ══ STEP 1 — IDENTITY ══ *@
     <div class="hw-panel hw-panel-active" id="hw-step-0">
@@ -82,20 +82,22 @@
             <div class="hw-grid hw-grid-13" style="margin-bottom:18px;">
                 <div class="hw-field">
                     <label asp-for="IdentifierType" class="hw-field-label">ID Type <span class="hw-req">*</span></label>
-                    <div class="hw-select-wrap">
-                        <select asp-for="IdentifierType" class="hw-select hw-select-no-icon" style="padding-left:12px;">
-                            <option value="@IdentifierType.SaId">SA ID</option>
-                            <option value="@IdentifierType.Passport">Passport</option>
-                        </select>
-                    </div>
+                    <select asp-for="IdentifierType" class="hw-select hw-select-no-icon" style="padding-left:12px;" id="IdentifierType">
+                        <option value="@((int)IdentifierType.SaId)">SA ID</option>
+                        <option value="@((int)IdentifierType.Passport)">Passport</option>
+                    </select>
                     <span asp-validation-for="IdentifierType" class="hw-field-error"></span>
                 </div>
                 <div class="hw-field">
                     <label asp-for="IdentifierValue" class="hw-field-label">ID / Passport Number <span class="hw-req">*</span></label>
                     <div class="hw-field-wrap">
                         <i class="bi bi-credit-card-2-front hw-field-ico"></i>
-                        <input asp-for="IdentifierValue" class="hw-input" placeholder="e.g. 9001015009087" />
+                        <input asp-for="IdentifierValue" class="hw-input" placeholder="e.g. 9001015009087" id="IdentifierValue" />
                     </div>
+                    <div class="hw-field-hint" id="saIdHint">
+                        For SA ID, the system will auto-fill Date of Birth, Gender, and Citizenship Status.
+                    </div>
+                    <div class="hw-field-hint" id="saIdStatusMessage" style="display:none;"></div>
                     <span asp-validation-for="IdentifierValue" class="hw-field-error"></span>
                 </div>
             </div>
@@ -143,28 +145,31 @@
                     <label asp-for="DateOfBirth" class="hw-field-label">Date of Birth <span class="hw-req">*</span></label>
                     <div class="hw-field-wrap">
                         <i class="bi bi-calendar3 hw-field-ico"></i>
-                        <input asp-for="DateOfBirth" class="hw-input" type="date" />
+                        <input asp-for="DateOfBirth" class="hw-input" type="date" id="DateOfBirth" />
                     </div>
+                    <div class="hw-field-hint">For SA ID, this is auto-filled from the ID number.</div>
                     <span asp-validation-for="DateOfBirth" class="hw-field-error"></span>
                 </div>
                 <div class="hw-field">
                     <label asp-for="GenderId" class="hw-field-label">Gender <span class="hw-req">*</span></label>
                     <div class="hw-field-wrap hw-select-wrap">
                         <i class="bi bi-gender-ambiguous hw-field-ico"></i>
-                        <select asp-for="GenderId" asp-items="Model.Genders" class="hw-select">
+                        <select asp-for="GenderId" asp-items="Model.Genders" class="hw-select" id="GenderId">
                             <option value="">— Select gender —</option>
                         </select>
                     </div>
+                    <div class="hw-field-hint">For SA ID, this is auto-filled from the ID number.</div>
                     <span asp-validation-for="GenderId" class="hw-field-error"></span>
                 </div>
                 <div class="hw-field">
                     <label asp-for="RaceId" class="hw-field-label">Race <span class="hw-req">*</span></label>
                     <div class="hw-field-wrap hw-select-wrap">
                         <i class="bi bi-people hw-field-ico"></i>
-                        <select asp-for="RaceId" asp-items="Model.Races" class="hw-select">
+                        <select asp-for="RaceId" asp-items="Model.Races" class="hw-select" id="RaceId">
                             <option value="">— Select race —</option>
                         </select>
                     </div>
+                    <div class="hw-field-hint">Race is captured manually and is not derived from the ID number.</div>
                     <span asp-validation-for="RaceId" class="hw-field-error"></span>
                 </div>
             </div>
@@ -173,10 +178,11 @@
                     <label asp-for="CitizenshipStatusId" class="hw-field-label">Citizenship Status <span class="hw-req">*</span></label>
                     <div class="hw-field-wrap hw-select-wrap">
                         <i class="bi bi-passport hw-field-ico"></i>
-                        <select asp-for="CitizenshipStatusId" asp-items="Model.CitizenshipStatuses" class="hw-select">
+                        <select asp-for="CitizenshipStatusId" asp-items="Model.CitizenshipStatuses" class="hw-select" id="CitizenshipStatusId">
                             <option value="">— Select —</option>
                         </select>
                     </div>
+                    <div class="hw-field-hint">For SA ID, this is auto-filled from the citizenship digit.</div>
                     <span asp-validation-for="CitizenshipStatusId" class="hw-field-error"></span>
                 </div>
                 <div class="hw-field">
@@ -335,7 +341,6 @@
         </div>
         <div class="hw-panel-body">
 
-            @* Active toggle *@
             <div style="margin-bottom:20px;">
                 <div class="hw-toggle-row">
                     <div>
@@ -349,7 +354,6 @@
                 </div>
             </div>
 
-            @* POPIA consent *@
             <div class="hw-popia-box">
                 <div class="hw-popia-head">
                     <div class="hw-popia-icon"><i class="bi bi-shield-lock"></i></div>
@@ -358,28 +362,11 @@
                         <div class="hw-popia-sub">Consent must be recorded before processing personal information</div>
                     </div>
                 </div>
-              @*   <label class="hw-popia-check">
-                    <input asp-for="ConsentGiven" type="checkbox" />
-                    <span class="hw-popia-check-label">
-                        I, the beneficiary or authorised representative, consent to the collection, use, and processing
-                        of my personal information by HWSETA for skills development monitoring purposes in accordance
-                        with the Protection of Personal Information Act (POPIA), Act 4 of 2013.
-                    </span>
-                </label>
-                <div class="hw-field">
-                    <label asp-for="ConsentDate" class="hw-field-label">Consent Date <span class="hw-req">*</span></label>
-                    <div class="hw-field-wrap" style="max-width:240px;">
-                        <i class="bi bi-calendar-check hw-field-ico"></i>
-                        <input asp-for="ConsentDate" class="hw-input" type="date" />
-                    </div>
-                    <span asp-validation-for="ConsentDate" class="hw-field-error"></span>
-                </div> *@
             </div>
 
         </div>
     </div>
 
-    @* ── Navigation ── *@
     <div class="hw-form-nav">
         <div style="display:flex;gap:10px;">
             <button type="button" class="hw-btn-sec" id="hw-btn-prev" onclick="hwPrev()" style="display:none;">
@@ -399,39 +386,36 @@
             </button>
         </div>
     </div>
-
 </form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
     <script>
         var _hwCurrentStep = 0;
         var _hwTotalSteps  = 5;
 
         function hwGoStep(step) {
-            // Hide all panels
             document.querySelectorAll('.hw-panel').forEach(function(p) {
                 p.classList.remove('hw-panel-active');
             });
-            // Show target panel
+
             document.getElementById('hw-step-' + step).classList.add('hw-panel-active');
 
-            // Update stepper dots
             document.querySelectorAll('.hw-step').forEach(function(s, i) {
                 s.classList.remove('active','done');
-                if (i < step)  s.classList.add('done');
+                if (i < step) s.classList.add('done');
                 if (i === step) s.classList.add('active');
-                // Update dot icon for done steps
+
                 var dot = s.querySelector('.hw-step-dot');
                 if (i < step) dot.innerHTML = '<i class="bi bi-check-lg"></i>';
                 else if (i > step) dot.textContent = (i + 1).toString();
             });
-            // Restore icon for step 0
+
             if (step === 0) {
                 document.querySelector('[data-step="0"] .hw-step-dot').innerHTML = '<i class="bi bi-fingerprint"></i>';
             }
 
-            // Progress lines
             for (var i = 0; i < _hwTotalSteps - 1; i++) {
                 var fill = document.getElementById('hw-line-' + i);
                 if (fill) fill.style.width = i < step ? '100%' : '0%';
@@ -441,9 +425,17 @@
             hwUpdateNav();
         }
 
-        function hwNext() {
-            if (_hwCurrentStep < _hwTotalSteps - 1) hwGoStep(_hwCurrentStep + 1);
+        async function hwNext() {
+            if (_hwCurrentStep === 0 && typeof window.hwTryPopulateFromSaId === 'function') {
+                const ok = await window.hwTryPopulateFromSaId(true);
+                if (!ok) return;
+            }
+
+            if (_hwCurrentStep < _hwTotalSteps - 1) {
+                hwGoStep(_hwCurrentStep + 1);
+            }
         }
+
         function hwPrev() {
             if (_hwCurrentStep > 0) hwGoStep(_hwCurrentStep - 1);
         }
@@ -460,10 +452,10 @@
             counter.textContent  = 'Step ' + (_hwCurrentStep + 1) + ' of ' + _hwTotalSteps;
         }
 
-        // Disability type reveal
         (function () {
             var status = document.getElementById('disabilityStatus');
             var wrap   = document.getElementById('disabilityTypeWrap');
+
             function toggle() {
                 if (!status || !wrap) return;
                 if (status.value && status.value !== '') {
@@ -474,11 +466,11 @@
                     wrap.classList.add('hw-hidden');
                 }
             }
+
             toggle();
             status?.addEventListener('change', toggle);
         })();
 
-        // Server-side validation: jump to first panel that has errors
         document.addEventListener('DOMContentLoaded', function () {
             var stepFields = [
                 ['IdentifierType','IdentifierValue','FirstName','LastName'],
@@ -487,7 +479,9 @@
                 ['AddressLine1','ProvinceId','City','PostalCode'],
                 ['ConsentGiven','ConsentDate']
             ];
+
             var firstErrorStep = -1;
+
             stepFields.forEach(function (fields, si) {
                 fields.forEach(function (f) {
                     var span = document.querySelector('[data-valmsg-for$="' + f + '"]');
@@ -500,9 +494,174 @@
                     }
                 });
             });
-            if (firstErrorStep > -1) hwGoStep(firstErrorStep);
-        });
 
-        hwUpdateNav();
+            if (firstErrorStep > -1) hwGoStep(firstErrorStep);
+            else hwUpdateNav();
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const idType = document.getElementById('IdentifierType');
+            const idValue = document.getElementById('IdentifierValue');
+            const dob = document.getElementById('DateOfBirth');
+            const gender = document.getElementById('GenderId');
+            const citizenship = document.getElementById('CitizenshipStatusId');
+            const race = document.getElementById('RaceId');
+            const statusBox = document.getElementById('saIdStatusMessage');
+            const saIdHint = document.getElementById('saIdHint');
+
+            function showStatus(message, isError) {
+                if (!statusBox) return;
+
+                statusBox.style.display = 'block';
+                statusBox.textContent = message || '';
+                statusBox.style.color = isError ? 'var(--hw-red)' : 'var(--hw-green)';
+                statusBox.style.fontWeight = '600';
+                statusBox.style.marginTop = '6px';
+            }
+
+            function clearStatus() {
+                if (!statusBox) return;
+                statusBox.style.display = 'none';
+                statusBox.textContent = '';
+            }
+
+            function isSaIdSelected() {
+                if (!idType) return false;
+
+                const val = (idType.value || '').toString().trim().toLowerCase();
+                return val === '1' || val === 'said';
+            }
+
+            function setDemographicsReadonly(makeReadonly) {
+                if (dob) dob.readOnly = makeReadonly;
+                if (gender) gender.disabled = makeReadonly;
+                if (citizenship) citizenship.disabled = makeReadonly;
+            }
+
+            function clearAutoFieldsForPassport() {
+                if (!isSaIdSelected()) {
+                    clearStatus();
+                    setDemographicsReadonly(false);
+                }
+            }
+
+            async function tryPopulateFromSaId(strictForNextStep) {
+                if (!idType || !idValue) return true;
+
+                const rawId = (idValue.value || '').trim();
+
+                if (!isSaIdSelected()) {
+                    clearAutoFieldsForPassport();
+                    return true;
+                }
+
+                if (!rawId) {
+                    if (strictForNextStep) {
+                        showStatus('Enter the South African ID number before moving to Demographics.', true);
+                        return false;
+                    }
+
+                    clearStatus();
+                    setDemographicsReadonly(false);
+                    return true;
+                }
+
+                if (rawId.length < 13) {
+                    showStatus('Enter the full 13-digit SA ID number to auto-populate Date of Birth, Gender, and Citizenship.', true);
+                    setDemographicsReadonly(false);
+                    return strictForNextStep ? false : true;
+                }
+
+                try {
+                    const res = await fetch('@Url.Action("ParseSaId", "Beneficiaries")?idNumber=' + encodeURIComponent(rawId));
+                    if (!res.ok) {
+                        showStatus('Could not validate the SA ID number right now.', true);
+                        setDemographicsReadonly(false);
+                        return strictForNextStep ? false : true;
+                    }
+
+                    const data = await res.json();
+
+                    if (!data.ok) {
+                        showStatus(data.error || 'Invalid SA ID number.', true);
+                        setDemographicsReadonly(false);
+                        return strictForNextStep ? false : true;
+                    }
+
+                    idValue.value = data.normalisedId || idValue.value;
+
+                    if (dob && data.dateOfBirth) {
+                        dob.value = data.dateOfBirth;
+                    }
+
+                            if (gender && data.genderId) {
+            const genderOptionExists = Array.from(gender.options).some(o => o.value === data.genderId);
+            if (genderOptionExists) {
+                gender.value = data.genderId;
+                gender.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        if (citizenship && data.citizenshipStatusId) {
+            const citizenshipOptionExists = Array.from(citizenship.options).some(o => o.value === data.citizenshipStatusId);
+            if (citizenshipOptionExists) {
+                citizenship.value = data.citizenshipStatusId;
+                citizenship.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+                    if (race && !race.value) {
+                        // Race stays manual
+                    }
+        setTimeout(function () {
+            setDemographicsReadonly(true);
+        }, 50);
+
+        showStatus('SA ID verified. Date of Birth, Gender, and Citizenship Status were auto-populated.', false);
+        return true;
+                } catch {
+                    showStatus('Could not validate the SA ID number right now.', true);
+                    setDemographicsReadonly(false);
+                    return strictForNextStep ? false : true;
+                }
+            }
+
+            window.hwTryPopulateFromSaId = tryPopulateFromSaId;
+
+            if (idValue) {
+                idValue.addEventListener('blur', function () { tryPopulateFromSaId(false); });
+                idValue.addEventListener('change', function () { tryPopulateFromSaId(false); });
+                idValue.addEventListener('input', function () {
+                    if ((idValue.value || '').trim().length >= 13) {
+                        tryPopulateFromSaId(false);
+                    } else {
+                        clearStatus();
+                        setDemographicsReadonly(false);
+                    }
+                });
+            }
+
+            if (idType) {
+                idType.addEventListener('change', function () {
+                    clearStatus();
+
+                    if (isSaIdSelected()) {
+                        if (saIdHint) saIdHint.style.display = 'block';
+                        tryPopulateFromSaId(false);
+                    } else {
+                        if (saIdHint) saIdHint.style.display = 'none';
+                        setDemographicsReadonly(false);
+                    }
+                });
+            }
+
+            if (isSaIdSelected()) {
+                if (saIdHint) saIdHint.style.display = 'block';
+            } else {
+                if (saIdHint) saIdHint.style.display = 'none';
+            }
+        });
     </script>
 }

@@ -47,6 +47,11 @@ namespace HWSETA_Impact_Hub.Data
         public DbSet<FormPublish> FormPublishes => Set<FormPublish>();
         public DbSet<FormSubmission> FormSubmissions => Set<FormSubmission>();
         public DbSet<FormAnswer> FormAnswers => Set<FormAnswer>();
+
+        public DbSet<ConversationThread> ConversationThreads => Set<ConversationThread>();
+        public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+
+        public DbSet<AdminChatProfile> AdminChatProfiles => Set<AdminChatProfile>();
         public ApplicationDbContext(
             DbContextOptions<ApplicationDbContext> options,
             IAesEncryptionService? enc = null)
@@ -61,7 +66,9 @@ namespace HWSETA_Impact_Hub.Data
             // STEP 1 — Identity (always first)
             // ══════════════════════════════════════════════════════════════
             base.OnModelCreating(b);
-
+            ConfigureConversationThread(b);
+            ConfigureConversationMessage(b);
+            ConfigureAdminChatProfile(b);
             // ══════════════════════════════════════════════════════════════
             // STEP 2 — Lookup TPH table
             // All 12 lookup subtypes share one "Lookups" table.
@@ -641,7 +648,75 @@ namespace HWSETA_Impact_Hub.Data
                 e.HasIndex(x => new { x.Status, x.CreatedOnUtc });
 
                 e.Property(x => x.RowVersion).IsRowVersion();
+
+
+            });
+
+
+        }
+                private static void ConfigureConversationThread(ModelBuilder b)
+        {
+            b.Entity<ConversationThread>(e =>
+            {
+                e.ToTable("ConversationThreads");
+                e.HasKey(x => x.Id);
+
+                e.Property(x => x.Subject).HasMaxLength(300).IsRequired();
+                e.Property(x => x.Status).IsRequired();
+
+                e.HasOne(x => x.Beneficiary)
+                    .WithMany()
+                    .HasForeignKey(x => x.BeneficiaryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasIndex(x => new { x.BeneficiaryId, x.Status });
+                e.HasIndex(x => x.LastMessageOnUtc);
+
+                e.Property(x => x.RowVersion).IsRowVersion();
             });
         }
+
+        private static void ConfigureConversationMessage(ModelBuilder b)
+        {
+            b.Entity<ConversationMessage>(e =>
+            {
+                e.ToTable("ConversationMessages");
+                e.HasKey(x => x.Id);
+
+                e.Property(x => x.SenderDisplayName).HasMaxLength(200).IsRequired();
+                e.Property(x => x.SenderUserId).HasMaxLength(80);
+                e.Property(x => x.MessageText).HasMaxLength(4000).IsRequired();
+
+                e.HasOne(x => x.Thread)
+                    .WithMany(x => x.Messages)
+                    .HasForeignKey(x => x.ThreadId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(x => x.Beneficiary)
+                    .WithMany()
+                    .HasForeignKey(x => x.BeneficiaryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasIndex(x => new { x.ThreadId, x.SentOnUtc });
+
+                e.Property(x => x.RowVersion).IsRowVersion();
+            });
+        }
+            private static void ConfigureAdminChatProfile(ModelBuilder b)
+        {
+            b.Entity<AdminChatProfile>(e =>
+            {
+                e.ToTable("AdminChatProfiles");
+                e.HasKey(x => x.Id);
+
+                e.Property(x => x.DisplayName).HasMaxLength(100).IsRequired();
+                e.Property(x => x.AvatarColor).HasMaxLength(30);
+
+                e.HasIndex(x => x.DisplayName).IsUnique();
+                e.Property(x => x.RowVersion).IsRowVersion();
+            });
+        }
+
     }
-}
+    }
+    

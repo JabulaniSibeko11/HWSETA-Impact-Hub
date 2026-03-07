@@ -6,5 +6,7 @@ namespace HWSETA_Impact_Hub.Services.Interface
     {
         Task<List<Cohort>> ListAsync(CancellationToken ct);
         Task<(bool ok, string? error)> CreateAsync(Guid currentUserId, Cohort cohort, CancellationToken ct);
+
+        Task<string> PreviewNextCodeAsync(int intakeYear, CancellationToken ct);
     }
 }

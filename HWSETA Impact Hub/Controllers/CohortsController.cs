@@ -40,6 +40,8 @@ namespace HWSETA_Impact_Hub.Controllers
                 IsActive = true
             };
 
+            vm.CohortCode = await _svc.PreviewNextCodeAsync(vm.IntakeYear, ct);
+
             await ReloadDropdowns(vm, ct);
             return View(vm);
         }
@@ -48,6 +50,9 @@ namespace HWSETA_Impact_Hub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CohortCreateVm vm, CancellationToken ct)
         {
+            // Cohort code is system-generated, not user-entered
+            vm.CohortCode = await _svc.PreviewNextCodeAsync(vm.IntakeYear, ct);
+
             if (!ModelState.IsValid)
             {
                 await ReloadDropdowns(vm, ct);
@@ -61,8 +66,16 @@ namespace HWSETA_Impact_Hub.Controllers
                 return View(vm);
             }
 
+            if (!Guid.TryParse(_user.UserId, out var userGuid) || userGuid == Guid.Empty)
+            {
+                ModelState.AddModelError("", "Current user is not available. Please sign in again.");
+                await ReloadDropdowns(vm, ct);
+                return View(vm);
+            }
+
             var entity = new Cohort
             {
+                // service will finalise/generate the code again safely
                 CohortCode = vm.CohortCode,
                 ProgrammeId = vm.ProgrammeId,
                 ProviderId = vm.ProviderId,
@@ -75,16 +88,29 @@ namespace HWSETA_Impact_Hub.Controllers
 
                 IsActive = vm.IsActive
             };
-            if (!Guid.TryParse(_user.UserId, out var userGuid) || userGuid == Guid.Empty)
+
+            var (ok, error) = await _svc.CreateAsync(userGuid, entity, ct);
+
+            if (!ok)
             {
-                ModelState.AddModelError("", "Current user is not available. Please sign in again.");
+                ModelState.AddModelError("", error ?? "Failed to create cohort.");
+                vm.CohortCode = await _svc.PreviewNextCodeAsync(vm.IntakeYear, ct);
                 await ReloadDropdowns(vm, ct);
                 return View(vm);
             }
 
-            var (ok, error) = await _svc.CreateAsync(userGuid, entity, ct);
             TempData["Success"] = "Cohort created successfully.";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> PreviewCode(int intakeYear, CancellationToken ct)
+        {
+            if (intakeYear < 2000 || intakeYear > 2100)
+                return Json(new { code = "" });
+
+            var code = await _svc.PreviewNextCodeAsync(intakeYear, ct);
+            return Json(new { code });
         }
         [HttpGet]
         public async Task<IActionResult> Details(Guid id, CancellationToken ct)

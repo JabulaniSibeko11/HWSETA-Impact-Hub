@@ -17,51 +17,113 @@
             private readonly ApplicationDbContext _db;
             private readonly ICurrentUserService _user;
             private readonly IAesEncryptionService _enc;
+            private readonly ISaIdParserService _saIdParser;
 
             public BeneficiaryService(
                 ApplicationDbContext db,
                 ICurrentUserService user,
-                IAesEncryptionService enc)
+                IAesEncryptionService enc,
+                ISaIdParserService saIdParser)
             {
                 _db = db;
                 _user = user;
                 _enc = enc;
+                _saIdParser = saIdParser;
             }
 
             public async Task<List<BeneficiaryListVm>> ListAsync(CancellationToken ct)
             {
-                var list = await _db.Beneficiaries
+                var rows = await _db.Beneficiaries
                     .AsNoTracking()
+                    .Include(x => x.Address)
+                        .ThenInclude(a => a.Province)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.IdentifierType,
+                        x.IdentifierValue,
+                        x.FirstName,
+                        x.LastName,
+                        x.Email,
+                        x.MobileNumber,
+                        Province = x.Address != null && x.Address.Province != null
+                            ? x.Address.Province.Name
+                            : "",
+                        City = x.Address != null
+                            ? x.Address.City
+                            : "",
+                        x.RegistrationStatus,
+                        x.IsActive
+                    })
+                    .ToListAsync(ct);
+
+                var list = rows
                     .Select(x => new BeneficiaryListVm
                     {
                         Id = x.Id,
                         IdentifierType = x.IdentifierType.ToString(),
                         IdentifierValue = x.IdentifierValue ?? "",
-                        FullName = ((x.FirstName ?? "") + " " + (x.LastName ?? "")).Trim(),
+                        FullName = $"{x.FirstName ?? ""} {x.LastName ?? ""}".Trim(),
                         Email = x.Email ?? "",
                         MobileNumber = x.MobileNumber ?? "",
-                        Province = x.Address != null && x.Address.Province != null
-                            ? (x.Address.Province.Name ?? "")
-                            : "",
-                        City = x.Address != null
-                            ? (x.Address.City ?? "")
-                            : "",
+                        Province = x.Province ?? "",
+                        City = x.City ?? "",
                         RegistrationStatus = x.RegistrationStatus.ToString(),
                         IsActive = x.IsActive
                     })
                     .OrderBy(x => x.FullName)
-                    .ToListAsync(ct);
+                    .ToList();
 
                 return list;
             }
 
             public async Task<(bool ok, string? error, Guid? beneficiaryId)> CreateAsync(BeneficiaryCreateVm vm, CancellationToken ct)
             {
-                var idVal = vm.IdentifierValue.Trim();
-                var idHash = _enc.BlindIndex(idVal) ?? "";
+                var idVal = (vm.IdentifierValue ?? "").Trim();
                 var emailVal = string.IsNullOrWhiteSpace(vm.Email) ? null : vm.Email.Trim();
 
-                // Duplicate check uses the blind index (IdentifierValue is encrypted)
+                if (string.IsNullOrWhiteSpace(idVal))
+                    return (false, "Identifier Value is required.", null);
+
+                Guid genderId = vm.GenderId;
+                Guid citizenshipStatusId = vm.CitizenshipStatusId;
+                DateTime dateOfBirth = vm.DateOfBirth.Date;
+
+                if (vm.IdentifierType == IdentifierType.SaId)
+                {
+                    var parsed = _saIdParser.Parse(idVal);
+                    if (!parsed.IsValid)
+                        return (false, parsed.Error ?? "Invalid South African ID number.", null);
+
+                    idVal = parsed.NormalisedId;
+                    dateOfBirth = parsed.DateOfBirth!.Value.Date;
+
+                    var genderName = parsed.IsMale == true ? "Male" : "Female";
+                    var citizenshipName = parsed.IsSouthAfricanCitizen == true
+                        ? "South African Citizen"
+                        : "Permanent Resident";
+
+                    genderId = await _db.Genders
+                        .AsNoTracking()
+                        .Where(x => x.IsActive && x.Name == genderName)
+                        .Select(x => x.Id)
+                        .FirstOrDefaultAsync(ct);
+
+                    if (genderId == Guid.Empty)
+                        return (false, $"Gender lookup '{genderName}' is missing.", null);
+
+                    citizenshipStatusId = await _db.CitizenshipStatuses
+                        .AsNoTracking()
+                        .Where(x => x.IsActive && x.Name == citizenshipName)
+                        .Select(x => x.Id)
+                        .FirstOrDefaultAsync(ct);
+
+                    if (citizenshipStatusId == Guid.Empty)
+                        return (false, $"Citizenship lookup '{citizenshipName}' is missing.", null);
+                }
+
+                var idHash = _enc.BlindIndex(idVal) ?? "";
+
                 var exists = await _db.Beneficiaries.AnyAsync(x =>
                     x.IdentifierType == vm.IdentifierType &&
                     x.IdentifierValueHash == idHash, ct);
@@ -69,12 +131,11 @@
                 if (exists)
                     return (false, "Beneficiary already exists (same ID/Passport).", null);
 
-                // Create Address first (required)
                 var addr = new Address
                 {
-                    AddressLine1 = vm.AddressLine1.Trim(),
-                    City = vm.City.Trim(),
-                    PostalCode = vm.PostalCode.Trim(),
+                    AddressLine1 = (vm.AddressLine1 ?? "").Trim(),
+                    City = (vm.City ?? "").Trim(),
+                    PostalCode = (vm.PostalCode ?? "").Trim(),
                     ProvinceId = vm.ProvinceId,
                     CreatedOnUtc = DateTime.UtcNow,
                     CreatedByUserId = _user.UserId
@@ -83,24 +144,25 @@
                 var b = new Beneficiary
                 {
                     IdentifierType = vm.IdentifierType,
-                    IdentifierValue = idVal,        // encrypted by EF Value Converter
-                    IdentifierValueHash = idHash,       // blind index for lookups/unique constraint
-                    FirstName = vm.FirstName.Trim(),
-                    MiddleName = string.IsNullOrWhiteSpace(vm.MiddleName) ? null : vm.MiddleName.Trim(),
-                    LastName = vm.LastName.Trim(),
-                    DateOfBirth = vm.DateOfBirth,
+                    IdentifierValue = idVal,
+                    IdentifierValueHash = idHash,
 
-                    GenderId = vm.GenderId,
+                    FirstName = (vm.FirstName ?? "").Trim(),
+                    MiddleName = string.IsNullOrWhiteSpace(vm.MiddleName) ? null : vm.MiddleName.Trim(),
+                    LastName = (vm.LastName ?? "").Trim(),
+                    DateOfBirth = dateOfBirth,
+
+                    GenderId = genderId,
                     RaceId = vm.RaceId,
-                    CitizenshipStatusId = vm.CitizenshipStatusId,
+                    CitizenshipStatusId = citizenshipStatusId,
                     DisabilityStatusId = vm.DisabilityStatusId,
                     DisabilityTypeId = vm.DisabilityTypeId,
                     EducationLevelId = vm.EducationLevelId,
                     EmploymentStatusId = vm.EmploymentStatusId,
 
-                    Email = emailVal,             // encrypted by EF Value Converter
+                    Email = emailVal,
                     EmailHash = _enc.BlindIndex(emailVal),
-                    MobileNumber = vm.MobileNumber.Trim(),
+                    MobileNumber = (vm.MobileNumber ?? "").Trim(),
                     AltNumber = string.IsNullOrWhiteSpace(vm.AltNumber) ? null : vm.AltNumber.Trim(),
 
                     ConsentGiven = false,
@@ -118,8 +180,6 @@
 
                 return (true, null, b.Id);
             }
-
-
 
             public async Task<BeneficiaryImportResultVm> ImportFromExcelAsync(IFormFile file, CancellationToken ct)
             {
@@ -882,15 +942,16 @@
 
             public async Task<(bool ok, string? error)> SetActiveAsync(Guid id, bool isActive, CancellationToken ct)
             {
-                var entity = await _db.Beneficiaries.FirstOrDefaultAsync(x => x.Id == id, ct);
-                if (entity == null)
+                var affected = await _db.Beneficiaries
+                    .Where(x => x.Id == id)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.IsActive, isActive)
+                        .SetProperty(x => x.UpdatedOnUtc, DateTime.UtcNow)
+                        .SetProperty(x => x.UpdatedByUserId, _user.UserId), ct);
+
+                if (affected == 0)
                     return (false, "Beneficiary not found.");
 
-                entity.IsActive = isActive;
-                entity.UpdatedOnUtc = DateTime.UtcNow;
-                entity.UpdatedByUserId = _user.UserId;
-
-                await _db.SaveChangesAsync(ct);
                 return (true, null);
             }
         }
