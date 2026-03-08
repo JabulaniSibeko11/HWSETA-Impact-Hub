@@ -37,5 +37,11 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public DateTime? CompletedAtUtc { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        public string? Status { get; set; }
+
+        public DateTime? SentOnUtc { get; set; }
+        
+        public DateTime ? ExpiryOnUtc { get; set; }
     }
 }

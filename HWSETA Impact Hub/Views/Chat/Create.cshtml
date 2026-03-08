@@ -5,57 +5,90 @@
 
 <link rel="stylesheet" href="~/css/beneficiarycreatecss.css" />
 
-<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+<div class="hw-page-head">
     <div>
-        <div class="hw-page-eyebrow"><i class="bi bi-envelope-plus me-1"></i>Communication Centre</div>
-        <h1 class="hw-page-title">Start <span>Conversation</span></h1>
+        <div class="hw-page-eyebrow">
+            <i class="bi bi-envelope-plus"></i> Communication Centre
+        </div>
+
+        <h1 class="hw-page-title">
+            Start <span>Conversation</span>
+        </h1>
     </div>
-    <a asp-action="Index" class="hw-btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+
+    <a asp-action="Index" class="hw-btn-outline">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
 </div>
 
 <div class="hw-card">
     <div class="hw-card-head">
-        <div class="hw-card-icon green"><i class="bi bi-chat-square-text"></i></div>
+        <div class="hw-card-icon green">
+            <i class="bi bi-chat-square-text"></i>
+        </div>
+
         <div>
             <div class="hw-card-title">New Thread</div>
-            <div class="hw-card-sub">Send the first message to a beneficiary using a system chatter name.</div>
+            <div class="hw-card-sub">
+                Send the first message and optionally attach a published form.
+            </div>
         </div>
     </div>
+
     <div class="hw-card-body">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
 
-            <div class="hw-field" style="margin-bottom:16px;">
-                <label asp-for="AdminChatProfileId" class="hw-field-label">Send As</label>
+            <div class="hw-field">
+                <label class="hw-field-label" asp-for="AdminChatProfileId">Send As</label>
                 <select asp-for="AdminChatProfileId" asp-items="Model.AdminChatProfiles" class="hw-select">
                     <option value="">— Select chatter name —</option>
                 </select>
                 <span asp-validation-for="AdminChatProfileId" class="hw-field-error"></span>
             </div>
 
-            <div class="hw-field" style="margin-bottom:16px;">
-                <label asp-for="BeneficiaryId" class="hw-field-label">Beneficiary</label>
+            <div class="hw-field">
+                <label class="hw-field-label" asp-for="BeneficiaryId">Beneficiary</label>
                 <select asp-for="BeneficiaryId" asp-items="Model.Beneficiaries" class="hw-select">
                     <option value="">— Select beneficiary —</option>
                 </select>
                 <span asp-validation-for="BeneficiaryId" class="hw-field-error"></span>
             </div>
 
-            <div class="hw-field" style="margin-bottom:16px;">
-                <label asp-for="Subject" class="hw-field-label">Subject</label>
+            <div class="hw-field">
+                <label class="hw-field-label" asp-for="Subject"></label>
                 <input asp-for="Subject" class="hw-input" />
                 <span asp-validation-for="Subject" class="hw-field-error"></span>
             </div>
 
             <div class="hw-field">
-                <label asp-for="MessageText" class="hw-field-label">Message</label>
-                <textarea asp-for="MessageText" class="hw-input" rows="7"></textarea>
+                <label class="hw-field-label" asp-for="MessageText">Opening Message</label>
+                <textarea asp-for="MessageText" rows="5" class="hw-input"></textarea>
                 <span asp-validation-for="MessageText" class="hw-field-error"></span>
             </div>
 
-            <div style="margin-top:16px;">
-                <button type="submit" class="hw-btn-primary">
-                    <i class="bi bi-send"></i> Start Conversation
+            <div class="hw-section-divider" style="margin:22px 0 16px 0;">
+                <span>Optional Form Attachment</span>
+            </div>
+
+            <div class="hw-field">
+                <label class="hw-field-label" asp-for="FormPublishId">Attach Published Form</label>
+                <select asp-for="FormPublishId" asp-items="Model.PublishedForms" class="hw-select">
+                    <option value="">— No form attachment —</option>
+                </select>
+                <span asp-validation-for="FormPublishId" class="hw-field-error"></span>
+            </div>
+
+            <div class="hw-field">
+                <label class="hw-field-label" asp-for="FormNote">Form Note</label>
+                <textarea asp-for="FormNote" rows="4" class="hw-input"></textarea>
+                <span asp-validation-for="FormNote" class="hw-field-error"></span>
+            </div>
+
+            <div style="margin-top:20px">
+                <button class="hw-btn-primary">
+                    <i class="bi bi-send"></i>
+                    Start Conversation
                 </button>
             </div>
         </form>

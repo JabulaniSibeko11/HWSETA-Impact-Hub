@@ -43,8 +43,9 @@ namespace HWSETA_Impact_Hub.Controllers
                 reloadVm.BeneficiaryId = vm.BeneficiaryId;
                 reloadVm.Subject = vm.Subject;
                 reloadVm.MessageText = vm.MessageText;
-                reloadVm.AdminChatProfiles = reloadVm.AdminChatProfiles;
                 reloadVm.AdminChatProfileId = vm.AdminChatProfileId;
+                reloadVm.FormPublishId = vm.FormPublishId;
+                reloadVm.FormNote = vm.FormNote;
                 return View(reloadVm);
             }
 
@@ -62,6 +63,8 @@ namespace HWSETA_Impact_Hub.Controllers
                 reloadVm.Subject = vm.Subject;
                 reloadVm.MessageText = vm.MessageText;
                 reloadVm.AdminChatProfileId = vm.AdminChatProfileId;
+                reloadVm.FormPublishId = vm.FormPublishId;
+                reloadVm.FormNote = vm.FormNote;
                 return View(reloadVm);
             }
 
@@ -101,6 +104,34 @@ namespace HWSETA_Impact_Hub.Controllers
             }
 
             TempData["Success"] = "Reply sent.";
+            return RedirectToAction(nameof(Thread), new { id = vm.ThreadId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendForm(SendThreadFormVm vm, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Please select a chatter name and a published form.";
+                return RedirectToAction(nameof(Thread), new { id = vm.ThreadId });
+            }
+
+            var (ok, error) = await _svc.SendFormAsync(
+                vm.ThreadId,
+                vm.AdminChatProfileId,
+                vm.FormPublishId,
+                vm.Note,
+                _user.UserId ?? "",
+                ct);
+
+            if (!ok)
+            {
+                TempData["Error"] = error ?? "Failed to send form.";
+                return RedirectToAction(nameof(Thread), new { id = vm.ThreadId });
+            }
+
+            TempData["Success"] = "Form shared successfully.";
             return RedirectToAction(nameof(Thread), new { id = vm.ThreadId });
         }
 

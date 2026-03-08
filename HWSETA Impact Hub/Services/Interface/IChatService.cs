@@ -23,6 +23,14 @@ namespace HWSETA_Impact_Hub.Services.Interface
             string currentUserId,
             CancellationToken ct);
 
+        Task<(bool ok, string? error)> SendFormAsync(
+            Guid threadId,
+            Guid? adminChatProfileId,
+            Guid? formPublishId,
+            string? note,
+            string currentUserId,
+            CancellationToken ct);
+
         Task<(bool ok, string? error)> CloseThreadAsync(Guid threadId, CancellationToken ct);
 
         Task<List<AdminChatProfileOptionVm>> GetAdminChatProfilesAsync(CancellationToken ct);

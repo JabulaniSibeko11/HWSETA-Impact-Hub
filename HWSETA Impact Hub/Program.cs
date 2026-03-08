@@ -137,6 +137,8 @@ builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<INotificationFeedService, NotificationFeedService>();
 builder.Services.AddScoped<AdminChatProfileSeeder>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IBeneficiaryPortalService, BeneficiaryPortalService>();
+builder.Services.AddScoped<ILoginRedirectService, LoginRedirectService>();
 
 var app = builder.Build();
 await IdentitySeeder.SeedAsync(app.Services);

@@ -687,6 +687,8 @@ namespace HWSETA_Impact_Hub.Data
                 e.Property(x => x.SenderUserId).HasMaxLength(80);
                 e.Property(x => x.MessageText).HasMaxLength(4000).IsRequired();
 
+                e.Property(x => x.IsFormShareMessage).HasDefaultValue(false);
+
                 e.HasOne(x => x.Thread)
                     .WithMany(x => x.Messages)
                     .HasForeignKey(x => x.ThreadId)
@@ -697,12 +699,27 @@ namespace HWSETA_Impact_Hub.Data
                     .HasForeignKey(x => x.BeneficiaryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                e.HasOne(x => x.AdminChatProfile)
+                    .WithMany()
+                    .HasForeignKey(x => x.AdminChatProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(x => x.FormPublish)
+                    .WithMany()
+                    .HasForeignKey(x => x.FormPublishId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(x => x.BeneficiaryFormInvite)
+                    .WithMany()
+                    .HasForeignKey(x => x.BeneficiaryFormInviteId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 e.HasIndex(x => new { x.ThreadId, x.SentOnUtc });
 
                 e.Property(x => x.RowVersion).IsRowVersion();
             });
         }
-            private static void ConfigureAdminChatProfile(ModelBuilder b)
+        private static void ConfigureAdminChatProfile(ModelBuilder b)
         {
             b.Entity<AdminChatProfile>(e =>
             {

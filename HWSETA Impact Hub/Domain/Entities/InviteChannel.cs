@@ -6,7 +6,8 @@ namespace HWSETA_Impact_Hub.Domain.Entities
     {
         Email = 1,
         Sms = 2,
-        Both = 3
+        Both = 3,
+        Chat = 4,
     }
 
     public enum InviteStatus

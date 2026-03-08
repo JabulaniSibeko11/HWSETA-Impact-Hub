@@ -29,5 +29,14 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public Guid? AdminChatProfileId { get; set; }
         public AdminChatProfile? AdminChatProfile { get; set; }
 
+        // NEW: form-share support
+        public bool IsFormShareMessage { get; set; }
+
+        public Guid? FormPublishId { get; set; }
+        public FormPublish? FormPublish { get; set; }
+
+        public Guid? BeneficiaryFormInviteId { get; set; }
+        public BeneficiaryFormInvite? BeneficiaryFormInvite { get; set; }
+
     }
 }

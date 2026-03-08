@@ -23,5 +23,7 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Chats
         [Required]
         [StringLength(4000)]
         public string ReplyText { get; set; } = "";
+
+        public SendThreadFormVm SendForm { get; set; } = new();
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace HWSETA_Impact_Hub.Infrastructure.Identity
+﻿using HWSETA_Impact_Hub.Infrastructure.Confugations;
+
+namespace HWSETA_Impact_Hub.Infrastructure.Identity
 {
     public sealed class SecurityOptions
     {
@@ -9,6 +11,10 @@
         public BootstrapAdminOptions BootstrapAdmin { get; set; } = new();
 
         public List<AdminMenuItem> AdminMenu { get; set; } = new();
+
+    
+            public LoginRedirectsOptions LoginRedirects { get; set; } = new();
+        
     }
 
 

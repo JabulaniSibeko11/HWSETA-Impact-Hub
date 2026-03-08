@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="~/HWSETA_Impact_Hub.styles.css" asp-append-version="true" />
 
     <link href="~/css/layoutcss.css" rel="stylesheet" />
+    <link href="~/css/FeedbackCss.css" rel="stylesheet" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -103,6 +104,12 @@
                     <div class="hw-section-label">Navigation</div>
                     <div class="hw-nav-item">
                         <a class="hw-nav-link active" asp-area="" asp-controller="Home" asp-action="Index" data-tip="Home">
+                            <span class="hw-nav-icon"><i class="bi bi-house-door"></i></span>
+                            <span class="hw-nav-label">Home</span>
+                        </a>
+                    </div>
+                    <div class="hw-nav-item">
+                        <a class="hw-nav-link active" asp-area="" asp-controller="BeneficiaryPortal" asp-action="Index" data-tip="Beneficiary Portal">
                             <span class="hw-nav-icon"><i class="bi bi-house-door"></i></span>
                             <span class="hw-nav-label">Home</span>
                         </a>

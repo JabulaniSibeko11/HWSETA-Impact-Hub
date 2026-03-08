@@ -3,30 +3,23 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HWSETA_Impact_Hub.Models.ViewModels.Chats
 {
-    public sealed class CreateThreadVm
+    public sealed class SendThreadFormVm
     {
         [Required]
-        public Guid BeneficiaryId { get; set; }
-
-        [Required]
-        [StringLength(300)]
-        public string Subject { get; set; } = "";
-
-        [StringLength(4000)]
-        public string MessageText { get; set; } = "";
+        public Guid ThreadId { get; set; }
 
         [Required]
         [Display(Name = "Send As")]
         public Guid? AdminChatProfileId { get; set; }
 
-        [Display(Name = "Attach Published Form")]
+        [Required]
+        [Display(Name = "Published Form")]
         public Guid? FormPublishId { get; set; }
 
         [StringLength(1000)]
-        [Display(Name = "Form Note")]
-        public string? FormNote { get; set; }
+        [Display(Name = "Optional Note")]
+        public string? Note { get; set; }
 
-        public List<SelectListItem> Beneficiaries { get; set; } = new();
         public List<SelectListItem> AdminChatProfiles { get; set; } = new();
         public List<SelectListItem> PublishedForms { get; set; } = new();
     }
