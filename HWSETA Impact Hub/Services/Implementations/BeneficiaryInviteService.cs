@@ -241,7 +241,7 @@ namespace HWSETA_Impact_Hub.Services.Implementations
                 note: "Password set step completed", ct: ct);
         }
 
-        public async Task MarkLocationCapturedAsync(Guid beneficiaryId, decimal lat, decimal lon, CancellationToken ct)
+        public async Task MarkLocationCapturedAsync(Guid beneficiaryId, string lat, string lon, CancellationToken ct)
         {
             var ben = await _db.Beneficiaries.FirstAsync(x => x.Id == beneficiaryId, ct);
             ben.Latitude = lat;

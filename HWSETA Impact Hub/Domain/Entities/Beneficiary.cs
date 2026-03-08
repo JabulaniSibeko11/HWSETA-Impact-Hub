@@ -106,8 +106,8 @@ namespace HWSETA_Impact_Hub.Domain.Entities
         public DateTime? RegistrationSubmittedAt { get; set; }
 
         // GPS
-        public decimal? Latitude { get; set; }
-        public decimal? Longitude { get; set; }
+        public string? Latitude { get; set; }
+        public string? Longitude { get; set; }
 
         // If registration indicates “Completed”, we require proof upload:
         public string? ProofOfCompletionPath { get; set; }

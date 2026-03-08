@@ -8,9 +8,9 @@ namespace HWSETA_Impact_Hub.Models.ViewModels.Registrations
         public string Token { get; set; } = "";
 
         [Required]
-        public decimal Latitude { get; set; }
+        public string Latitude { get; set; }
 
         [Required]
-        public decimal Longitude { get; set; }
+        public string Longitude { get; set; }
     }
 }

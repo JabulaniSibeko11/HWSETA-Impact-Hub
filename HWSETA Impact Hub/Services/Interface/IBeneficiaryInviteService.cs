@@ -11,7 +11,7 @@ namespace HWSETA_Impact_Hub.Services.Interface
         Task<(bool ok, Guid beneficiaryId, string? error)> ValidateTokenAsync(string token, CancellationToken ct);
 
         Task MarkPasswordSetAsync(Guid beneficiaryId, CancellationToken ct);
-        Task MarkLocationCapturedAsync(Guid beneficiaryId, decimal lat, decimal lon, CancellationToken ct);
+        Task MarkLocationCapturedAsync(Guid beneficiaryId, string lat, string lon, CancellationToken ct);
 
 
 

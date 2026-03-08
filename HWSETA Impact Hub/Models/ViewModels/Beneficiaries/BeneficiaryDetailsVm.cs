@@ -41,8 +41,8 @@
         public DateTime? LocationCapturedAt { get; set; }
         public DateTime? RegistrationSubmittedAt { get; set; }
 
-        public decimal? Latitude { get; set; }
-        public decimal? Longitude { get; set; }
+        public string? Latitude { get; set; }
+        public string? Longitude { get; set; }
 
         public string ProofOfCompletionPath { get; set; } = "";
         public DateTime? ProofUploadedAt { get; set; }
