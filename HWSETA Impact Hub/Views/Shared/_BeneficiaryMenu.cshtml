@@ -1,0 +1,61 @@
+﻿<div class="hw-section-label">My Portal</div>
+
+<div class="hw-nav-item">
+    <a class="hw-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BeneficiaryPortal" ? "active" : "")"
+       asp-controller="BeneficiaryPortal"
+       asp-action="Index"
+       data-tip="My Dashboard">
+        <span class="hw-nav-icon"><i class="bi bi-speedometer2"></i></span>
+        <span class="hw-nav-label">My Dashboard</span>
+    </a>
+</div>
+
+<div class="hw-nav-item">
+    <a class="hw-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BeneficiaryForms" ? "active" : "")"
+       asp-controller="BeneficiaryForms"
+       asp-action="Index"
+       data-tip="My Forms">
+        <span class="hw-nav-icon"><i class="bi bi-file-earmark-text"></i></span>
+        <span class="hw-nav-label">My Forms</span>
+    </a>
+</div>
+
+<div class="hw-nav-item">
+    <a class="hw-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BeneficiaryMessages" ? "active" : "")"
+       asp-controller="BeneficiaryMessages"
+       asp-action="Index"
+       data-tip="My Messages">
+        <span class="hw-nav-icon"><i class="bi bi-chat-dots"></i></span>
+        <span class="hw-nav-label">My Messages</span>
+    </a>
+</div>
+
+<div class="hw-nav-item">
+    <a class="hw-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BeneficiaryEnrollments" ? "active" : "")"
+       asp-controller="BeneficiaryEnrollments"
+       asp-action="Index"
+       data-tip="My Enrolments">
+        <span class="hw-nav-icon"><i class="bi bi-mortarboard"></i></span>
+        <span class="hw-nav-label">My Enrolments</span>
+    </a>
+</div>
+
+<div class="hw-nav-item">
+    <a class="hw-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BeneficiaryProfile" ? "active" : "")"
+       asp-controller="BeneficiaryProfile"
+       asp-action="Index"
+       data-tip="My Profile">
+        <span class="hw-nav-icon"><i class="bi bi-person-circle"></i></span>
+        <span class="hw-nav-label">My Profile</span>
+    </a>
+</div>
+
+<div class="hw-nav-item">
+    <a class="hw-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BeneficiaryNotifications" ? "active" : "")"
+       asp-controller="BeneficiaryNotifications"
+       asp-action="Index"
+       data-tip="Notifications">
+        <span class="hw-nav-icon"><i class="bi bi-bell"></i></span>
+        <span class="hw-nav-label">Notifications</span>
+    </a>
+</div>

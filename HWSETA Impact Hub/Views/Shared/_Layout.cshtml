@@ -1,6 +1,7 @@
 ﻿@using HWSETA_Impact_Hub.Infrastructure.Identity
 @inject Microsoft.AspNetCore.Identity.SignInManager<ApplicationUser> SignInManager
 @inject Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> UserManager
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,14 +17,47 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/HWSETA_Impact_Hub.styles.css" asp-append-version="true" />
-
     <link href="~/css/layoutcss.css" rel="stylesheet" />
     <link href="~/css/FeedbackCss.css" rel="stylesheet" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+    @{
+        var isAuthenticated = User?.Identity?.IsAuthenticated == true;
 
-    @* ── PAGE LOADER ───────────────────────────────────── *@
+        var currentUser = isAuthenticated ? await UserManager.GetUserAsync(User) : null;
+        var roles = currentUser != null
+        ? await UserManager.GetRolesAsync(currentUser)
+        : new List<string>();
+
+        var isBeneficiary = roles.Any(r => r.Equals("Beneficiary", StringComparison.OrdinalIgnoreCase));
+        var isAdminSide = roles.Any(r =>
+        r.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+        r.Equals("ProgrammeManager", StringComparison.OrdinalIgnoreCase) ||
+        r.Equals("ExecutiveReadOnly", StringComparison.OrdinalIgnoreCase));
+
+        var homeController = isBeneficiary ? "BeneficiaryPortal" : "Home";
+        var homeAction = "Index";
+
+        var displayName = currentUser?.UserName ?? User?.Identity?.Name ?? "User";
+        var initials = "";
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            initials = string.Concat(
+            displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(w => w[0].ToString().ToUpper())
+            );
+
+            if (string.IsNullOrWhiteSpace(initials))
+            {
+                initials = displayName.Length >= 2
+                ? displayName[..2].ToUpper()
+                : displayName.ToUpper();
+            }
+        }
+    }
+
     <div id="hw-page-loader" role="status" aria-label="Loading application">
         <div class="hw-loader-mark">
             <div class="hw-loader-badge">IH</div>
@@ -36,29 +70,21 @@
         <div class="hw-loader-hint">Initialising system, please wait…</div>
     </div>
 
-    @* ── TOAST CONTAINER ──────────────────────────────── *@
     <div id="hw-toasts" aria-live="polite" aria-atomic="true"></div>
-
-    @* ── MOBILE OVERLAY ───────────────────────────────── *@
     <div id="hw-overlay" onclick="hwCloseMobile()"></div>
 
-    @* ── APP SHELL ────────────────────────────────────── *@
     <div id="hw-shell">
 
-        @* ╔══════════════════════════════════════════════╗
-           ║                  SIDEBAR                     ║
-           ╚══════════════════════════════════════════════╝ *@
         <aside id="hw-sidebar" aria-label="Main navigation">
-
-            @* Brand gradient stripe *@
             <div class="hw-sidebar-stripe"></div>
 
-            @* Logo / Brand *@
             <div class="hw-sidebar-head">
                 <div class="hw-sidebar-badge">IH</div>
                 <div class="hw-sidebar-brand">
                     <div class="hw-brand-name">HWSETA Impact Hub</div>
-                    <div class="hw-brand-sub">Beneficiary Management</div>
+                    <div class="hw-brand-sub">
+                        @(isBeneficiary ? "Beneficiary Portal" : "Beneficiary Management")
+                    </div>
                 </div>
                 <button class="hw-toggle-btn" id="hw-toggle-btn"
                         onclick="hwToggleSidebar()"
@@ -69,29 +95,41 @@
                 </button>
             </div>
 
-            @* ── DYNAMIC ADMIN MENU (from _AdminMenu partial) ── *@
             <nav class="hw-sidebar-nav" aria-label="Application menu">
-                @if (User?.Identity?.IsAuthenticated == true)
+                @if (isAuthenticated)
                 {
-                    @* Home *@
                     <div class="hw-section-label">Main</div>
+
                     <div class="hw-nav-item">
-                        <a class="hw-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
-                           asp-area="" asp-controller="Home" asp-action="Index"
+                        <a class="hw-nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == homeController) ? "active" : "")"
+                           asp-area=""
+                           asp-controller="@homeController"
+                           asp-action="@homeAction"
                            data-tip="Dashboard">
-                            <span class="hw-nav-icon"><i class="bi bi-grid-1x2"></i></span>
-                            <span class="hw-nav-label">Dashboard</span>
+                            <span class="hw-nav-icon">
+                                <i class="bi @(isBeneficiary ? "bi-person-circle" : "bi-grid-1x2")"></i>
+                            </span>
+                            <span class="hw-nav-label">
+                                @(isBeneficiary ? "My Dashboard" : "Dashboard")
+                            </span>
                         </a>
                     </div>
 
-                    @* Admin menu items rendered via partial *@
-                    <partial name="_AdminMenu" />
+                    @if (isBeneficiary)
+                    {
+                        <partial name="_BeneficiaryMenu" />
+                    }
+                    else if (isAdminSide)
+                    {
+                        <partial name="_AdminMenu" />
+                    }
 
-                    @* Privacy / static pages *@
                     <div class="hw-section-label">System</div>
                     <div class="hw-nav-item">
                         <a class="hw-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Privacy" ? "active" : "")"
-                           asp-area="" asp-controller="Home" asp-action="Privacy"
+                           asp-area=""
+                           asp-controller="Home"
+                           asp-action="Privacy"
                            data-tip="Privacy Policy">
                             <span class="hw-nav-icon"><i class="bi bi-shield-check"></i></span>
                             <span class="hw-nav-label">Privacy Policy</span>
@@ -100,22 +138,25 @@
                 }
                 else
                 {
-                    @* Non-authenticated minimal nav *@
                     <div class="hw-section-label">Navigation</div>
+
                     <div class="hw-nav-item">
-                        <a class="hw-nav-link active" asp-area="" asp-controller="Home" asp-action="Index" data-tip="Home">
+                        <a class="hw-nav-link active"
+                           asp-area=""
+                           asp-controller="Home"
+                           asp-action="Index"
+                           data-tip="Home">
                             <span class="hw-nav-icon"><i class="bi bi-house-door"></i></span>
                             <span class="hw-nav-label">Home</span>
                         </a>
                     </div>
+
                     <div class="hw-nav-item">
-                        <a class="hw-nav-link active" asp-area="" asp-controller="BeneficiaryPortal" asp-action="Index" data-tip="Beneficiary Portal">
-                            <span class="hw-nav-icon"><i class="bi bi-house-door"></i></span>
-                            <span class="hw-nav-label">Home</span>
-                        </a>
-                    </div>
-                    <div class="hw-nav-item">
-                        <a class="hw-nav-link" asp-area="" asp-controller="Home" asp-action="Privacy" data-tip="Privacy">
+                        <a class="hw-nav-link"
+                           asp-area=""
+                           asp-controller="Home"
+                           asp-action="Privacy"
+                           data-tip="Privacy">
                             <span class="hw-nav-icon"><i class="bi bi-shield-check"></i></span>
                             <span class="hw-nav-label">Privacy Policy</span>
                         </a>
@@ -123,22 +164,16 @@
                 }
             </nav>
 
-            @* ── User / Profile footer ── *@
             <div class="hw-sidebar-foot">
-                @if (User?.Identity?.IsAuthenticated == true)
+                @if (isAuthenticated)
                 {
-                    var currentUser = await UserManager.GetUserAsync(User);
-                    var displayName = currentUser?.UserName ?? User.Identity.Name ?? "User";
-                    var initials = string.Concat(displayName.Split(' ').Take(2).Select(w => w.Length > 0 ? w[0].ToString().ToUpper() : ""));
-                    if (initials.Length == 0) initials = displayName.Length >= 2 ? displayName[..2].ToUpper() : displayName.ToUpper();
-                    //var roles = await UserManager.GetRolesAsync(currentUser!);
-                    //var primaryRole = roles.FirstOrDefault() ?? "User";
-
                     <div class="hw-user-row" title="@displayName">
                         <div class="hw-user-avatar">@initials</div>
                         <div class="hw-user-info">
                             <div class="hw-user-name">@displayName</div>
-                            @* <div class="hw-user-role">@primaryRole</div> *@
+                            <div class="hw-user-role">
+                                @(isBeneficiary ? "Beneficiary" : roles.FirstOrDefault() ?? "User")
+                            </div>
                         </div>
                     </div>
                 }
@@ -153,27 +188,23 @@
                     </div>
                 }
             </div>
-
         </aside>
 
-        @* ╔══════════════════════════════════════════════╗
-           ║               MAIN WRAPPER                   ║
-           ╚══════════════════════════════════════════════╝ *@
         <div id="hw-main">
-
-            @* ── TOPBAR ──────────────────────────────── *@
             <header id="hw-topbar">
-
-                @* Mobile hamburger *@
                 <button class="hw-mobile-menu-btn" onclick="hwOpenMobile()" aria-label="Open navigation">
                     <i class="bi bi-list"></i>
                 </button>
 
-                @* Breadcrumb *@
                 <nav class="hw-breadcrumb" aria-label="breadcrumb">
-                    <a class="hw-bc-home" asp-area="" asp-controller="Home" asp-action="Index">
-                        <i class="bi bi-house-door-fill me-1"></i>Home
+                    <a class="hw-bc-home"
+                       asp-area=""
+                       asp-controller="@homeController"
+                       asp-action="@homeAction">
+                        <i class="bi bi-house-door-fill me-1"></i>
+                        @(isBeneficiary ? "My Portal" : "Home")
                     </a>
+
                     @if (ViewData["Title"] != null)
                     {
                         <i class="bi bi-chevron-right hw-bc-sep"></i>
@@ -181,33 +212,33 @@
                     }
                 </nav>
 
-                @* Right-side controls *@
                 <div class="hw-topbar-right">
-
-                    @* Search *@
-                    <div class="hw-search d-none d-md-block">
+                    <div class="hw-search d-none d-md-block" style="position:relative;">
                         <i class="bi bi-search hw-search-ico"></i>
-                        <input type="search" placeholder="Search…" aria-label="Search" />
+                        <input type="search"
+                               id="hw-global-search"
+                               placeholder="Search beneficiaries, forms, messages…"
+                               aria-label="Global search"
+                               autocomplete="off" />
+
+                        <div id="hw-search-results"
+                             style="display:none;position:absolute;top:110%;left:0;right:0;background:#fff;border:1px solid var(--hw-border);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.08);padding:8px;z-index:1000;max-height:420px;overflow:auto;">
+                        </div>
                     </div>
 
-                    @* Notifications *@
-                    @if (User?.Identity?.IsAuthenticated == true)
+                    @if (isAuthenticated)
                     {
                         @await Component.InvokeAsync("TopbarNotifications")
                     }
 
-                    @* Login partial (sign in / sign out / register links) *@
                     <partial name="_LoginPartial" />
-
                 </div>
             </header>
 
-            @* ── PAGE CONTENT ─────────────────────── *@
             <main id="hw-body" role="main">
                 @RenderBody()
             </main>
 
-            @* ── FOOTER ───────────────────────────── *@
             <footer id="hw-footer">
                 <div>
                     <span class="hw-footer-brand">HWSETA Impact Hub</span>
@@ -219,17 +250,14 @@
                     <a href="mailto:research@hwseta.org.za">Contact</a>
                 </div>
             </footer>
+        </div>
+    </div>
 
-        </div>@* /hw-main *@
-    </div>@* /hw-shell *@
-
-    @* ── SCRIPTS ──────────────────────────────────── *@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-        /* ── PAGE LOADER ──────────────────────────── */
         window.addEventListener('load', function () {
             setTimeout(function () {
                 var loader = document.getElementById('hw-page-loader');
@@ -237,10 +265,9 @@
             }, 1800);
         });
 
-        /* ── SIDEBAR TOGGLE ───────────────────────── */
         var _hwCollapsed = false;
-        var _hwSidebar   = document.getElementById('hw-sidebar');
-        var _hwMain      = document.getElementById('hw-main');
+        var _hwSidebar = document.getElementById('hw-sidebar');
+        var _hwMain = document.getElementById('hw-main');
         var _hwToggleBtn = document.getElementById('hw-toggle-btn');
 
         function hwToggleSidebar() {
@@ -248,10 +275,9 @@
             _hwSidebar.classList.toggle('hw-collapsed', _hwCollapsed);
             _hwMain.classList.toggle('hw-sidebar-collapsed', _hwCollapsed);
             _hwToggleBtn.setAttribute('aria-expanded', !_hwCollapsed);
-            try { localStorage.setItem('hw_sidebar_collapsed', _hwCollapsed ? '1' : '0'); } catch(e){}
+            try { localStorage.setItem('hw_sidebar_collapsed', _hwCollapsed ? '1' : '0'); } catch (e) {}
         }
 
-        /* Restore preference */
         (function () {
             try {
                 if (localStorage.getItem('hw_sidebar_collapsed') === '1') {
@@ -260,41 +286,40 @@
                     _hwMain.classList.add('hw-sidebar-collapsed');
                     _hwToggleBtn.setAttribute('aria-expanded', 'false');
                 }
-            } catch(e){}
+            } catch (e) {}
         })();
 
-        /* Hover-expand when collapsed (desktop only) */
         _hwSidebar.addEventListener('mouseenter', function () {
             if (_hwCollapsed && window.innerWidth > 768) _hwSidebar.classList.remove('hw-collapsed');
         });
+
         _hwSidebar.addEventListener('mouseleave', function () {
             if (_hwCollapsed && window.innerWidth > 768) _hwSidebar.classList.add('hw-collapsed');
         });
 
-        /* ── MOBILE SIDEBAR ───────────────────────── */
         function hwOpenMobile() {
             _hwSidebar.classList.add('hw-mobile-open');
             document.getElementById('hw-overlay').classList.add('hw-show');
             document.body.style.overflow = 'hidden';
         }
+
         function hwCloseMobile() {
             _hwSidebar.classList.remove('hw-mobile-open');
             document.getElementById('hw-overlay').classList.remove('hw-show');
             document.body.style.overflow = '';
         }
 
-        /* ── TOAST SYSTEM ─────────────────────────── */
         var _hwToastIcons = {
             success: 'bi-check-circle-fill',
-            error:   'bi-x-circle-fill',
+            error: 'bi-x-circle-fill',
             warning: 'bi-exclamation-triangle-fill',
-            info:    'bi-info-circle-fill'
+            info: 'bi-info-circle-fill'
         };
 
         function hwToast(type, title, message, duration) {
-            type     = type     || 'info';
-            title    = title    || type.charAt(0).toUpperCase() + type.slice(1);
-            message  = message  || '';
+            type = type || 'info';
+            title = title || type.charAt(0).toUpperCase() + type.slice(1);
+            message = message || '';
             duration = duration || 4500;
 
             var container = document.getElementById('hw-toasts');
@@ -321,23 +346,18 @@
             if (!el || el.classList.contains('hw-toast-out')) return;
             clearTimeout(el._hwTimer);
             el.classList.add('hw-toast-out');
-            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
+            setTimeout(function () {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }, 260);
         }
 
-        /* Expose globally so controllers / pages can call hwToast() from Razor TempData scripts */
-        window.hwToast        = hwToast;
+        window.hwToast = hwToast;
         window.hwDismissToast = hwDismissToast;
 
-        /* ── TEMPDATA TOAST BRIDGE ────────────────── */
-        /* Place this in your controllers:
-             TempData["ToastType"]    = "success";
-             TempData["ToastTitle"]   = "Saved";
-             TempData["ToastMessage"] = "Record updated successfully.";
-        */
         (function () {
             var type = '@(TempData["ToastType"] as string ?? "")';
-            var title= '@(TempData["ToastTitle"] as string ?? "")';
-            var msg  = '@(TempData["ToastMessage"] as string ?? "")';
+            var title = '@(TempData["ToastTitle"] as string ?? "")';
+            var msg = '@(TempData["ToastMessage"] as string ?? "")';
             if (type && title) {
                 window.addEventListener('load', function () {
                     setTimeout(function () { hwToast(type, title, msg); }, 400);
@@ -345,7 +365,108 @@
             }
         })();
     </script>
+    <script>
+        (function () {
+            const input = document.getElementById('hw-global-search');
+            const box = document.getElementById('hw-search-results');
+            let timer = null;
 
+            if (!input || !box) return;
+
+            function hideBox() {
+                box.style.display = 'none';
+                box.innerHTML = '';
+            }
+
+            function iconHtml(icon) {
+                return '<i class="bi ' + (icon || 'bi-search') + '" style="font-size:14px;color:var(--hw-green);"></i>';
+            }
+
+            function renderResults(data) {
+                if (!data || !data.results || data.results.length === 0) {
+                    box.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--hw-muted);">No results found.</div>';
+                    box.style.display = 'block';
+                    return;
+                }
+
+                const groups = {};
+                data.results.forEach(r => {
+                    if (!groups[r.section]) groups[r.section] = [];
+                    groups[r.section].push(r);
+                });
+
+                let html = '';
+                Object.keys(groups).forEach(section => {
+                    html += '<div style="padding:6px 8px 4px 8px;font-size:11px;font-weight:700;color:var(--hw-muted);text-transform:uppercase;">' + section + '</div>';
+
+                    groups[section].forEach(item => {
+                        html += `
+                            <a href="${item.url}"
+                               style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;text-decoration:none;color:inherit;">
+                                <div style="width:28px;height:28px;border-radius:8px;background:var(--hw-green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    ${iconHtml(item.icon)}
+                                </div>
+                                <div style="min-width:0;">
+                                    <div style="font-size:13px;font-weight:700;color:var(--hw-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                        ${item.title || ''}
+                                    </div>
+                                    <div style="font-size:12px;color:var(--hw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                        ${item.subtitle || ''}
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                });
+
+                box.innerHTML = html;
+                box.style.display = 'block';
+            }
+
+            async function runSearch(query) {
+                try {
+                    const res = await fetch('/Search/Quick?q=' + encodeURIComponent(query));
+                    if (!res.ok) {
+                        hideBox();
+                        return;
+                    }
+
+                    const data = await res.json();
+                    renderResults(data);
+                } catch {
+                    hideBox();
+                }
+            }
+
+            input.addEventListener('input', function () {
+                const q = (input.value || '').trim();
+
+                clearTimeout(timer);
+
+                if (q.length < 2) {
+                    hideBox();
+                    return;
+                }
+
+                timer = setTimeout(function () {
+                    runSearch(q);
+                }, 250);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!box.contains(e.target) && e.target !== input) {
+                    hideBox();
+                }
+            });
+
+            input.addEventListener('focus', function () {
+                const q = (input.value || '').trim();
+                if (q.length >= 2) {
+                    runSearch(q);
+                }
+            });
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

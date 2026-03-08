@@ -3,6 +3,7 @@ using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Infrastructure.Audit;
 using HWSETA_Impact_Hub.Infrastructure.Confugations;
 using HWSETA_Impact_Hub.Infrastructure.Encryption;
+
 using HWSETA_Impact_Hub.Infrastructure.Identity;
 using HWSETA_Impact_Hub.Infrastructure.RequestContext;
 using HWSETA_Impact_Hub.Infrastructure.Seed;
@@ -10,8 +11,9 @@ using HWSETA_Impact_Hub.Services.Implementations;
 using HWSETA_Impact_Hub.Services.Implementations.HWSETA_Impact_Hub.Services.Implementations;
 using HWSETA_Impact_Hub.Services.Interface;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
-using HWSETA_Impact_Hub.Infrastructure.Encryption;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Connection string
@@ -139,6 +141,8 @@ builder.Services.AddScoped<AdminChatProfileSeeder>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IBeneficiaryPortalService, BeneficiaryPortalService>();
 builder.Services.AddScoped<ILoginRedirectService, LoginRedirectService>();
+builder.Services.AddScoped<IEmailSender, IdentityEmailSender>();
+builder.Services.AddScoped<IGlobalSearchService, GlobalSearchService>();
 
 var app = builder.Build();
 await IdentitySeeder.SeedAsync(app.Services);
