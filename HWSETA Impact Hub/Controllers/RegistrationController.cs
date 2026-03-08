@@ -1,4 +1,5 @@
-﻿using HWSETA_Impact_Hub.Data;
+﻿using DocumentFormat.OpenXml.InkML;
+using HWSETA_Impact_Hub.Data;
 using HWSETA_Impact_Hub.Domain.Entities;
 using HWSETA_Impact_Hub.Infrastructure.Confugations;
 using HWSETA_Impact_Hub.Models.ViewModels.Registrations;
@@ -456,16 +457,30 @@ namespace HWSETA_Impact_Hub.Controllers
             if (qualificationTypeId == Guid.Empty)
                 return Ok(Array.Empty<object>());
 
-            var items = await _db.Cohorts.AsNoTracking()
-                .Where(c => c.IsActive && c.QualificationTypeId == qualificationTypeId)
-                .Select(c => new { c.ProgrammeId, c.Programme.ProgrammeName })
-                .Distinct()
-                .OrderBy(x => x.ProgrammeName)
-                .Select(x => new { id = x.ProgrammeId, name = x.ProgrammeName })
-                .ToListAsync(ct);
+            //var items = await _db.Cohorts.AsNoTracking()
+            //    .Where(c => c.IsActive && c.QualificationTypeId == qualificationTypeId)
+            //    .Select(c => new { c.ProgrammeId, c.Programme.ProgrammeName })
+            //    .Distinct()
+            //    .OrderBy(x => x.ProgrammeName)
+            //    .Select(x => new { id = x.ProgrammeId, name = x.ProgrammeName })
+            //    .ToListAsync(ct);
+
+            var items = await _db.Programmes
+                .Where(p => p.QualificationTypeId == qualificationTypeId && p.IsActive)
+                .OrderBy(p => p.ProgrammeName)
+                .Select(p => new
+                {
+                    id = p.Id,
+                    name = p.ProgrammeName
+                })
+                .ToListAsync();
 
             return Ok(items);
         }
+
+
+        
+
         private async Task<List<SelectListItem>> GetProgrammesSelectListAsync(Guid qualificationTypeId, CancellationToken ct)
         {
             var items = await _db.Cohorts.AsNoTracking()

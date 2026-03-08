@@ -439,7 +439,7 @@
 
     </div><!-- /.hw-form-body -->
 </div><!-- /.hw-reg-wrap -->
-@section Scripts {
+
     <partial name="_ValidationScriptsPartial" />
     <script>
         (function () {
@@ -477,11 +477,13 @@
                 }
             }
 
+            
             if (qual) {
-                qual.addEventListener('change', function () { loadProgrammes(this.value); });
-                // if pre-selected (validation fail), don't reset the programme list
-                if (qual.value && (!prog || prog.options.length <= 1)) loadProgrammes(qual.value);
-            }
+                qual.addEventListener('change', function () {
+                //console.log("Qualification changed:", this.value);
+                loadProgrammes(this.value);
+            });
+        }
 
             // ── Completion letter notice ──────────────────────────────
             const status = document.getElementById('ProgressStatus');
@@ -529,4 +531,3 @@
             }
         })();
     </script>
-}
