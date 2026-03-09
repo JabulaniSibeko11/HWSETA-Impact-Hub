@@ -1,142 +1,424 @@
 ﻿@model HWSETA_Impact_Hub.Models.ViewModels.Forms.FormPublishVm
 @{
     ViewData["Title"] = "Publish Form";
-    var pubBadge = Model.IsPublished ? "success" : "secondary";
-    var openBadge = Model.IsOpen ? "primary" : "warning";
+
+    var isPublished = Model.IsPublished;
+    var isOpen = Model.IsOpen;
+    var hasUrl = !string.IsNullOrWhiteSpace(Model.PublicUrl);
+
+    // Status helpers
+    string StatusLabel() => isPublished ? (isOpen ? "Live" : "Paused") : "Draft";
+    string StatusPill() => isPublished ? (isOpen ? "pub-live" : "pub-paused") : "pub-draft";
+    string StatusIcon() => isPublished ? (isOpen ? "bi-broadcast" : "bi-pause-circle-fill") : "bi-pencil-square";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<link href="~/css/publishcss.css" rel="stylesheet" />
+
+@* ── Page header ── *@
+<div class="pub-page-header">
     <div>
-        <h1 class="mb-0">Publish Form</h1>
-        <div class="text-muted">@Model.Title</div>
-
-        <div class="mt-2 d-flex gap-2 flex-wrap">
-            <span class="badge bg-@pubBadge">
-                @(Model.IsPublished ? "Published" : "Not Published")
+        <div class="pub-eyebrow">
+            <i class="bi bi-send-fill"></i> Form Templates &rsaquo; Publish
+        </div>
+        <h1 class="pub-title">Publish <span>@Model.Title</span></h1>
+        <div class="pub-header-meta">
+            <span class="pub-status-pill @StatusPill()">
+                <i class="bi @StatusIcon()"></i>
+                @StatusLabel()
             </span>
-
-            <span class="badge bg-@openBadge">
-                @(Model.IsOpen ? "Open" : "Closed")
-            </span>
+            @if (isPublished)
+            {
+                <span class="pub-meta-tag">
+                    <i class="bi bi-check2-circle"></i> Published
+                </span>
+            }
+            @if (isOpen && isPublished)
+            {
+                <span class="pub-meta-tag green">
+                    <i class="bi bi-globe"></i> Accepting submissions
+                </span>
+            }
         </div>
     </div>
-
-    <a class="btn btn-outline-secondary" asp-action="Builder" asp-route-id="@Model.TemplateId">
-        Back to Builder
-    </a>
+    <div class="pub-header-actions">
+        <a asp-action="PreviewDraft" asp-route-templateId="@Model.TemplateId"
+           class="pub-btn-outline" target="_blank">
+            <i class="bi bi-eye"></i> Preview Draft
+        </a>
+        <a asp-action="Builder" asp-route-id="@Model.TemplateId" class="pub-btn-ghost">
+            <i class="bi bi-arrow-left"></i> Back to Builder
+        </a>
+    </div>
 </div>
 
+@* ── Alerts ── *@
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <div class="pub-alert success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
+    </div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    <div class="pub-alert error">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
 }
 
-<div class="card mb-3">
-    <div class="card-body">
+@* ── Main layout ── *@
+<div class="pub-layout">
 
-        @if (!string.IsNullOrWhiteSpace(Model.PublicUrl))
+    @* ═══ LEFT — main form ═══ *@
+    <div class="pub-main">
+
+        @* Public link card *@
+        @if (hasUrl)
         {
-            <div class="mb-3">
-                <label class="form-label">Public Link</label>
-                <div class="input-group">
-                    <input class="form-control" value="@Model.PublicUrl" readonly />
-                    <a class="btn btn-outline-primary" href="@Model.PublicUrl" target="_blank">Open</a>
-                    <button type="button" class="btn btn-outline-secondary"
-                            onclick="navigator.clipboard.writeText('@Model.PublicUrl')">
-                        Copy
-                    </button>
+            <div class="pub-link-card">
+                <div class="pub-link-card-icon">
+                    <i class="bi bi-link-45deg"></i>
                 </div>
-                <div class="form-text">
-                    This link becomes active only when the form is <strong>Published</strong> and <strong>Open</strong>, and within the Open/Close window.
+                <div class="pub-link-card-body">
+                    <div class="pub-link-label">Public Link</div>
+                    <div class="pub-link-url" id="pub-url-text">@Model.PublicUrl</div>
+                    <div class="pub-link-note">
+                        This link is active only when the form is <strong>Published</strong>,
+                        <strong>Open</strong>, and within the open/close window.
+                    </div>
+                </div>
+                <div class="pub-link-actions">
+                    <button type="button" class="pub-btn-copy" id="pub-copy-btn"
+                            onclick="copyPublicUrl()">
+                        <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                    <a href="@Model.PublicUrl" target="_blank" class="pub-btn-outline-sm">
+                        <i class="bi bi-box-arrow-up-right"></i> Open
+                    </a>
                 </div>
             </div>
         }
         else
         {
-            <div class="text-muted mb-3">Not published yet.</div>
+            <div class="pub-unpublished-notice">
+                <div class="pub-unpublished-icon">
+                    <i class="bi bi-send"></i>
+                </div>
+                <div>
+                    <div class="pub-unpublished-title">Not published yet</div>
+                    <div class="pub-unpublished-sub">
+                        Fill in the settings below and click <strong>Publish / Update</strong>
+                        to generate a public link and make this form available.
+                    </div>
+                </div>
+            </div>
         }
 
-        <form method="post" asp-action="Publish">
-            @Html.AntiForgeryToken()
-
-            <input type="hidden" asp-for="TemplateId" />
-            <input type="hidden" asp-for="Token" />
-
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="row g-3">
-
-                <div class="col-md-4">
-                    <label class="form-label">Open From (UTC)</label>
-                    <input asp-for="OpenFromUtc" class="form-control" />
-                    <div class="form-text">If empty, it will open immediately.</div>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Close At (UTC)</label>
-                    <input asp-for="CloseAtUtc" class="form-control" />
-                    <div class="form-text">Leave empty for no closing date.</div>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Max Submissions (optional)</label>
-                    <input asp-for="MaxSubmissions" class="form-control" />
-                </div>
-
-                <div class="col-md-6">
-                    <div class="form-check mt-4">
-                        <input asp-for="IsOpen" class="form-check-input" />
-                        <label asp-for="IsOpen" class="form-check-label">Open for submissions</label>
+        @* Publish settings form *@
+        <div class="pub-panel">
+            <div class="pub-panel-head">
+                <div class="pub-panel-head-left">
+                    <div class="pub-panel-icon green">
+                        <i class="bi bi-sliders"></i>
                     </div>
-                    <div class="form-text">
-                        You can publish but keep it closed (for testing or scheduling).
+                    <div>
+                        <div class="pub-panel-title">Publication Settings</div>
+                        <div class="pub-panel-sub">Configure availability, schedule, and submission limits</div>
                     </div>
                 </div>
+            </div>
+            <div class="pub-panel-body">
+                <form asp-action="Publish" method="post" id="pub-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="TemplateId" />
+                    <input type="hidden" asp-for="Token" />
 
-                <div class="col-md-6">
-                    <div class="form-check mt-4">
-                        <input asp-for="AllowMultipleSubmissions" class="form-check-input" />
-                        <label asp-for="AllowMultipleSubmissions" class="form-check-label">
-                            Allow multiple submissions
+                    <div asp-validation-summary="ModelOnly" class="pub-validation-summary"></div>
+
+                    @* Availability toggles *@
+                    <div class="pub-section-label">
+                        <i class="bi bi-toggle-on"></i> Availability
+                    </div>
+
+                    <div class="pub-toggle-grid">
+                        <label class="pub-toggle-card" for="IsOpen">
+                            <div class="pub-toggle-card-left">
+                                <div class="pub-toggle-icon green">
+                                    <i class="bi bi-unlock-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="pub-toggle-label">Open for Submissions</div>
+                                    <div class="pub-toggle-hint">
+                                        Beneficiaries can submit responses when enabled.
+                                        You can publish but keep closed for testing.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pub-switch-wrap">
+                                <input type="checkbox" asp-for="IsOpen" class="pub-switch-input" id="IsOpen" />
+                                <span class="pub-switch-track">
+                                    <span class="pub-switch-thumb"></span>
+                                </span>
+                            </div>
+                        </label>
+
+                        <label class="pub-toggle-card" for="AllowMultipleSubmissions">
+                            <div class="pub-toggle-card-left">
+                                <div class="pub-toggle-icon gold">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </div>
+                                <div>
+                                    <div class="pub-toggle-label">Allow Multiple Submissions</div>
+                                    <div class="pub-toggle-hint">
+                                        If disabled, each beneficiary may only submit once.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pub-switch-wrap">
+                                <input type="checkbox" asp-for="AllowMultipleSubmissions"
+                                       class="pub-switch-input" id="AllowMultipleSubmissions" />
+                                <span class="pub-switch-track">
+                                    <span class="pub-switch-thumb"></span>
+                                </span>
+                            </div>
                         </label>
                     </div>
-                </div>
 
+                    @* Schedule *@
+                    <div class="pub-section-label" style="margin-top:24px;">
+                        <i class="bi bi-calendar3"></i> Schedule
+                    </div>
+
+                    <div class="pub-field-grid">
+                        <div class="pub-field">
+                            <label class="pub-field-label" asp-for="OpenFromUtc">
+                                <i class="bi bi-calendar-check" style="font-family:unset!important"></i>
+                                Open From (UTC)
+                            </label>
+                            <div class="pub-input-wrap">
+                                <input asp-for="OpenFromUtc" type="datetime-local"
+                                       class="pub-input" id="open-from" />
+                            </div>
+                            <div class="pub-field-hint">Leave empty to open immediately upon publishing.</div>
+                            <span asp-validation-for="OpenFromUtc" class="pub-field-error"></span>
+                        </div>
+
+                        <div class="pub-field">
+                            <label class="pub-field-label" asp-for="CloseAtUtc">
+                                <i class="bi bi-calendar-x" style="font-family:unset!important"></i>
+                                Close At (UTC)
+                            </label>
+                            <div class="pub-input-wrap">
+                                <input asp-for="CloseAtUtc" type="datetime-local"
+                                       class="pub-input" id="close-at" />
+                            </div>
+                            <div class="pub-field-hint">Leave empty for no automatic closing date.</div>
+                            <span asp-validation-for="CloseAtUtc" class="pub-field-error"></span>
+                        </div>
+
+                        <div class="pub-field">
+                            <label class="pub-field-label" asp-for="MaxSubmissions">
+                                <i class="bi bi-people-fill" style="font-family:unset!important"></i>
+                                Max Submissions
+                            </label>
+                            <div class="pub-input-wrap">
+                                <input asp-for="MaxSubmissions" type="number" min="1"
+                                       class="pub-input" placeholder="Unlimited" />
+                            </div>
+                            <div class="pub-field-hint">Leave empty for unlimited submissions.</div>
+                            <span asp-validation-for="MaxSubmissions" class="pub-field-error"></span>
+                        </div>
+                    </div>
+
+                    @* Actions *@
+                    <div class="pub-form-actions">
+                        <button type="submit" class="pub-btn-primary" id="pub-submit-btn">
+                            <i class="bi bi-send-fill"></i>
+                            @(isPublished ? "Update Settings" : "Publish Form")
+                        </button>
+
+                        @if (hasUrl)
+                        {
+                            <a asp-action="SendCenter"
+                               asp-route-templateId="@Model.TemplateId"
+                               class="pub-btn-green">
+                                <i class="bi bi-people-fill"></i> Go to Send Centre
+                            </a>
+                        }
+
+                        @if (hasUrl)
+                        {
+                            <a href="@Model.PublicUrl" target="_blank" class="pub-btn-outline">
+                                <i class="bi bi-eye"></i> Preview Published
+                            </a>
+                        }
+                    </div>
+                </form>
             </div>
+        </div>
 
-            <div class="mt-3 d-flex gap-2">
-                <button class="btn btn-primary" type="submit">Publish / Update</button>
-                <a class="btn btn-outline-primary"
-                   asp-action="PreviewDraft"
-                   asp-route-templateId="@Model.TemplateId"
-                   target="_blank">
-                    Preview Draft
-                </a>
+        @* Danger zone *@
+        @if (isPublished)
+        {
+            <div class="pub-danger-zone">
+                <div class="pub-danger-head">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Danger Zone
+                </div>
+                <div class="pub-danger-body">
+                    <div class="pub-danger-row">
+                        <div>
+                            <div class="pub-danger-label">Unpublish this form</div>
+                            <div class="pub-danger-hint">
+                                The public link will stop accepting new submissions immediately.
+                                Existing submissions are preserved.
+                            </div>
+                        </div>
+                        <form method="post" asp-action="Unpublish">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="templateId" value="@Model.TemplateId" />
+                            <button type="submit" class="pub-btn-danger"
+                                    onclick="return confirm('Unpublish this form? The public link will stop accepting submissions.')">
+                                <i class="bi bi-x-circle"></i> Unpublish
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 
-                @if (!string.IsNullOrWhiteSpace(Model.PublicUrl))
+    @* ═══ RIGHT — sidebar ═══ *@
+    <div class="pub-sidebar">
+
+        @* Status card *@
+        <div class="pub-status-card @StatusPill()">
+            <div class="pub-status-card-top">
+                <div class="pub-status-card-icon">
+                    <i class="bi @StatusIcon()"></i>
+                </div>
+                <div class="pub-status-card-label">@StatusLabel()</div>
+            </div>
+            <div class="pub-status-card-desc">
+                @if (!isPublished)
                 {
-                    <a class="btn btn-outline-secondary" href="@Model.PublicUrl" target="_blank">
-                        Preview Published
-                    </a>
+                    <text>This form is in draft mode. It is not accessible to the public.</text>
+                }
+                else if (!isOpen)
+                {
+                    <text>Published but paused. The public link exists but is not accepting submissions.</text>
+                }
+                else
+                {
+                    <text>Live and accepting submissions from beneficiaries.</text>
                 }
             </div>
-        </form>
+        </div>
 
-        <form method="post" asp-action="Unpublish" class="mt-2">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="templateId" value="@Model.TemplateId" />
-            <button class="btn btn-outline-danger" type="submit"
-                    onclick="return confirm('Unpublish this form? The public link will stop accepting submissions.');">
-                Unpublish
-            </button>
-        </form>
+        @* Checklist *@
+        <div class="pub-info-card">
+            <div class="pub-info-head">
+                <div class="pub-info-icon green">
+                    <i class="bi bi-check2-all"></i>
+                </div>
+                <div class="pub-info-title">Pre-publish Checklist</div>
+            </div>
+            <div class="pub-info-body">
+                <div class="pub-checklist">
+                    <div class="pub-check-item @(isPublished ? "done" : "")">
+                        <div class="pub-check-dot @(isPublished ? "done" : "")">
+                            <i class="bi @(isPublished ? "bi-check-lg" : "bi-circle")" style="font-family:unset!important"></i>
+                        </div>
+                        <span>Form published</span>
+                    </div>
+                    <div class="pub-check-item @(isOpen ? "done" : "")">
+                        <div class="pub-check-dot @(isOpen ? "done" : "")">
+                            <i class="bi @(isOpen ? "bi-check-lg" : "bi-circle")" style="font-family:unset!important"></i>
+                        </div>
+                        <span>Submissions open</span>
+                    </div>
+                    <div class="pub-check-item @(hasUrl ? "done" : "")">
+                        <div class="pub-check-dot @(hasUrl ? "done" : "")">
+                            <i class="bi @(hasUrl ? "bi-check-lg" : "bi-circle")" style="font-family:unset!important"></i>
+                        </div>
+                        <span>Public URL generated</span>
+                    </div>
+                    <div class="pub-check-item done">
+                        <div class="pub-check-dot done">
+                            <i class="bi bi-check-lg" style="font-family:unset!important"></i>
+                        </div>
+                        <span>Form template saved</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Quick tips *@
+        <div class="pub-info-card">
+            <div class="pub-info-head">
+                <div class="pub-info-icon gold">
+                    <i class="bi bi-lightbulb-fill"></i>
+                </div>
+                <div class="pub-info-title">Tips</div>
+            </div>
+            <div class="pub-info-body pub-tips">
+                <div class="pub-tip">
+                    <div class="pub-tip-icon">
+                        <i class="bi bi-eye-fill" style="font-family:unset!important"></i>
+                    </div>
+                    <span>Use <strong>Preview Draft</strong> to test the form before going live.</span>
+                </div>
+                <div class="pub-tip">
+                    <div class="pub-tip-icon">
+                        <i class="bi bi-calendar3" style="font-family:unset!important"></i>
+                    </div>
+                    <span>Set an <strong>Open From</strong> date to schedule the launch in advance.</span>
+                </div>
+                <div class="pub-tip">
+                    <div class="pub-tip-icon">
+                        <i class="bi bi-people-fill" style="font-family:unset!important"></i>
+                    </div>
+                    <span>Use <strong>Send Centre</strong> to push the form directly to beneficiaries.</span>
+                </div>
+                <div class="pub-tip">
+                    <div class="pub-tip-icon">
+                        <i class="bi bi-pause-circle" style="font-family:unset!important"></i>
+                    </div>
+                    <span>Toggle <strong>Open</strong> off to pause without unpublishing.</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function copyPublicUrl() {
+            var url = document.getElementById('pub-url-text');
+            if (!url) return;
+            navigator.clipboard.writeText(url.textContent.trim()).then(function () {
+                var btn = document.getElementById('pub-copy-btn');
+                if (btn) {
+                    var orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check-lg" style="font-family:unset!important"></i> Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(function () { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2200);
+                }
+            });
+        }
+
+        // Disable submit button on submit
+        (function () {
+            var form = document.getElementById('pub-form');
+            var btn  = document.getElementById('pub-submit-btn');
+            if (form && btn) {
+                form.addEventListener('submit', function () {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="bi bi-hourglass-split" style="font-family:unset!important"></i> Saving…';
+                });
+            }
+        })();
+    </script>
 }

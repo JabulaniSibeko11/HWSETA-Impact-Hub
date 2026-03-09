@@ -1,159 +1,307 @@
 ﻿@model HWSETA_Impact_Hub.Models.ViewModels.Chats.ChatThreadVm
 @{
-    ViewData["Title"] = "Conversation";
+    ViewData["Title"] = "Conversation — " + Model.Subject;
+    var initials = string.Concat(Model.BeneficiaryName.Split(' ').Take(2).Select(w => w.FirstOrDefault())).ToUpper();
 }
 
-<link rel="stylesheet" href="~/css/beneficiarycreatecss.css" />
+<link href="~/css/chatscss.css" rel="stylesheet" />
 
-<div class="hw-page-head">
+@* ── Page header ── *@
+<div class="ch-page-header">
     <div>
-        <div class="hw-page-eyebrow">
-            <i class="bi bi-chat-left-text"></i> Communication
+        <div class="ch-eyebrow">
+            <i class="bi bi-chat-left-text-fill"></i> Communication Centre
         </div>
-
-        <h1 class="hw-page-title">@Model.Subject</h1>
-
-        <p class="hw-page-desc">
-            @Model.BeneficiaryName
-        </p>
+        <h1 class="ch-title">@Model.Subject</h1>
+        <p class="ch-desc">Conversation with <strong>@Model.BeneficiaryName</strong></p>
     </div>
-
-    <a asp-action="Index" class="hw-btn-outline">
-        Back
-    </a>
+    <div class="ch-header-actions">
+        <a asp-action="Index" class="ch-btn-outline">
+            <i class="bi bi-arrow-left"></i> Back to Inbox
+        </a>
+    </div>
 </div>
 
-<div class="hw-card">
-    <div class="hw-card-head">
-        <div class="hw-card-icon gold">
-            <i class="bi bi-chat"></i>
-        </div>
-
-        <div>
-            <div class="hw-card-title">Conversation</div>
-        </div>
+@* ── Alerts ── *@
+@if (TempData["Success"] != null)
+{
+    <div class="ch-alert success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
     </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="ch-alert error">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
 
-    <div class="hw-card-body">
-        @foreach (var msg in Model.Messages)
-        {
-            <div style="margin-bottom:16px;padding:14px;border:1px solid var(--hw-border);border-radius:12px;background:@(msg.IsMine ? "var(--hw-green-light)" : "#fff");">
-                <strong>@msg.SenderDisplayName</strong>
+@* ── Thread layout ── *@
+<div class="ch-thread-layout">
 
-                <div style="font-size:12px;color:var(--hw-muted);margin-top:4px;">
-                    @msg.SentOnUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")
-                </div>
-
-                <div style="margin-top:10px;white-space:pre-wrap;">
-                    @msg.MessageText
-                </div>
-
-                @if (msg.IsFormShareMessage && msg.FormTitle != null)
-                {
-                    <div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff;border:1px solid var(--hw-border);">
-                        <div style="font-weight:700;color:var(--hw-dark);">
-                            <i class="bi bi-file-earmark-text"></i> Attached Form
+    @* ═══ Main column ═══ *@
+    <div>
+        @* Conversation *@
+        <div class="ch-convo-panel">
+            <div class="ch-convo-head">
+                <div class="ch-convo-head-top">
+                    <div>
+                        <div class="ch-convo-subject">@Model.Subject</div>
+                        <div class="ch-convo-beneficiary">
+                            <div class="ch-convo-beneficiary-avatar">@initials</div>
+                            @Model.BeneficiaryName
+                            <span style="color:var(--hw-border);">·</span>
+                            @if (Model.Status == "Open")
+                            {
+                                <span class="ch-badge ch-badge-open"><span class="ch-badge-dot"></span>Open</span>
+                            }
+                            else
+                            {
+                                <span class="ch-badge ch-badge-closed"><span class="ch-badge-dot"></span>Closed</span>
+                            }
                         </div>
-                        <div style="font-size:13px;color:var(--hw-muted);margin-top:4px;">
-                            @msg.FormTitle
+                    </div>
+                </div>
+            </div>
+
+            <div class="ch-message-stream" id="ch-message-stream">
+                @{
+                    DateTime? lastDate = null;
+                }
+                @foreach (var msg in Model.Messages.OrderBy(m => m.SentOnUtc))
+                {
+                    var msgDate = msg.SentOnUtc.ToLocalTime().Date;
+                    var avatarClass = msg.SenderType == "Admin" ? "admin" : (msg.SenderType == "System" ? "system" : "beneficiary");
+                    var nameInitials = string.Concat(msg.SenderDisplayName.Split(' ').Take(2).Select(w => w.FirstOrDefault())).ToUpper();
+
+                    @* Day separator *@
+                    if (lastDate == null || lastDate != msgDate)
+                    {
+                        <div class="ch-day-sep">
+                            @msgDate.ToString("dddd, dd MMMM yyyy")
+                        </div>
+                        lastDate = msgDate;
+                    }
+
+                    <div class="ch-msg-wrap @(msg.IsMine ? "mine" : "")">
+                        <div class="ch-msg-avatar @avatarClass">
+                            @nameInitials
+                        </div>
+                        <div class="ch-msg-content">
+                            <div class="ch-msg-meta">
+                                <span class="ch-msg-sender">@msg.SenderDisplayName</span>
+                                <span class="ch-msg-time">@msg.SentOnUtc.ToLocalTime().ToString("HH:mm")</span>
+                            </div>
+                            <div class="ch-msg-bubble">@msg.MessageText</div>
+                            @if (msg.IsFormShareMessage && msg.FormTitle != null)
+                            {
+                                <div class="ch-form-card" style="margin-top:10px;">
+                                    <div class="ch-form-card-icon">
+                                        <i class="bi bi-file-earmark-text-fill" style="font-family:unset!important"></i>
+                                    </div>
+                                    <div>
+                                        <div class="ch-form-card-title">@msg.FormTitle</div>
+                                        <div class="ch-form-card-sub">Monitoring Form · Click to open</div>
+                                    </div>
+                                    <i class="bi bi-arrow-right-circle" style="font-family:unset!important;color:var(--hw-muted);margin-left:auto;font-size:16px;"></i>
+                                </div>
+                            }
                         </div>
                     </div>
                 }
             </div>
+        </div>
+
+        @if (Model.Status == "Open")
+        {
+            @* Reply panel *@
+            <div class="ch-reply-panel">
+                <div class="ch-panel-head">
+                    <div class="ch-panel-head-icon green">
+                        <i class="bi bi-reply-fill" style="font-family:unset!important"></i>
+                    </div>
+                    <div>
+                        <div class="ch-panel-title">Reply</div>
+                        <div class="ch-panel-sub">Send a message to @Model.BeneficiaryName</div>
+                    </div>
+                </div>
+                <div class="ch-panel-body">
+                    <form asp-action="Reply" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ThreadId" />
+
+                        <div class="ch-field">
+                            <label class="ch-field-label" asp-for="AdminChatProfileId">
+                                Reply As <span class="req">*</span>
+                            </label>
+                            <select asp-for="AdminChatProfileId" asp-items="Model.AdminChatProfiles" class="ch-select">
+                                <option value="">— Select chatter name —</option>
+                            </select>
+                            <span asp-validation-for="AdminChatProfileId" class="ch-field-error"></span>
+                        </div>
+
+                        <div class="ch-field">
+                            <label class="ch-field-label" asp-for="ReplyText">
+                                Message <span class="req">*</span>
+                            </label>
+                            <textarea asp-for="ReplyText" rows="5" class="ch-textarea" id="reply-text"
+                                      placeholder="Type your reply here…"></textarea>
+                            <div class="ch-char-count"><span id="reply-count">0</span> / 4000</div>
+                            <span asp-validation-for="ReplyText" class="ch-field-error"></span>
+                        </div>
+
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+                            <button type="submit" class="ch-btn-send">
+                                <i class="bi bi-send-fill" style="font-family:unset!important"></i>
+                                Send Reply
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @* Send form panel *@
+            <div class="ch-reply-panel" style="margin-top:14px;">
+                <div class="ch-panel-head">
+                    <div class="ch-panel-head-icon gold">
+                        <i class="bi bi-file-earmark-arrow-up-fill" style="font-family:unset!important"></i>
+                    </div>
+                    <div>
+                        <div class="ch-panel-title">Send Monitoring Form</div>
+                        <div class="ch-panel-sub">Share a published form directly in this conversation</div>
+                    </div>
+                </div>
+                <div class="ch-panel-body">
+                    <form asp-action="SendForm" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="SendForm.ThreadId" />
+
+                        <div class="ch-field">
+                            <label class="ch-field-label" asp-for="SendForm.AdminChatProfileId">
+                                Send As <span class="req">*</span>
+                            </label>
+                            <select asp-for="SendForm.AdminChatProfileId" asp-items="Model.SendForm.AdminChatProfiles" class="ch-select">
+                                <option value="">— Select chatter name —</option>
+                            </select>
+                        </div>
+
+                        <div class="ch-field">
+                            <label class="ch-field-label" asp-for="SendForm.FormPublishId">
+                                Published Form <span class="req">*</span>
+                            </label>
+                            <select asp-for="SendForm.FormPublishId" asp-items="Model.SendForm.PublishedForms" class="ch-select">
+                                <option value="">— Select published form —</option>
+                            </select>
+                        </div>
+
+                        <div class="ch-field">
+                            <label class="ch-field-label" asp-for="SendForm.Note">Optional Note</label>
+                            <textarea asp-for="SendForm.Note" rows="3" class="ch-textarea"
+                                      placeholder="Add a note to accompany this form…"></textarea>
+                        </div>
+
+                        <button type="submit" class="ch-btn-gold" style="margin-top:8px;">
+                            <i class="bi bi-send-check-fill" style="font-family:unset!important"></i>
+                            Send Form
+                        </button>
+                    </form>
+                </div>
+            </div>
         }
     </div>
+
+    @* ═══ Sidebar ═══ *@
+    <div class="ch-sidebar">
+
+        @* Beneficiary info *@
+        <div class="ch-info-card">
+            <div class="ch-info-head">
+                <div class="ch-info-head-icon gold">
+                    <i class="bi bi-person-fill" style="font-family:unset!important"></i>
+                </div>
+                <div class="ch-info-title">Beneficiary</div>
+            </div>
+            <div class="ch-beneficiary-block">
+                <div class="ch-beneficiary-avatar-lg">@initials</div>
+                <div class="ch-beneficiary-name">@Model.BeneficiaryName</div>
+                <div class="ch-beneficiary-id" style="margin-top:2px;">
+                    <span class="ch-badge ch-badge-open" style="font-size:10px;">Beneficiary</span>
+                </div>
+            </div>
+        </div>
+
+        @* Thread info *@
+        <div class="ch-info-card">
+            <div class="ch-info-head">
+                <div class="ch-info-head-icon blue">
+                    <i class="bi bi-info-circle-fill" style="font-family:unset!important"></i>
+                </div>
+                <div class="ch-info-title">Thread Info</div>
+            </div>
+            <div class="ch-info-body">
+                <div class="ch-detail-row">
+                    <div class="ch-detail-label">Status</div>
+                    <div class="ch-detail-value">
+                        @if (Model.Status == "Open")
+                        {
+                            <span class="ch-badge ch-badge-open"><span class="ch-badge-dot"></span>Open</span>
+                        }
+                        else
+                        {
+                            <span class="ch-badge ch-badge-closed"><span class="ch-badge-dot"></span>Closed</span>
+                        }
+                    </div>
+                </div>
+                <div class="ch-detail-row">
+                    <div class="ch-detail-label">Messages</div>
+                    <div class="ch-detail-value">@Model.Messages.Count message@(Model.Messages.Count != 1 ? "s" : "")</div>
+                </div>
+                <div class="ch-detail-row" style="border:none;">
+                    <div class="ch-detail-label">Subject</div>
+                    <div class="ch-detail-value" style="font-weight:600;font-size:12px;">@Model.Subject</div>
+                </div>
+            </div>
+
+            @if (Model.Status == "Open")
+            {
+                <div class="ch-close-thread-wrap">
+                    <form asp-action="Close" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.ThreadId" />
+                        <button type="submit" class="ch-btn-danger" style="width:100%;justify-content:center;"
+                                onclick="return confirm('Close this conversation? The beneficiary will no longer be able to reply.')">
+                            <i class="bi bi-x-circle" style="font-family:unset!important"></i>
+                            Close Conversation
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+
+    </div>
+
 </div>
-
-@if (Model.Status == "Open")
-{
-    <div class="hw-card" style="margin-top:18px;">
-        <div class="hw-card-head">
-            <div class="hw-card-icon green">
-                <i class="bi bi-reply"></i>
-            </div>
-
-            <div>
-                <div class="hw-card-title">Reply</div>
-            </div>
-        </div>
-
-        <div class="hw-card-body">
-            <form asp-action="Reply" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="ThreadId" />
-
-                <div class="hw-field">
-                    <label class="hw-field-label" asp-for="AdminChatProfileId">Reply As</label>
-                    <select asp-for="AdminChatProfileId" asp-items="Model.AdminChatProfiles" class="hw-select">
-                        <option value="">— Select chatter name —</option>
-                    </select>
-                    <span asp-validation-for="AdminChatProfileId" class="hw-field-error"></span>
-                </div>
-
-                <div class="hw-field">
-                    <label class="hw-field-label" asp-for="ReplyText">Message</label>
-                    <textarea asp-for="ReplyText" rows="5" class="hw-input"></textarea>
-                    <span asp-validation-for="ReplyText" class="hw-field-error"></span>
-                </div>
-
-                <div style="margin-top:20px">
-                    <button class="hw-btn-primary">
-                        <i class="bi bi-send"></i>
-                        Send Reply
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="hw-card" style="margin-top:18px;">
-        <div class="hw-card-head">
-            <div class="hw-card-icon gold">
-                <i class="bi bi-file-earmark-text"></i>
-            </div>
-
-            <div>
-                <div class="hw-card-title">Send Form to Beneficiary</div>
-                <div class="hw-card-sub">Share a published form directly in this conversation.</div>
-            </div>
-        </div>
-
-        <div class="hw-card-body">
-            <form asp-action="SendForm" method="post">
-                @Html.AntiForgeryToken()
-
-                <input type="hidden" asp-for="SendForm.ThreadId" />
-
-                <div class="hw-field">
-                    <label class="hw-field-label" asp-for="SendForm.AdminChatProfileId">Send As</label>
-                    <select asp-for="SendForm.AdminChatProfileId" asp-items="Model.SendForm.AdminChatProfiles" class="hw-select">
-                        <option value="">— Select chatter name —</option>
-                    </select>
-                </div>
-
-                <div class="hw-field">
-                    <label class="hw-field-label" asp-for="SendForm.FormPublishId">Published Form</label>
-                    <select asp-for="SendForm.FormPublishId" asp-items="Model.SendForm.PublishedForms" class="hw-select">
-                        <option value="">— Select published form —</option>
-                    </select>
-                </div>
-
-                <div class="hw-field">
-                    <label class="hw-field-label" asp-for="SendForm.Note">Optional Note</label>
-                    <textarea asp-for="SendForm.Note" rows="4" class="hw-input"></textarea>
-                </div>
-
-                <div style="margin-top:20px">
-                    <button class="hw-btn-primary">
-                        <i class="bi bi-send-check"></i>
-                        Send Form
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Scroll to bottom of message stream
+        (function () {
+            var stream = document.getElementById('ch-message-stream');
+            if (stream) stream.scrollTop = stream.scrollHeight;
+        })();
+
+        // Reply char counter
+        (function () {
+            var ta    = document.getElementById('reply-text');
+            var count = document.getElementById('reply-count');
+            if (!ta || !count) return;
+            ta.addEventListener('input', function () {
+                count.textContent = ta.value.length;
+                count.style.color = ta.value.length > 3800 ? 'var(--hw-red)' : 'var(--hw-muted)';
+            });
+        })();
+    </script>
 }

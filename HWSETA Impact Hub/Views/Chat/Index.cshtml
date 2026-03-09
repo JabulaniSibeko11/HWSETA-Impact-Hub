@@ -1,67 +1,192 @@
 ﻿@model HWSETA_Impact_Hub.Models.ViewModels.Chats.ChatInboxVm
 @{
-    ViewData["Title"] = "Inbox";
+    ViewData["Title"] = "Communication Centre";
+    var total = Model.Threads.Count;
+    var open = Model.Threads.Count(t => t.Status == "Open");
+    var closed = Model.Threads.Count(t => t.Status == "Closed");
+    var unread = Model.Threads.Count(t => t.HasUnreadAdminMessage || t.HasUnreadBeneficiaryMessage);
 }
 
-<link rel="stylesheet" href="~/css/beneficiarycreatecss.css" />
+<link href="~/css/chatscss.css" rel="stylesheet" />
 
-<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+@* ── Page header ── *@
+<div class="ch-page-header">
     <div>
-        <div class="hw-page-eyebrow"><i class="bi bi-chat-dots me-1"></i>Communication Centre</div>
-        <h1 class="hw-page-title">Email <span>Chat Inbox</span></h1>
-        <p class="hw-page-desc">Track two-way communication between beneficiaries and administrators.</p>
+        <div class="ch-eyebrow">
+            <i class="bi bi-envelope-fill"></i> Communication Centre
+        </div>
+        <h1 class="ch-title">Email <span>Chat Inbox</span></h1>
+        <p class="ch-desc">Track two-way communication between beneficiaries and administrators.</p>
     </div>
-    <a asp-action="Create" class="hw-btn-primary">
-        <i class="bi bi-plus-circle"></i> New Conversation
-    </a>
+    <div class="ch-header-actions">
+        <a asp-action="Create" class="ch-btn-primary">
+            <i class="bi bi-plus-circle-fill"></i> New Conversation
+        </a>
+    </div>
 </div>
 
-<div class="hw-card">
-    <div class="hw-card-head">
-        <div class="hw-card-icon green"><i class="bi bi-inbox"></i></div>
+@* ── Alerts ── *@
+@if (TempData["Success"] != null)
+{
+    <div class="ch-alert success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="ch-alert error">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+@* ── Stat strip ── *@
+<div class="ch-stat-strip">
+    <div class="ch-stat-card green">
+        <div class="ch-stat-icon green"><i class="bi bi-chat-dots-fill" style="font-family:unset!important"></i></div>
         <div>
-            <div class="hw-card-title">Inbox</div>
-            <div class="hw-card-sub">Open and recent communication threads</div>
+            <div class="ch-stat-value">@total</div>
+            <div class="ch-stat-label">Total Threads</div>
         </div>
     </div>
-    <div class="hw-card-body">
+    <div class="ch-stat-card gold">
+        <div class="ch-stat-icon gold"><i class="bi bi-envelope-open-fill" style="font-family:unset!important"></i></div>
+        <div>
+            <div class="ch-stat-value">@open</div>
+            <div class="ch-stat-label">Open</div>
+        </div>
+    </div>
+    <div class="ch-stat-card blue">
+        <div class="ch-stat-icon blue"><i class="bi bi-check2-all" style="font-family:unset!important"></i></div>
+        <div>
+            <div class="ch-stat-value">@closed</div>
+            <div class="ch-stat-label">Closed</div>
+        </div>
+    </div>
+    <div class="ch-stat-card red">
+        <div class="ch-stat-icon red"><i class="bi bi-bell-fill" style="font-family:unset!important"></i></div>
+        <div>
+            <div class="ch-stat-value">@unread</div>
+            <div class="ch-stat-label">Unread</div>
+        </div>
+    </div>
+</div>
+
+@* ── Inbox panel ── *@
+<div class="ch-inbox-panel">
+    <div class="ch-inbox-head">
+        <div class="ch-inbox-head-left">
+            <div class="ch-inbox-icon">
+                <i class="bi bi-inbox-fill" style="font-family:unset!important"></i>
+            </div>
+            <div>
+                <div class="ch-inbox-title">Inbox</div>
+                <div class="ch-inbox-sub">@total conversation@(total != 1 ? "s" : "") · @open open</div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Search / filter bar ── *@
+    <div class="ch-search-bar">
+        <div class="ch-search-wrap">
+            <i class="bi bi-search" style="font-family:unset!important"></i>
+            <input type="text" class="ch-search-input" id="ch-search"
+                   placeholder="Search by beneficiary, subject or preview…" />
+        </div>
+        <select class="ch-filter-select" id="ch-filter-status" style="position:relative;">
+            <option value="">All Status</option>
+            <option value="Open">Open</option>
+            <option value="Closed">Closed</option>
+        </select>
+    </div>
+
+    @* ── Thread list ── *@
+    <div class="ch-thread-list" id="ch-thread-list">
         @if (!Model.Threads.Any())
         {
-            <div class="hw-field-hint">No conversations yet.</div>
+            <div class="ch-empty">
+                <div class="ch-empty-icon">
+                    <i class="bi bi-chat-square" style="font-family:unset!important"></i>
+                </div>
+                <div class="ch-empty-title">No conversations yet</div>
+                <div class="ch-empty-sub">Start a new conversation with a beneficiary to get going.</div>
+                <a asp-action="Create" class="ch-btn-primary" style="margin-top:8px;">
+                    <i class="bi bi-plus-circle-fill"></i> Start First Conversation
+                </a>
+            </div>
         }
         else
         {
-            <div style="display:flex;flex-direction:column;gap:12px;">
-                @foreach (var t in Model.Threads)
-                {
-                    <a asp-action="Thread" asp-route-id="@t.ThreadId"
-                       style="display:block;text-decoration:none;color:inherit;border:1.5px solid var(--hw-border);border-radius:14px;padding:16px 18px;background:#fff;">
-                        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-                            <div>
-                                <div style="font-weight:800;color:var(--hw-dark);">@t.Subject</div>
-                                <div style="font-size:12px;color:var(--hw-muted);margin-top:4px;">
-                                    <strong>@t.BeneficiaryName</strong>
-                                </div>
-                                <div style="font-size:12px;color:var(--hw-muted);margin-top:6px;">
-                                    <strong>@t.LastSender:</strong> @t.LastMessagePreview
-                                </div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-size:11px;font-weight:700;color:var(--hw-muted);">@t.LastMessageOnUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</div>
-                                <div style="margin-top:6px;">
-                                    <span class="hw-status-badge @(t.Status == "Open" ? "active" : "inactive")">@t.Status</span>
-                                </div>
-                                @if (t.HasUnreadAdminMessage || t.HasUnreadBeneficiaryMessage)
-                                {
-                                    <div style="margin-top:6px;font-size:11px;font-weight:700;color:var(--hw-red);">
-                                        Unread
-                                    </div>
-                                }
-                            </div>
+            @foreach (var t in Model.Threads.OrderByDescending(x => x.LastMessageOnUtc))
+            {
+                var initials = string.Concat(t.BeneficiaryName.Split(' ').Take(2).Select(w => w.FirstOrDefault()));
+                var avatarColors = new[] { "green", "gold", "blue", "teal", "purple", "red" };
+                var avatarCol = avatarColors[Math.Abs(t.ThreadId.GetHashCode()) % avatarColors.Length];
+                var isUnread = t.HasUnreadAdminMessage || t.HasUnreadBeneficiaryMessage;
+
+                <a asp-action="Thread" asp-route-id="@t.ThreadId"
+                   class="ch-thread-item @(isUnread ? "unread" : "")"
+                   data-name="@t.BeneficiaryName.ToLower()"
+                   data-subject="@t.Subject.ToLower()"
+                   data-preview="@t.LastMessagePreview.ToLower()"
+                   data-status="@t.Status">
+                    <div class="ch-avatar @avatarCol">@initials.ToString().ToUpper()</div>
+                    <div class="ch-thread-body">
+                        <div class="ch-thread-top">
+                            <span class="ch-thread-name">@t.BeneficiaryName</span>
+                            <span class="ch-thread-time">@t.LastMessageOnUtc.ToLocalTime().ToString("dd MMM HH:mm")</span>
                         </div>
-                    </a>
-                }
-            </div>
+                        <div class="ch-thread-subject">@t.Subject</div>
+                        <div class="ch-thread-preview">
+                            <strong style="color:var(--hw-dark);">@t.LastSender:</strong> @t.LastMessagePreview
+                        </div>
+                        <div class="ch-thread-meta">
+                            @if (t.Status == "Open")
+                            {
+                                <span class="ch-badge ch-badge-open">
+                                    <span class="ch-badge-dot"></span>Open
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="ch-badge ch-badge-closed">
+                                    <span class="ch-badge-dot"></span>Closed
+                                </span>
+                            }
+                            @if (isUnread)
+                            {
+                                <span class="ch-badge ch-badge-unread">
+                                    <span class="ch-badge-dot"></span>Unread
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </a>
+            }
         }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var search  = document.getElementById('ch-search');
+            var filter  = document.getElementById('ch-filter-status');
+            var items   = document.querySelectorAll('.ch-thread-item');
+
+            function applyFilters() {
+                var q  = search  ? search.value.toLowerCase()  : '';
+                var st = filter  ? filter.value                : '';
+                items.forEach(function (el) {
+                    var matchQ  = !q  || el.dataset.name.includes(q) || el.dataset.subject.includes(q) || el.dataset.preview.includes(q);
+                    var matchSt = !st || el.dataset.status === st;
+                    el.style.display = (matchQ && matchSt) ? '' : 'none';
+                });
+            }
+
+            if (search)  search.addEventListener('input',  applyFilters);
+            if (filter)  filter.addEventListener('change', applyFilters);
+        })();
+    </script>
+}

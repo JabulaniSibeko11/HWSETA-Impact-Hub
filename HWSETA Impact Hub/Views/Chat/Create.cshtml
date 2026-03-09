@@ -3,98 +3,217 @@
     ViewData["Title"] = "New Conversation";
 }
 
-<link rel="stylesheet" href="~/css/beneficiarycreatecss.css" />
+<link href="~/css/chatscss.css" rel="stylesheet" />
 
-<div class="hw-page-head">
+@* ── Page header ── *@
+<div class="ch-page-header">
     <div>
-        <div class="hw-page-eyebrow">
-            <i class="bi bi-envelope-plus"></i> Communication Centre
+        <div class="ch-eyebrow">
+            <i class="bi bi-envelope-plus-fill"></i> Communication Centre
         </div>
-
-        <h1 class="hw-page-title">
-            Start <span>Conversation</span>
-        </h1>
+        <h1 class="ch-title">Start <span>Conversation</span></h1>
+        <p class="ch-desc">Compose and send the opening message to a beneficiary.</p>
     </div>
-
-    <a asp-action="Index" class="hw-btn-outline">
-        <i class="bi bi-arrow-left"></i> Back
-    </a>
+    <div class="ch-header-actions">
+        <a asp-action="Index" class="ch-btn-outline">
+            <i class="bi bi-arrow-left"></i> Back to Inbox
+        </a>
+    </div>
 </div>
 
-<div class="hw-card">
-    <div class="hw-card-head">
-        <div class="hw-card-icon green">
-            <i class="bi bi-chat-square-text"></i>
+@* ── Alerts ── *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="ch-alert error">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>Please fix the errors below before sending.</span>
+    </div>
+}
+
+@* ── Create layout ── *@
+<div class="ch-create-layout">
+
+    @* ═══ Main form ═══ *@
+    <div class="ch-form-panel">
+        <div class="ch-panel-head">
+            <div class="ch-panel-head-icon green">
+                <i class="bi bi-chat-square-text-fill" style="font-family:unset!important"></i>
+            </div>
+            <div>
+                <div class="ch-panel-title">New Thread</div>
+                <div class="ch-panel-sub">Send the first message and optionally attach a published form.</div>
+            </div>
         </div>
 
-        <div>
-            <div class="hw-card-title">New Thread</div>
-            <div class="hw-card-sub">
-                Send the first message and optionally attach a published form.
-            </div>
+        <div class="ch-panel-body">
+            <form asp-action="Create" method="post" id="create-form">
+                @Html.AntiForgeryToken()
+
+                @* ── Send As ── *@
+                <div class="ch-field">
+                    <label class="ch-field-label" asp-for="AdminChatProfileId">
+                        Send As <span class="req">*</span>
+                    </label>
+                    <select asp-for="AdminChatProfileId" asp-items="Model.AdminChatProfiles" class="ch-select">
+                        <option value="">— Select chatter name —</option>
+                    </select>
+                    <span asp-validation-for="AdminChatProfileId" class="ch-field-error"></span>
+                </div>
+
+                @* ── Beneficiary ── *@
+                <div class="ch-field">
+                    <label class="ch-field-label" asp-for="BeneficiaryId">
+                        Beneficiary <span class="req">*</span>
+                    </label>
+                    <select asp-for="BeneficiaryId" asp-items="Model.Beneficiaries" class="ch-select" id="beneficiary-select">
+                        <option value="">— Select beneficiary —</option>
+                    </select>
+                    <div class="ch-field-hint">Select the beneficiary this conversation is for.</div>
+                    <span asp-validation-for="BeneficiaryId" class="ch-field-error"></span>
+                </div>
+
+                @* ── Subject ── *@
+                <div class="ch-field">
+                    <label class="ch-field-label" asp-for="Subject">
+                        Subject <span class="req">*</span>
+                    </label>
+                    <input asp-for="Subject" class="ch-input" id="subject-input"
+                           placeholder="e.g. Training update for August cohort" maxlength="300" />
+                    <div class="ch-char-count"><span id="subject-count">0</span> / 300</div>
+                    <span asp-validation-for="Subject" class="ch-field-error"></span>
+                </div>
+
+                @* ── Opening message ── *@
+                <div class="ch-field">
+                    <label class="ch-field-label" asp-for="MessageText">
+                        Opening Message
+                    </label>
+                    <textarea asp-for="MessageText" rows="6" class="ch-textarea" id="message-text"
+                              placeholder="Write your opening message here…"></textarea>
+                    <div class="ch-char-count"><span id="message-count">0</span> / 4000</div>
+                    <span asp-validation-for="MessageText" class="ch-field-error"></span>
+                </div>
+
+                @* ── Optional form attachment ── *@
+                <div class="ch-divider"><i class="bi bi-paperclip" style="font-family:unset!important"></i> Optional Form Attachment</div>
+
+                <div class="ch-optional-section">
+                    <div class="ch-optional-label">
+                        <i class="bi bi-file-earmark-check-fill" style="font-family:unset!important"></i>
+                        Attach a published monitoring form
+                    </div>
+
+                    <div class="ch-field">
+                        <label class="ch-field-label" asp-for="FormPublishId">Published Form</label>
+                        <select asp-for="FormPublishId" asp-items="Model.PublishedForms" class="ch-select">
+                            <option value="">— No form attachment —</option>
+                        </select>
+                        <div class="ch-field-hint">Optionally include a monitoring form with this message.</div>
+                        <span asp-validation-for="FormPublishId" class="ch-field-error"></span>
+                    </div>
+
+                    <div class="ch-field" style="margin-bottom:0;">
+                        <label class="ch-field-label" asp-for="FormNote">Note for this form</label>
+                        <textarea asp-for="FormNote" rows="3" class="ch-textarea"
+                                  placeholder="Add a note to accompany this form (optional)…"></textarea>
+                        <span asp-validation-for="FormNote" class="ch-field-error"></span>
+                    </div>
+                </div>
+
+                @* ── Submit ── *@
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:24px;">
+                    <button type="submit" class="ch-btn-send" id="send-btn">
+                        <i class="bi bi-send-fill" style="font-family:unset!important"></i>
+                        Start Conversation
+                    </button>
+                    <a asp-action="Index" class="ch-btn-outline">Cancel</a>
+                </div>
+            </form>
         </div>
     </div>
 
-    <div class="hw-card-body">
-        <form asp-action="Create" method="post">
-            @Html.AntiForgeryToken()
+    @* ═══ Sidebar ═══ *@
+    <div class="ch-sidebar">
 
-            <div class="hw-field">
-                <label class="hw-field-label" asp-for="AdminChatProfileId">Send As</label>
-                <select asp-for="AdminChatProfileId" asp-items="Model.AdminChatProfiles" class="hw-select">
-                    <option value="">— Select chatter name —</option>
-                </select>
-                <span asp-validation-for="AdminChatProfileId" class="hw-field-error"></span>
+        @* Tips card *@
+        <div class="ch-compose-preview">
+            <div class="ch-compose-preview-head">
+                <i class="bi bi-lightbulb-fill" style="font-family:unset!important"></i>
+                Compose Tips
             </div>
+            <div class="ch-compose-tips">
+                <div class="ch-compose-tip">
+                    <div class="ch-compose-tip-icon"><i class="bi bi-person-check-fill" style="font-family:unset!important"></i></div>
+                    <span>Choose the right chatter profile — this determines the display name the beneficiary sees.</span>
+                </div>
+                <div class="ch-compose-tip">
+                    <div class="ch-compose-tip-icon"><i class="bi bi-chat-quote-fill" style="font-family:unset!important"></i></div>
+                    <span>Keep your opening message clear and friendly. Beneficiaries respond better to personal tone.</span>
+                </div>
+                <div class="ch-compose-tip">
+                    <div class="ch-compose-tip-icon"><i class="bi bi-file-earmark-text-fill" style="font-family:unset!important"></i></div>
+                    <span>Attach a published form to request information or collect feedback directly in the thread.</span>
+                </div>
+                <div class="ch-compose-tip">
+                    <div class="ch-compose-tip-icon"><i class="bi bi-shield-check-fill" style="font-family:unset!important"></i></div>
+                    <span>All messages are stored securely and are linked to the beneficiary's record.</span>
+                </div>
+            </div>
+        </div>
 
-            <div class="hw-field">
-                <label class="hw-field-label" asp-for="BeneficiaryId">Beneficiary</label>
-                <select asp-for="BeneficiaryId" asp-items="Model.Beneficiaries" class="hw-select">
-                    <option value="">— Select beneficiary —</option>
-                </select>
-                <span asp-validation-for="BeneficiaryId" class="hw-field-error"></span>
+        @* Guidelines card *@
+        <div class="ch-info-card">
+            <div class="ch-info-head">
+                <div class="ch-info-head-icon red">
+                    <i class="bi bi-exclamation-diamond-fill" style="font-family:unset!important"></i>
+                </div>
+                <div class="ch-info-title">Communication Guidelines</div>
             </div>
+            <div class="ch-info-body" style="font-size:12px;color:var(--hw-muted);font-weight:500;line-height:1.6;">
+                <p style="margin:0 0 8px;">All communication is subject to HWSETA's POPIA compliance policy.</p>
+                <p style="margin:0 0 8px;">Do not include sensitive financial or identity information in message bodies.</p>
+                <p style="margin:0;">Conversations are audited and may be reviewed by authorised personnel.</p>
+            </div>
+        </div>
 
-            <div class="hw-field">
-                <label class="hw-field-label" asp-for="Subject"></label>
-                <input asp-for="Subject" class="hw-input" />
-                <span asp-validation-for="Subject" class="hw-field-error"></span>
-            </div>
-
-            <div class="hw-field">
-                <label class="hw-field-label" asp-for="MessageText">Opening Message</label>
-                <textarea asp-for="MessageText" rows="5" class="hw-input"></textarea>
-                <span asp-validation-for="MessageText" class="hw-field-error"></span>
-            </div>
-
-            <div class="hw-section-divider" style="margin:22px 0 16px 0;">
-                <span>Optional Form Attachment</span>
-            </div>
-
-            <div class="hw-field">
-                <label class="hw-field-label" asp-for="FormPublishId">Attach Published Form</label>
-                <select asp-for="FormPublishId" asp-items="Model.PublishedForms" class="hw-select">
-                    <option value="">— No form attachment —</option>
-                </select>
-                <span asp-validation-for="FormPublishId" class="hw-field-error"></span>
-            </div>
-
-            <div class="hw-field">
-                <label class="hw-field-label" asp-for="FormNote">Form Note</label>
-                <textarea asp-for="FormNote" rows="4" class="hw-input"></textarea>
-                <span asp-validation-for="FormNote" class="hw-field-error"></span>
-            </div>
-
-            <div style="margin-top:20px">
-                <button class="hw-btn-primary">
-                    <i class="bi bi-send"></i>
-                    Start Conversation
-                </button>
-            </div>
-        </form>
     </div>
+
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            // Subject char counter
+            var subjectInput = document.getElementById('subject-input');
+            var subjectCount = document.getElementById('subject-count');
+            if (subjectInput && subjectCount) {
+                subjectCount.textContent = subjectInput.value.length;
+                subjectInput.addEventListener('input', function () {
+                    subjectCount.textContent = subjectInput.value.length;
+                });
+            }
+
+            // Message char counter
+            var messageText  = document.getElementById('message-text');
+            var messageCount = document.getElementById('message-count');
+            if (messageText && messageCount) {
+                messageCount.textContent = messageText.value.length;
+                messageText.addEventListener('input', function () {
+                    messageCount.textContent = messageText.value.length;
+                    messageCount.style.color = messageText.value.length > 3800 ? 'var(--hw-red)' : 'var(--hw-muted)';
+                });
+            }
+
+            // Disable send button on submit to prevent double-submit
+            var form    = document.getElementById('create-form');
+            var sendBtn = document.getElementById('send-btn');
+            if (form && sendBtn) {
+                form.addEventListener('submit', function () {
+                    sendBtn.disabled = true;
+                    sendBtn.innerHTML = '<i class="bi bi-hourglass-split" style="font-family:unset!important"></i> Sending…';
+                });
+            }
+        })();
+    </script>
 }
